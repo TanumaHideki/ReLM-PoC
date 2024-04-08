@@ -1,0 +1,17 @@
+digraph localmem {
+    // Define nodes
+    LM1 [label = "Local\nMemory";shape = cylinder;];
+    LM2 [label = "Local\nMemory";shape = cylinder;];
+    LM3 [label = "Local\nMemory";shape = cylinder;];
+    LM4 [label = "Local\nMemory";shape = cylinder;];
+    CPU1 [shape = box3d;];
+    CPU2 [shape = box3d;];
+    CPU3 [shape = box3d;];
+    CPU4 [shape = box3d;];
+    BUS [label = "{{<a>Port 1|<b>Port 2|<c>Port 3|<d>Port 4}|Communication Bus}";shape = record;width = 4.5;];
+    // Define edges
+    LM1 -> CPU1 -> BUS:a [dir = both;];
+    LM2 -> CPU2 -> BUS:b [dir = both;];
+    LM3 -> CPU3 -> BUS:c [dir = both;];
+    LM4 -> CPU4 -> BUS:d [dir = both;];
+}

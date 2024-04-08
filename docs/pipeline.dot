@@ -1,0 +1,132 @@
+digraph pipeline {
+    subgraph {
+        rank = same;
+        node [shape = none;];
+        Reg0 [label = "Reg";];
+        PC0 [label = "PC";];
+        WB00 [label = "Bank #0\nWriteBack";];
+        WB01 [label = "Bank #1\nWriteBack";];
+        WB02 [label = "Bank #2\nWriteBack";];
+        WB03 [label = "Bank #3\nWriteBack";];
+    }
+    subgraph cluster_0 {
+        subgraph {
+            rank = same;
+            node [style = bold; shape = box;];
+            Reg0D [label = "FF";];
+            PC0D [label = "FF";];
+            OP0 [label = "Bank #0\nOpCode";shape = cylinder;];
+            X0 [label = "Bank #0\nOperand";shape = cylinder;];
+            WB01D [label = "FF";];
+            WB02D [label = "FF";];
+            WB03D [label = "FF";];
+        }
+        subgraph {
+            rank = same;
+            Label0 [label = "CPU #0";shape = none;];
+            CPU0 [width = 8;label = "{{<regi>Reg|<pci>PC|<op>OpCode|<x>Operand|<wb1i>WB1|<wb2i>WB2|<wb3i>WB3}|Execution Unit (Combinational Logic)|{<rego>Reg|<pco>PC|<wb1o>WB1|<wb2o>WB2|<wb3o>WB3|<wb0o>WB0}}";shape = record;];
+        }
+    }
+    Reg0 -> Reg0D -> CPU0:regi;
+    PC0 -> {PC0D OP0 X0};
+    PC0D -> CPU0:pci;
+    OP0 -> CPU0:op;
+    WB00 -> X0 -> CPU0:x;
+    WB01 -> WB01D -> CPU0:wb1i;
+    WB02 -> WB02D -> CPU0:wb2i;
+    WB03 -> WB03D -> CPU0:wb3i;
+    subgraph cluster_1 {
+        subgraph {
+            rank = same;
+            node [style = bold; shape = box;];
+            Reg1D [label = "FF";];
+            PC1D [label = "FF";];
+            OP1 [label = "Bank #1\nOpCode";shape = cylinder;];
+            X1 [label = "Bank #1\nOperand";shape = cylinder;];
+            WB12D [label = "FF";];
+            WB13D [label = "FF";];
+            WB10D [label = "FF";];
+        }
+        subgraph {
+            rank = same;
+            Label1 [label = "CPU #1";shape = none;];
+            CPU1 [width = 8;label = "{{<regi>Reg|<pci>PC|<op>OpCode|<x>Operand|<wb2i>WB2|<wb3i>WB3|<wb0i>WB0}|Execution Unit (Combinational Logic)|{<rego>Reg|<pco>PC|<wb2o>WB2|<wb3o>WB3|<wb0o>WB0|<wb1o>WB1}}";shape = record;];
+        }
+    }
+    CPU0:rego:s -> Reg1D -> CPU1:regi;
+    CPU0:pco -> {PC1D OP1 X1};
+    PC1D -> CPU1:pci;
+    OP1 -> CPU1:op;
+    CPU0:wb1o -> X1 -> CPU1:x;
+    CPU0:wb2o -> WB12D -> CPU1:wb2i;
+    CPU0:wb3o -> WB13D -> CPU1:wb3i;
+    CPU0:wb0o -> WB10D -> CPU1:wb0i;
+    subgraph cluster_2 {
+        subgraph {
+            rank = same;
+            node [style = bold; shape = box;];
+            Reg2D [label = "FF";];
+            PC2D [label = "FF";];
+            OP2 [label = "Bank #2\nOpCode";shape = cylinder;];
+            X2 [label = "Bank #2\nOperand";shape = cylinder;];
+            WB23D [label = "FF";];
+            WB20D [label = "FF";];
+            WB21D [label = "FF";];
+        }
+        subgraph {
+            rank = same;
+            Label2 [label = "CPU #2";shape = none;];
+            CPU2 [width = 8;label = "{{<regi>Reg|<pci>PC|<op>OpCode|<x>Operand|<wb3i>WB3|<wb0i>WB0|<wb1i>WB1}|Execution Unit (Combinational Logic)|{<rego>Reg|<pco>PC|<wb3o>WB3|<wb0o>WB0|<wb1o>WB1|<wb2o>WB2}}";shape = record;];
+        }
+    }
+    CPU1:rego:s -> Reg2D -> CPU2:regi;
+    CPU1:pco -> {PC2D OP2 X2};
+    PC2D -> CPU2:pci;
+    OP2 -> CPU2:op;
+    CPU1:wb2o -> X2 -> CPU2:x;
+    CPU1:wb3o -> WB23D -> CPU2:wb3i;
+    CPU1:wb0o -> WB20D -> CPU2:wb0i;
+    CPU1:wb1o -> WB21D -> CPU2:wb1i;
+    subgraph cluster_3 {
+        subgraph {
+            rank = same;
+            node [style = bold; shape = box;];
+            Reg3D [label = "FF";];
+            PC3D [label = "FF";];
+            OP3 [label = "Bank #3\nOpCode";shape = cylinder;];
+            X3 [label = "Bank #3\nOperand";shape = cylinder;];
+            WB30D [label = "FF";];
+            WB31D [label = "FF";];
+            WB32D [label = "FF";];
+        }
+        subgraph {
+            rank = same;
+            Label3 [label = "CPU #3";shape = none;];
+            CPU3 [width = 8;label = "{{<regi>Reg|<pci>PC|<op>OpCode|<x>Operand|<wb0i>WB0|<wb1i>WB1|<wb2i>WB2}|Execution Unit (Combinational Logic)|{<rego>Reg|<pco>PC|<wb0o>WB0|<wb1o>WB1|<wb2o>WB2|<wb3o>WB3}}";shape = record;];
+        }
+    }
+    CPU2:rego:s -> Reg3D -> CPU3:regi;
+    CPU2:pco -> {PC3D OP3 X3};
+    PC3D -> CPU3:pci;
+    OP3 -> CPU3:op;
+    CPU2:wb3o -> X3 -> CPU3:x;
+    CPU2:wb0o -> WB30D -> CPU3:wb0i;
+    CPU2:wb1o -> WB31D -> CPU3:wb1i;
+    CPU2:wb2o -> WB32D -> CPU3:wb2i;
+    subgraph {
+        rank = same;
+        node [shape = none;];
+        Reg4 [label = "Reg";];
+        PC4 [label = "PC";];
+        WB40 [label = "Bank #0\nWriteBack";];
+        WB41 [label = "Bank #1\nWriteBack";];
+        WB42 [label = "Bank #2\nWriteBack";];
+        WB43 [label = "Bank #3\nWriteBack";];
+    }
+    CPU3:rego -> Reg4;
+    CPU3:pco -> PC4;
+    CPU3:wb0o -> WB40;
+    CPU3:wb1o -> WB41;
+    CPU3:wb2o -> WB42;
+    CPU3:wb3o -> WB43;
+}

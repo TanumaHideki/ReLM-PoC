@@ -1,0 +1,159 @@
+<?xml version="1.0" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="332pt" height="332pt" viewBox="0.00 0.00 332.00 331.80">
+<g id="graph0" class="graph" transform="translate(4,327.79998779296875) scale(1)" data-name="cachemem">
+
+<polygon fill="white" stroke="none" points="-4,4 -4,-327.8 328,-327.8 328,4 -4,4" style=""/>
+<!-- CPU1 -->
+<g id="node1" class="node" pointer-events="visible" data-name="CPU1">
+
+<polygon fill="none" stroke="black" points="66,-323.8 16,-323.8 12,-319.8 12,-287.8 62,-287.8 66,-291.8 66,-323.8" style=""/>
+<polyline fill="none" stroke="black" points="62,-319.8 12,-319.8" style=""/>
+<polyline fill="none" stroke="black" points="62,-319.8 62,-287.8" style=""/>
+<polyline fill="none" stroke="black" points="62,-319.8 66,-323.8" style=""/>
+<text text-anchor="middle" x="39" y="-301.6" font-family="Times,serif" font-size="14.00" style="">CPU1</text>
+</g>
+<!-- CM1 -->
+<g id="node5" class="node" pointer-events="visible" data-name="CM1">
+
+<path fill="none" stroke="black" d="M71.21,-246.68C71.21,-249.56 56.78,-251.9 39,-251.9 21.22,-251.9 6.79,-249.56 6.79,-246.68 6.79,-246.68 6.79,-199.72 6.79,-199.72 6.79,-196.84 21.22,-194.5 39,-194.5 56.78,-194.5 71.21,-196.84 71.21,-199.72 71.21,-199.72 71.21,-246.68 71.21,-246.68" style=""/>
+<path fill="none" stroke="black" d="M71.21,-246.68C71.21,-243.8 56.78,-241.46 39,-241.46 21.22,-241.46 6.79,-243.8 6.79,-246.68" style=""/>
+<text text-anchor="middle" x="39" y="-227.4" font-family="Times,serif" font-size="14.00" style="">Cache</text>
+<text text-anchor="middle" x="39" y="-210.6" font-family="Times,serif" font-size="14.00" style="">Memory</text>
+</g>
+<!-- CPU1&#45;&gt;CM1 -->
+<g id="edge1" class="edge" data-name="CPU1-&gt;CM1">
+
+<path fill="none" stroke="black" d="M39,-275.94C39,-269.92 39,-263.53 39,-257.37" style=""/>
+<polygon fill="black" stroke="black" points="35.5,-275.8 39,-285.8 42.5,-275.8 35.5,-275.8" style=""/>
+<polygon fill="black" stroke="black" points="42.5,-257.48 39,-247.48 35.5,-257.48 42.5,-257.48" style=""/>
+</g>
+<!-- CPU2 -->
+<g id="node2" class="node" pointer-events="visible" data-name="CPU2">
+
+<polygon fill="none" stroke="black" points="148,-323.8 98,-323.8 94,-319.8 94,-287.8 144,-287.8 148,-291.8 148,-323.8" style=""/>
+<polyline fill="none" stroke="black" points="144,-319.8 94,-319.8" style=""/>
+<polyline fill="none" stroke="black" points="144,-319.8 144,-287.8" style=""/>
+<polyline fill="none" stroke="black" points="144,-319.8 148,-323.8" style=""/>
+<text text-anchor="middle" x="121" y="-301.6" font-family="Times,serif" font-size="14.00" style="">CPU2</text>
+</g>
+<!-- CM2 -->
+<g id="node6" class="node" pointer-events="visible" data-name="CM2">
+
+<path fill="none" stroke="black" d="M153.21,-246.68C153.21,-249.56 138.78,-251.9 121,-251.9 103.22,-251.9 88.79,-249.56 88.79,-246.68 88.79,-246.68 88.79,-199.72 88.79,-199.72 88.79,-196.84 103.22,-194.5 121,-194.5 138.78,-194.5 153.21,-196.84 153.21,-199.72 153.21,-199.72 153.21,-246.68 153.21,-246.68" style=""/>
+<path fill="none" stroke="black" d="M153.21,-246.68C153.21,-243.8 138.78,-241.46 121,-241.46 103.22,-241.46 88.79,-243.8 88.79,-246.68" style=""/>
+<text text-anchor="middle" x="121" y="-227.4" font-family="Times,serif" font-size="14.00" style="">Cache</text>
+<text text-anchor="middle" x="121" y="-210.6" font-family="Times,serif" font-size="14.00" style="">Memory</text>
+</g>
+<!-- CPU2&#45;&gt;CM2 -->
+<g id="edge3" class="edge" data-name="CPU2-&gt;CM2">
+
+<path fill="none" stroke="black" d="M121,-275.94C121,-269.92 121,-263.53 121,-257.37" style=""/>
+<polygon fill="black" stroke="black" points="117.5,-275.8 121,-285.8 124.5,-275.8 117.5,-275.8" style=""/>
+<polygon fill="black" stroke="black" points="124.5,-257.48 121,-247.48 117.5,-257.48 124.5,-257.48" style=""/>
+</g>
+<!-- CPU3 -->
+<g id="node3" class="node" pointer-events="visible" data-name="CPU3">
+
+<polygon fill="none" stroke="black" points="230,-323.8 180,-323.8 176,-319.8 176,-287.8 226,-287.8 230,-291.8 230,-323.8" style=""/>
+<polyline fill="none" stroke="black" points="226,-319.8 176,-319.8" style=""/>
+<polyline fill="none" stroke="black" points="226,-319.8 226,-287.8" style=""/>
+<polyline fill="none" stroke="black" points="226,-319.8 230,-323.8" style=""/>
+<text text-anchor="middle" x="203" y="-301.6" font-family="Times,serif" font-size="14.00" style="">CPU3</text>
+</g>
+<!-- CM3 -->
+<g id="node7" class="node" pointer-events="visible" data-name="CM3">
+
+<path fill="none" stroke="black" d="M235.21,-246.68C235.21,-249.56 220.78,-251.9 203,-251.9 185.22,-251.9 170.79,-249.56 170.79,-246.68 170.79,-246.68 170.79,-199.72 170.79,-199.72 170.79,-196.84 185.22,-194.5 203,-194.5 220.78,-194.5 235.21,-196.84 235.21,-199.72 235.21,-199.72 235.21,-246.68 235.21,-246.68" style=""/>
+<path fill="none" stroke="black" d="M235.21,-246.68C235.21,-243.8 220.78,-241.46 203,-241.46 185.22,-241.46 170.79,-243.8 170.79,-246.68" style=""/>
+<text text-anchor="middle" x="203" y="-227.4" font-family="Times,serif" font-size="14.00" style="">Cache</text>
+<text text-anchor="middle" x="203" y="-210.6" font-family="Times,serif" font-size="14.00" style="">Memory</text>
+</g>
+<!-- CPU3&#45;&gt;CM3 -->
+<g id="edge5" class="edge" data-name="CPU3-&gt;CM3">
+
+<path fill="none" stroke="black" d="M203,-275.94C203,-269.92 203,-263.53 203,-257.37" style=""/>
+<polygon fill="black" stroke="black" points="199.5,-275.8 203,-285.8 206.5,-275.8 199.5,-275.8" style=""/>
+<polygon fill="black" stroke="black" points="206.5,-257.48 203,-247.48 199.5,-257.48 206.5,-257.48" style=""/>
+</g>
+<!-- CPU4 -->
+<g id="node4" class="node" pointer-events="visible" data-name="CPU4">
+
+<polygon fill="none" stroke="black" points="312,-323.8 262,-323.8 258,-319.8 258,-287.8 308,-287.8 312,-291.8 312,-323.8" style=""/>
+<polyline fill="none" stroke="black" points="308,-319.8 258,-319.8" style=""/>
+<polyline fill="none" stroke="black" points="308,-319.8 308,-287.8" style=""/>
+<polyline fill="none" stroke="black" points="308,-319.8 312,-323.8" style=""/>
+<text text-anchor="middle" x="285" y="-301.6" font-family="Times,serif" font-size="14.00" style="">CPU4</text>
+</g>
+<!-- CM4 -->
+<g id="node8" class="node" pointer-events="visible" data-name="CM4">
+
+<path fill="none" stroke="black" d="M317.21,-246.68C317.21,-249.56 302.78,-251.9 285,-251.9 267.22,-251.9 252.79,-249.56 252.79,-246.68 252.79,-246.68 252.79,-199.72 252.79,-199.72 252.79,-196.84 267.22,-194.5 285,-194.5 302.78,-194.5 317.21,-196.84 317.21,-199.72 317.21,-199.72 317.21,-246.68 317.21,-246.68" style=""/>
+<path fill="none" stroke="black" d="M317.21,-246.68C317.21,-243.8 302.78,-241.46 285,-241.46 267.22,-241.46 252.79,-243.8 252.79,-246.68" style=""/>
+<text text-anchor="middle" x="285" y="-227.4" font-family="Times,serif" font-size="14.00" style="">Cache</text>
+<text text-anchor="middle" x="285" y="-210.6" font-family="Times,serif" font-size="14.00" style="">Memory</text>
+</g>
+<!-- CPU4&#45;&gt;CM4 -->
+<g id="edge7" class="edge" data-name="CPU4-&gt;CM4">
+
+<path fill="none" stroke="black" d="M285,-275.94C285,-269.92 285,-263.53 285,-257.37" style=""/>
+<polygon fill="black" stroke="black" points="281.5,-275.8 285,-285.8 288.5,-275.8 281.5,-275.8" style=""/>
+<polygon fill="black" stroke="black" points="288.5,-257.48 285,-247.48 281.5,-257.48 288.5,-257.48" style=""/>
+</g>
+<!-- BUS -->
+<g id="node9" class="node" pointer-events="visible" data-name="BUS">
+
+<polygon fill="none" stroke="black" points="0,-108.5 0,-158.1 324,-158.1 324,-108.5 0,-108.5" style=""/>
+<text text-anchor="middle" x="40.42" y="-141.5" font-family="Times,serif" font-size="14.00" style="">Port 1</text>
+<polyline fill="none" stroke="black" points="80.84,-133.3 80.84,-158.1" style=""/>
+<text text-anchor="middle" x="121.26" y="-141.5" font-family="Times,serif" font-size="14.00" style="">Port 2</text>
+<polyline fill="none" stroke="black" points="161.68,-133.3 161.68,-158.1" style=""/>
+<text text-anchor="middle" x="202.09" y="-141.5" font-family="Times,serif" font-size="14.00" style="">Port 3</text>
+<polyline fill="none" stroke="black" points="242.51,-133.3 242.51,-158.1" style=""/>
+<text text-anchor="middle" x="282.93" y="-141.5" font-family="Times,serif" font-size="14.00" style="">Port 4</text>
+<polyline fill="none" stroke="black" points="0,-133.3 323.35,-133.3" style=""/>
+<text text-anchor="middle" x="161.68" y="-116.7" font-family="Times,serif" font-size="14.00" style="">Communication Bus</text>
+</g>
+<!-- CM1&#45;&gt;BUS -->
+<g id="edge2" class="edge" data-name="CM1-&gt;BUS:a" data-comment="CM1-&gt;BUS">
+
+<path fill="none" stroke="black" d="M39.81,-182.69C39.87,-178.46 39.92,-174.12 39.95,-169.82" style=""/>
+<polygon fill="black" stroke="black" points="36.32,-182.46 39.66,-192.51 43.32,-182.57 36.32,-182.46" style=""/>
+<polygon fill="black" stroke="black" points="43.45,-170.13 39.99,-160.11 36.45,-170.1 43.45,-170.13" style=""/>
+</g>
+<!-- CM2&#45;&gt;BUS -->
+<g id="edge4" class="edge" data-name="CM2-&gt;BUS:b" data-comment="CM2-&gt;BUS">
+
+<path fill="none" stroke="black" d="M121,-182.69C121,-178.45 121,-174.12 121,-169.82" style=""/>
+<polygon fill="black" stroke="black" points="117.5,-182.51 121,-192.51 124.5,-182.51 117.5,-182.51" style=""/>
+<polygon fill="black" stroke="black" points="124.5,-170.11 121,-160.11 117.5,-170.11 124.5,-170.11" style=""/>
+</g>
+<!-- CM3&#45;&gt;BUS -->
+<g id="edge6" class="edge" data-name="CM3-&gt;BUS:c" data-comment="CM3-&gt;BUS">
+
+<path fill="none" stroke="black" d="M202.19,-182.69C202.13,-178.46 202.08,-174.12 202.05,-169.82" style=""/>
+<polygon fill="black" stroke="black" points="198.68,-182.57 202.34,-192.51 205.68,-182.46 198.68,-182.57" style=""/>
+<polygon fill="black" stroke="black" points="205.55,-170.1 202.01,-160.11 198.55,-170.13 205.55,-170.1" style=""/>
+</g>
+<!-- CM4&#45;&gt;BUS -->
+<g id="edge8" class="edge" data-name="CM4-&gt;BUS:d" data-comment="CM4-&gt;BUS">
+
+<path fill="none" stroke="black" d="M283.37,-182.7C283.26,-178.46 283.16,-174.12 283.09,-169.82" style=""/>
+<polygon fill="black" stroke="black" points="279.87,-182.63 283.69,-192.52 286.86,-182.41 279.87,-182.63" style=""/>
+<polygon fill="black" stroke="black" points="286.59,-170.08 283.01,-160.11 279.59,-170.14 286.59,-170.08" style=""/>
+</g>
+<!-- SM -->
+<g id="node10" class="node" pointer-events="visible" data-name="SM">
+
+<path fill="none" stroke="black" d="M215.09,-65.45C215.09,-69.07 191.29,-72 162,-72 132.71,-72 108.91,-69.07 108.91,-65.45 108.91,-65.45 108.91,-6.55 108.91,-6.55 108.91,-2.93 132.71,0 162,0 191.29,0 215.09,-2.93 215.09,-6.55 215.09,-6.55 215.09,-65.45 215.09,-65.45" style=""/>
+<path fill="none" stroke="black" d="M215.09,-65.45C215.09,-61.84 191.29,-58.91 162,-58.91 132.71,-58.91 108.91,-61.84 108.91,-65.45" style=""/>
+<text text-anchor="middle" x="162" y="-31.8" font-family="Times,serif" font-size="14.00" style="">Shared Memory</text>
+</g>
+<!-- BUS&#45;&gt;SM -->
+<g id="edge9" class="edge" data-name="BUS-&gt;SM">
+
+<path fill="none" stroke="black" d="M162,-97.51C162,-90.5 162,-83.09 162,-75.95" style=""/>
+<polygon fill="black" stroke="black" points="158.5,-97.23 162,-107.23 165.5,-97.23 158.5,-97.23" style=""/>
+<polygon fill="black" stroke="black" points="165.5,-76.2 162,-66.2 158.5,-76.2 165.5,-76.2" style=""/>
+</g>
+</g>
+</svg>

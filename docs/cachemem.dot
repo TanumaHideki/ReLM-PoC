@@ -1,0 +1,19 @@
+digraph cachemem {
+    // Define nodes
+    CPU1 [shape = box3d;];
+    CPU2 [shape = box3d;];
+    CPU3 [shape = box3d;];
+    CPU4 [shape = box3d;];
+    CM1 [label = "Cache\nMemory";shape = cylinder;];
+    CM2 [label = "Cache\nMemory";shape = cylinder;];
+    CM3 [label = "Cache\nMemory";shape = cylinder;];
+    CM4 [label = "Cache\nMemory";shape = cylinder;];
+    BUS [label = "{{<a>Port 1|<b>Port 2|<c>Port 3|<d>Port 4}|Communication Bus}";shape = record;width = 4.5;];
+    SM [label = "Shared Memory";shape = cylinder;height = 1;];
+    // Define edges
+    CPU1 -> CM1 -> BUS:a [dir = both;];
+    CPU2 -> CM2 -> BUS:b [dir = both;];
+    CPU3 -> CM3 -> BUS:c [dir = both;];
+    CPU4 -> CM4 -> BUS:d [dir = both;];
+    BUS -> SM [dir = both;];
+}

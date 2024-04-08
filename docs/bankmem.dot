@@ -1,0 +1,26 @@
+digraph bankmem {
+    subgraph {
+        cluster = true;
+        label = "Shared Memory divided into Memory Banks;\nEach Memory Bank is connected to a CPU";
+        node [shape = cylinder;];
+        BM0 [label = "Memory\nBank #0";];
+        BM1 [label = "Memory\nBank #1";];
+        BM2 [label = "Memory\nBank #2";];
+        BM3 [label = "Memory\nBank #3";];
+    }
+    subgraph {
+        rank = same;
+        node [shape = box3d;];
+        CPU0 [label = "CPU #0";];
+        CPU1 [label = "CPU #1";];
+        CPU2 [label = "CPU #2";];
+        CPU3 [label = "CPU #3";];
+        CPU0 -> CPU1 -> CPU2 -> CPU3;
+    }
+    BM0 -> CPU0 [dir = both;];
+    BM1 -> CPU1 [dir = both;];
+    BM2 -> CPU2 [dir = both;];
+    BM3 -> CPU3 [dir = both;];
+    LOOP [label = "Threads move through\nthe ring of CPUs";shape = none;];
+    CPU3:se -> LOOP -> CPU0:sw;
+}

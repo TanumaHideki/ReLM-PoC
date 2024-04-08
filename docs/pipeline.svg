@@ -1,0 +1,819 @@
+<?xml version="1.0" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="802pt" height="946pt" viewBox="0.00 0.00 802.32 945.60">
+<g id="graph0" class="graph" transform="translate(4,941.5999755859375) scale(1)" data-name="pipeline">
+
+<polygon fill="white" stroke="none" points="-4,4 -4,-941.6 798.32,-941.6 798.32,4 -4,4" style=""/>
+<g id="clust2" class="cluster" data-name="cluster_0">
+
+<polygon fill="none" stroke="black" points="116,-683.4 116,-868 786,-868 786,-683.4 116,-683.4" style=""/>
+</g>
+<g id="clust6" class="cluster" data-name="cluster_1">
+
+<polygon fill="none" stroke="black" points="80,-478.8 80,-663.4 750,-663.4 750,-478.8 80,-478.8" style=""/>
+</g>
+<g id="clust10" class="cluster" data-name="cluster_2">
+
+<polygon fill="none" stroke="black" points="44,-274.2 44,-458.8 714,-458.8 714,-274.2 44,-274.2" style=""/>
+</g>
+<g id="clust14" class="cluster" data-name="cluster_3">
+
+<polygon fill="none" stroke="black" points="8,-69.6 8,-254.2 678,-254.2 678,-69.6 8,-69.6" style=""/>
+</g>
+<!-- Reg0 -->
+<g id="node1" class="node" pointer-events="visible" data-name="Reg0">
+
+<text text-anchor="middle" x="238" y="-912.6" font-family="Times,serif" font-size="14.00" style="">Reg</text>
+</g>
+<!-- Reg0D -->
+<g id="node7" class="node" pointer-events="visible" data-name="Reg0D">
+
+<polygon fill="none" stroke="black" stroke-width="2" points="265,-849.4 211,-849.4 211,-813.4 265,-813.4 265,-849.4" style=""/>
+<text text-anchor="middle" x="238" y="-827.2" font-family="Times,serif" font-size="14.00" style="">FF</text>
+</g>
+<!-- Reg0&#45;&gt;Reg0D -->
+<g id="edge1" class="edge" data-name="Reg0-&gt;Reg0D">
+
+<path fill="none" stroke="black" d="M238,-898.92C238,-888.1 238,-873.77 238,-861.19" style=""/>
+<polygon fill="black" stroke="black" points="241.5,-861.34 238,-851.34 234.5,-861.34 241.5,-861.34" style=""/>
+</g>
+<!-- PC0 -->
+<g id="node2" class="node" pointer-events="visible" data-name="PC0">
+
+<text text-anchor="middle" x="388" y="-912.6" font-family="Times,serif" font-size="14.00" style="">PC</text>
+</g>
+<!-- PC0D -->
+<g id="node8" class="node" pointer-events="visible" data-name="PC0D">
+
+<polygon fill="none" stroke="black" stroke-width="2" points="338,-849.4 284,-849.4 284,-813.4 338,-813.4 338,-849.4" style=""/>
+<text text-anchor="middle" x="311" y="-827.2" font-family="Times,serif" font-size="14.00" style="">FF</text>
+</g>
+<!-- PC0&#45;&gt;PC0D -->
+<g id="edge3" class="edge" data-name="PC0-&gt;PC0D">
+
+<path fill="none" stroke="black" d="M372.42,-898.92C361.6,-887.21 347,-871.39 334.74,-858.11" style=""/>
+<polygon fill="black" stroke="black" points="337.47,-855.91 328.12,-850.94 332.33,-860.66 337.47,-855.91" style=""/>
+</g>
+<!-- OP0 -->
+<g id="node9" class="node" pointer-events="visible" data-name="OP0">
+
+<path fill="none" stroke="black" stroke-width="2" d="M420.55,-854.88C420.55,-857.76 406.41,-860.1 389,-860.1 371.59,-860.1 357.45,-857.76 357.45,-854.88 357.45,-854.88 357.45,-807.92 357.45,-807.92 357.45,-805.04 371.59,-802.7 389,-802.7 406.41,-802.7 420.55,-805.04 420.55,-807.92 420.55,-807.92 420.55,-854.88 420.55,-854.88" style=""/>
+<path fill="none" stroke="black" stroke-width="2" d="M420.55,-854.88C420.55,-852 406.41,-849.66 389,-849.66 371.59,-849.66 357.45,-852 357.45,-854.88" style=""/>
+<text text-anchor="middle" x="389" y="-835.6" font-family="Times,serif" font-size="14.00" style="">Bank #0</text>
+<text text-anchor="middle" x="389" y="-818.8" font-family="Times,serif" font-size="14.00" style="">OpCode</text>
+</g>
+<!-- PC0&#45;&gt;OP0 -->
+<g id="edge4" class="edge" data-name="PC0-&gt;OP0">
+
+<path fill="none" stroke="black" d="M388.2,-898.92C388.32,-889.38 388.46,-877.12 388.6,-865.73" style=""/>
+<polygon fill="black" stroke="black" points="392.1,-865.88 388.72,-855.84 385.1,-865.79 392.1,-865.88" style=""/>
+</g>
+<!-- X0 -->
+<g id="node10" class="node" pointer-events="visible" data-name="X0">
+
+<path fill="none" stroke="black" stroke-width="2" d="M503.2,-854.88C503.2,-857.76 488.77,-860.1 471,-860.1 453.23,-860.1 438.8,-857.76 438.8,-854.88 438.8,-854.88 438.8,-807.92 438.8,-807.92 438.8,-805.04 453.23,-802.7 471,-802.7 488.77,-802.7 503.2,-805.04 503.2,-807.92 503.2,-807.92 503.2,-854.88 503.2,-854.88" style=""/>
+<path fill="none" stroke="black" stroke-width="2" d="M503.2,-854.88C503.2,-852 488.77,-849.66 471,-849.66 453.23,-849.66 438.8,-852 438.8,-854.88" style=""/>
+<text text-anchor="middle" x="471" y="-835.6" font-family="Times,serif" font-size="14.00" style="">Bank #0</text>
+<text text-anchor="middle" x="471" y="-818.8" font-family="Times,serif" font-size="14.00" style="">Operand</text>
+</g>
+<!-- PC0&#45;&gt;X0 -->
+<g id="edge5" class="edge" data-name="PC0-&gt;X0">
+
+<path fill="none" stroke="black" d="M404.8,-898.92C415.29,-888.38 429.09,-874.51 441.38,-862.17" style=""/>
+<polygon fill="black" stroke="black" points="443.54,-864.95 448.11,-855.4 438.58,-860.01 443.54,-864.95" style=""/>
+</g>
+<!-- WB00 -->
+<g id="node3" class="node" pointer-events="visible" data-name="WB00">
+
+<text text-anchor="middle" x="471" y="-921" font-family="Times,serif" font-size="14.00" style="">Bank #0</text>
+<text text-anchor="middle" x="471" y="-904.2" font-family="Times,serif" font-size="14.00" style="">WriteBack</text>
+</g>
+<!-- WB00&#45;&gt;X0 -->
+<g id="edge8" class="edge" data-name="WB00-&gt;X0">
+
+<path fill="none" stroke="black" d="M471,-896.46C471,-887.3 471,-876.09 471,-865.63" style=""/>
+<polygon fill="black" stroke="black" points="474.5,-865.8 471,-855.8 467.5,-865.8 474.5,-865.8" style=""/>
+</g>
+<!-- WB01 -->
+<g id="node4" class="node" pointer-events="visible" data-name="WB01">
+
+<text text-anchor="middle" x="566" y="-921" font-family="Times,serif" font-size="14.00" style="">Bank #1</text>
+<text text-anchor="middle" x="566" y="-904.2" font-family="Times,serif" font-size="14.00" style="">WriteBack</text>
+</g>
+<!-- WB01D -->
+<g id="node11" class="node" pointer-events="visible" data-name="WB01D">
+
+<polygon fill="none" stroke="black" stroke-width="2" points="599,-849.4 545,-849.4 545,-813.4 599,-813.4 599,-849.4" style=""/>
+<text text-anchor="middle" x="572" y="-827.2" font-family="Times,serif" font-size="14.00" style="">FF</text>
+</g>
+<!-- WB01&#45;&gt;WB01D -->
+<g id="edge10" class="edge" data-name="WB01-&gt;WB01D">
+
+<path fill="none" stroke="black" d="M567.39,-896.46C568.15,-885.96 569.1,-872.77 569.94,-861.1" style=""/>
+<polygon fill="black" stroke="black" points="573.42,-861.39 570.65,-851.16 566.44,-860.89 573.42,-861.39" style=""/>
+</g>
+<!-- WB02 -->
+<g id="node5" class="node" pointer-events="visible" data-name="WB02">
+
+<text text-anchor="middle" x="661" y="-921" font-family="Times,serif" font-size="14.00" style="">Bank #2</text>
+<text text-anchor="middle" x="661" y="-904.2" font-family="Times,serif" font-size="14.00" style="">WriteBack</text>
+</g>
+<!-- WB02D -->
+<g id="node12" class="node" pointer-events="visible" data-name="WB02D">
+
+<polygon fill="none" stroke="black" stroke-width="2" points="686,-849.4 632,-849.4 632,-813.4 686,-813.4 686,-849.4" style=""/>
+<text text-anchor="middle" x="659" y="-827.2" font-family="Times,serif" font-size="14.00" style="">FF</text>
+</g>
+<!-- WB02&#45;&gt;WB02D -->
+<g id="edge12" class="edge" data-name="WB02-&gt;WB02D">
+
+<path fill="none" stroke="black" d="M660.54,-896.46C660.28,-885.96 659.97,-872.77 659.69,-861.1" style=""/>
+<polygon fill="black" stroke="black" points="663.19,-861.08 659.45,-851.17 656.19,-861.25 663.19,-861.08" style=""/>
+</g>
+<!-- WB03 -->
+<g id="node6" class="node" pointer-events="visible" data-name="WB03">
+
+<text text-anchor="middle" x="756" y="-921" font-family="Times,serif" font-size="14.00" style="">Bank #3</text>
+<text text-anchor="middle" x="756" y="-904.2" font-family="Times,serif" font-size="14.00" style="">WriteBack</text>
+</g>
+<!-- WB03D -->
+<g id="node13" class="node" pointer-events="visible" data-name="WB03D">
+
+<polygon fill="none" stroke="black" stroke-width="2" points="771,-849.4 717,-849.4 717,-813.4 771,-813.4 771,-849.4" style=""/>
+<text text-anchor="middle" x="744" y="-827.2" font-family="Times,serif" font-size="14.00" style="">FF</text>
+</g>
+<!-- WB03&#45;&gt;WB03D -->
+<g id="edge14" class="edge" data-name="WB03-&gt;WB03D">
+
+<path fill="none" stroke="black" d="M753.22,-896.46C751.69,-885.85 749.77,-872.49 748.08,-860.73" style=""/>
+<polygon fill="black" stroke="black" points="751.59,-860.55 746.7,-851.15 744.66,-861.55 751.59,-860.55" style=""/>
+</g>
+<!-- CPU0 -->
+<g id="node15" class="node" pointer-events="visible" data-name="CPU0">
+
+<polygon fill="none" stroke="black" points="202,-691.9 202,-766.3 778,-766.3 778,-691.9 202,-691.9" style=""/>
+<text text-anchor="middle" x="238.28" y="-749.7" font-family="Times,serif" font-size="14.00" style="">Reg</text>
+<polyline fill="none" stroke="black" points="274.55,-741.5 274.55,-766.3" style=""/>
+<text text-anchor="middle" x="308.11" y="-749.7" font-family="Times,serif" font-size="14.00" style="">PC</text>
+<polyline fill="none" stroke="black" points="341.68,-741.5 341.68,-766.3" style=""/>
+<text text-anchor="middle" x="390.01" y="-749.7" font-family="Times,serif" font-size="14.00" style="">OpCode</text>
+<polyline fill="none" stroke="black" points="438.34,-741.5 438.34,-766.3" style=""/>
+<text text-anchor="middle" x="487.94" y="-749.7" font-family="Times,serif" font-size="14.00" style="">Operand</text>
+<polyline fill="none" stroke="black" points="537.54,-741.5 537.54,-766.3" style=""/>
+<text text-anchor="middle" x="577.31" y="-749.7" font-family="Times,serif" font-size="14.00" style="">WB1</text>
+<polyline fill="none" stroke="black" points="617.09,-741.5 617.09,-766.3" style=""/>
+<text text-anchor="middle" x="656.87" y="-749.7" font-family="Times,serif" font-size="14.00" style="">WB2</text>
+<polyline fill="none" stroke="black" points="696.64,-741.5 696.64,-766.3" style=""/>
+<text text-anchor="middle" x="736.92" y="-749.7" font-family="Times,serif" font-size="14.00" style="">WB3</text>
+<polyline fill="none" stroke="black" points="202,-741.5 777.19,-741.5" style=""/>
+<text text-anchor="middle" x="489.6" y="-724.9" font-family="Times,serif" font-size="14.00" style="">Execution Unit (Combinational Logic)</text>
+<polyline fill="none" stroke="black" points="202,-716.7 777.19,-716.7" style=""/>
+<text text-anchor="middle" x="247.78" y="-700.1" font-family="Times,serif" font-size="14.00" style="">Reg</text>
+<polyline fill="none" stroke="black" points="293.55,-691.9 293.55,-716.7" style=""/>
+<text text-anchor="middle" x="337.11" y="-700.1" font-family="Times,serif" font-size="14.00" style="">PC</text>
+<polyline fill="none" stroke="black" points="380.68,-691.9 380.68,-716.7" style=""/>
+<text text-anchor="middle" x="429.95" y="-700.1" font-family="Times,serif" font-size="14.00" style="">WB1</text>
+<polyline fill="none" stroke="black" points="479.23,-691.9 479.23,-716.7" style=""/>
+<text text-anchor="middle" x="529" y="-700.1" font-family="Times,serif" font-size="14.00" style="">WB2</text>
+<polyline fill="none" stroke="black" points="578.78,-691.9 578.78,-716.7" style=""/>
+<text text-anchor="middle" x="628.06" y="-700.1" font-family="Times,serif" font-size="14.00" style="">WB3</text>
+<polyline fill="none" stroke="black" points="677.33,-691.9 677.33,-716.7" style=""/>
+<text text-anchor="middle" x="727.11" y="-700.1" font-family="Times,serif" font-size="14.00" style="">WB0</text>
+</g>
+<!-- Reg0D&#45;&gt;CPU0 -->
+<g id="edge2" class="edge" data-name="Reg0D-&gt;CPU0:regi" data-comment="Reg0D-&gt;CPU0">
+
+<path fill="none" stroke="black" d="M238,-813.12C238,-803.33 238,-790.57 238,-778.09" style=""/>
+<polygon fill="black" stroke="black" points="241.5,-778.31 238,-768.31 234.5,-778.31 241.5,-778.31" style=""/>
+</g>
+<!-- PC0D&#45;&gt;CPU0 -->
+<g id="edge6" class="edge" data-name="PC0D-&gt;CPU0:pci" data-comment="PC0D-&gt;CPU0">
+
+<path fill="none" stroke="black" d="M309.75,-813.13C309.12,-803.34 308.43,-790.59 308.14,-778.1" style=""/>
+<polygon fill="black" stroke="black" points="311.64,-778.27 308.02,-768.31 304.64,-778.36 311.64,-778.27" style=""/>
+</g>
+<!-- OP0&#45;&gt;CPU0 -->
+<g id="edge7" class="edge" data-name="OP0-&gt;CPU0:op" data-comment="OP0-&gt;CPU0">
+
+<path fill="none" stroke="black" d="M389.63,-802.22C389.77,-794.72 389.89,-786.41 389.95,-778.21" style=""/>
+<polygon fill="black" stroke="black" points="393.45,-778.33 389.99,-768.31 386.45,-778.3 393.45,-778.33" style=""/>
+</g>
+<!-- X0&#45;&gt;CPU0 -->
+<g id="edge9" class="edge" data-name="X0-&gt;CPU0:x" data-comment="X0-&gt;CPU0">
+
+<path fill="none" stroke="black" d="M481.86,-802.33C484.15,-794.82 486.2,-786.46 487.25,-778.11" style=""/>
+<polygon fill="black" stroke="black" points="490.73,-778.52 487.9,-768.31 483.74,-778.06 490.73,-778.52" style=""/>
+</g>
+<!-- WB01D&#45;&gt;CPU0 -->
+<g id="edge11" class="edge" data-name="WB01D-&gt;CPU0b1i" data-comment="WB01D-&gt;CPU0">
+
+<path fill="none" stroke="black" d="M574.09,-813.15C575.14,-803.37 576.29,-790.62 576.77,-778.12" style=""/>
+<polygon fill="black" stroke="black" points="580.26,-778.38 576.97,-768.31 573.27,-778.24 580.26,-778.38" style=""/>
+</g>
+<!-- WB02D&#45;&gt;CPU0 -->
+<g id="edge13" class="edge" data-name="WB02D-&gt;CPU0b2i" data-comment="WB02D-&gt;CPU0">
+
+<path fill="none" stroke="black" d="M658.16,-813.13C657.74,-803.34 657.28,-790.58 657.09,-778.09" style=""/>
+<polygon fill="black" stroke="black" points="660.59,-778.28 657.01,-768.31 653.59,-778.34 660.59,-778.28" style=""/>
+</g>
+<!-- WB03D&#45;&gt;CPU0 -->
+<g id="edge15" class="edge" data-name="WB03D-&gt;CPU0b3i" data-comment="WB03D-&gt;CPU0">
+
+<path fill="none" stroke="black" d="M741.03,-812.91C739.57,-803.15 737.98,-790.49 737.32,-778.06" style=""/>
+<polygon fill="black" stroke="black" points="740.83,-778.21 737.04,-768.31 733.83,-778.41 740.83,-778.21" style=""/>
+</g>
+<!-- Label0 -->
+<g id="node14" class="node" pointer-events="visible" data-name="Label0">
+
+<text text-anchor="middle" x="154" y="-724.9" font-family="Times,serif" font-size="14.00" style="">CPU #0</text>
+</g>
+<!-- Reg1D -->
+<g id="node16" class="node" pointer-events="visible" data-name="Reg1D">
+
+<polygon fill="none" stroke="black" stroke-width="2" points="229,-644.8 175,-644.8 175,-608.8 229,-608.8 229,-644.8" style=""/>
+<text text-anchor="middle" x="202" y="-622.6" font-family="Times,serif" font-size="14.00" style="">FF</text>
+</g>
+<!-- CPU0&#45;&gt;Reg1D -->
+<g id="edge16" class="edge" data-name="CPU0-&gt;Reg1D">
+
+<path fill="none" stroke="black" d="M248,-691.1C248,-682.57 236.94,-667.19 225.67,-653.73" style=""/>
+<polygon fill="black" stroke="black" points="228.52,-651.67 219.34,-646.39 223.22,-656.25 228.52,-651.67" style=""/>
+</g>
+<!-- PC1D -->
+<g id="node17" class="node" pointer-events="visible" data-name="PC1D">
+
+<polygon fill="none" stroke="black" stroke-width="2" points="301,-644.8 247,-644.8 247,-608.8 301,-608.8 301,-644.8" style=""/>
+<text text-anchor="middle" x="274" y="-622.6" font-family="Times,serif" font-size="14.00" style="">FF</text>
+</g>
+<!-- CPU0&#45;&gt;PC1D -->
+<g id="edge18" class="edge" data-name="CPU0:pco-&gt;PC1D" data-comment="CPU0-&gt;PC1D">
+
+<path fill="none" stroke="black" d="M337,-691.1C337,-690.4 316.84,-670.23 299.33,-652.85" style=""/>
+<polygon fill="black" stroke="black" points="302.19,-650.76 292.62,-646.2 297.26,-655.73 302.19,-650.76" style=""/>
+</g>
+<!-- OP1 -->
+<g id="node18" class="node" pointer-events="visible" data-name="OP1">
+
+<path fill="none" stroke="black" stroke-width="2" d="M382.55,-650.28C382.55,-653.16 368.41,-655.5 351,-655.5 333.59,-655.5 319.45,-653.16 319.45,-650.28 319.45,-650.28 319.45,-603.32 319.45,-603.32 319.45,-600.44 333.59,-598.1 351,-598.1 368.41,-598.1 382.55,-600.44 382.55,-603.32 382.55,-603.32 382.55,-650.28 382.55,-650.28" style=""/>
+<path fill="none" stroke="black" stroke-width="2" d="M382.55,-650.28C382.55,-647.4 368.41,-645.06 351,-645.06 333.59,-645.06 319.45,-647.4 319.45,-650.28" style=""/>
+<text text-anchor="middle" x="351" y="-631" font-family="Times,serif" font-size="14.00" style="">Bank #1</text>
+<text text-anchor="middle" x="351" y="-614.2" font-family="Times,serif" font-size="14.00" style="">OpCode</text>
+</g>
+<!-- CPU0&#45;&gt;OP1 -->
+<g id="edge19" class="edge" data-name="CPU0:pco-&gt;OP1" data-comment="CPU0-&gt;OP1">
+
+<path fill="none" stroke="black" d="M337,-691.1C337,-680.99 338.72,-670.18 340.96,-660.4" style=""/>
+<polygon fill="black" stroke="black" points="344.29,-661.53 343.38,-650.98 337.51,-659.79 344.29,-661.53" style=""/>
+</g>
+<!-- X1 -->
+<g id="node19" class="node" pointer-events="visible" data-name="X1">
+
+<path fill="none" stroke="black" stroke-width="2" d="M465.2,-650.28C465.2,-653.16 450.77,-655.5 433,-655.5 415.23,-655.5 400.8,-653.16 400.8,-650.28 400.8,-650.28 400.8,-603.32 400.8,-603.32 400.8,-600.44 415.23,-598.1 433,-598.1 450.77,-598.1 465.2,-600.44 465.2,-603.32 465.2,-603.32 465.2,-650.28 465.2,-650.28" style=""/>
+<path fill="none" stroke="black" stroke-width="2" d="M465.2,-650.28C465.2,-647.4 450.77,-645.06 433,-645.06 415.23,-645.06 400.8,-647.4 400.8,-650.28" style=""/>
+<text text-anchor="middle" x="433" y="-631" font-family="Times,serif" font-size="14.00" style="">Bank #1</text>
+<text text-anchor="middle" x="433" y="-614.2" font-family="Times,serif" font-size="14.00" style="">Operand</text>
+</g>
+<!-- CPU0&#45;&gt;X1 -->
+<g id="edge20" class="edge" data-name="CPU0:pco-&gt;X1" data-comment="CPU0-&gt;X1">
+
+<path fill="none" stroke="black" d="M337,-691.1C337,-663.73 369.27,-678.65 392,-663.4 395.05,-661.35 398.13,-659.1 401.15,-656.76" style=""/>
+<polygon fill="black" stroke="black" points="403.26,-659.55 408.78,-650.52 398.83,-654.13 403.26,-659.55" style=""/>
+</g>
+<!-- CPU0&#45;&gt;X1 -->
+<g id="edge23" class="edge" data-name="CPU0b1o-&gt;X1" data-comment="CPU0-&gt;X1">
+
+<path fill="none" stroke="black" d="M430,-691.1C430,-681.32 430.36,-670.71 430.83,-661.01" style=""/>
+<polygon fill="black" stroke="black" points="434.31,-661.45 431.36,-651.27 427.33,-661.06 434.31,-661.45" style=""/>
+</g>
+<!-- WB12D -->
+<g id="node20" class="node" pointer-events="visible" data-name="WB12D">
+
+<polygon fill="none" stroke="black" stroke-width="2" points="563,-644.8 509,-644.8 509,-608.8 563,-608.8 563,-644.8" style=""/>
+<text text-anchor="middle" x="536" y="-622.6" font-family="Times,serif" font-size="14.00" style="">FF</text>
+</g>
+<!-- CPU0&#45;&gt;WB12D -->
+<g id="edge25" class="edge" data-name="CPU0b2o-&gt;WB12D" data-comment="CPU0-&gt;WB12D">
+
+<path fill="none" stroke="black" d="M529,-691.1C529,-679.77 530.12,-667.37 531.47,-656.58" style=""/>
+<polygon fill="black" stroke="black" points="534.93,-657.09 532.82,-646.71 527.99,-656.14 534.93,-657.09" style=""/>
+</g>
+<!-- WB13D -->
+<g id="node21" class="node" pointer-events="visible" data-name="WB13D">
+
+<polygon fill="none" stroke="black" stroke-width="2" points="654,-644.8 600,-644.8 600,-608.8 654,-608.8 654,-644.8" style=""/>
+<text text-anchor="middle" x="627" y="-622.6" font-family="Times,serif" font-size="14.00" style="">FF</text>
+</g>
+<!-- CPU0&#45;&gt;WB13D -->
+<g id="edge27" class="edge" data-name="CPU0b3o-&gt;WB13D" data-comment="CPU0-&gt;WB13D">
+
+<path fill="none" stroke="black" d="M628,-691.1C628,-679.84 627.84,-667.46 627.65,-656.65" style=""/>
+<polygon fill="black" stroke="black" points="631.15,-656.71 627.45,-646.78 624.15,-656.84 631.15,-656.71" style=""/>
+</g>
+<!-- WB10D -->
+<g id="node22" class="node" pointer-events="visible" data-name="WB10D">
+
+<polygon fill="none" stroke="black" stroke-width="2" points="730,-644.8 676,-644.8 676,-608.8 730,-608.8 730,-644.8" style=""/>
+<text text-anchor="middle" x="703" y="-622.6" font-family="Times,serif" font-size="14.00" style="">FF</text>
+</g>
+<!-- CPU0&#45;&gt;WB10D -->
+<g id="edge29" class="edge" data-name="CPU0b0o-&gt;WB10D" data-comment="CPU0-&gt;WB10D">
+
+<path fill="none" stroke="black" d="M727,-691.1C727,-678.85 723.02,-666.08 718.3,-655.24" style=""/>
+<polygon fill="black" stroke="black" points="721.59,-654.01 714.11,-646.51 715.28,-657.04 721.59,-654.01" style=""/>
+</g>
+<!-- CPU1 -->
+<g id="node24" class="node" pointer-events="visible" data-name="CPU1">
+
+<polygon fill="none" stroke="black" points="166,-487.3 166,-561.7 742,-561.7 742,-487.3 166,-487.3" style=""/>
+<text text-anchor="middle" x="202.28" y="-545.1" font-family="Times,serif" font-size="14.00" style="">Reg</text>
+<polyline fill="none" stroke="black" points="238.55,-536.9 238.55,-561.7" style=""/>
+<text text-anchor="middle" x="272.11" y="-545.1" font-family="Times,serif" font-size="14.00" style="">PC</text>
+<polyline fill="none" stroke="black" points="305.68,-536.9 305.68,-561.7" style=""/>
+<text text-anchor="middle" x="354.01" y="-545.1" font-family="Times,serif" font-size="14.00" style="">OpCode</text>
+<polyline fill="none" stroke="black" points="402.34,-536.9 402.34,-561.7" style=""/>
+<text text-anchor="middle" x="451.94" y="-545.1" font-family="Times,serif" font-size="14.00" style="">Operand</text>
+<polyline fill="none" stroke="black" points="501.54,-536.9 501.54,-561.7" style=""/>
+<text text-anchor="middle" x="541.31" y="-545.1" font-family="Times,serif" font-size="14.00" style="">WB2</text>
+<polyline fill="none" stroke="black" points="581.09,-536.9 581.09,-561.7" style=""/>
+<text text-anchor="middle" x="620.87" y="-545.1" font-family="Times,serif" font-size="14.00" style="">WB3</text>
+<polyline fill="none" stroke="black" points="660.64,-536.9 660.64,-561.7" style=""/>
+<text text-anchor="middle" x="700.92" y="-545.1" font-family="Times,serif" font-size="14.00" style="">WB0</text>
+<polyline fill="none" stroke="black" points="166,-536.9 741.19,-536.9" style=""/>
+<text text-anchor="middle" x="453.6" y="-520.3" font-family="Times,serif" font-size="14.00" style="">Execution Unit (Combinational Logic)</text>
+<polyline fill="none" stroke="black" points="166,-512.1 741.19,-512.1" style=""/>
+<text text-anchor="middle" x="211.78" y="-495.5" font-family="Times,serif" font-size="14.00" style="">Reg</text>
+<polyline fill="none" stroke="black" points="257.55,-487.3 257.55,-512.1" style=""/>
+<text text-anchor="middle" x="301.11" y="-495.5" font-family="Times,serif" font-size="14.00" style="">PC</text>
+<polyline fill="none" stroke="black" points="344.68,-487.3 344.68,-512.1" style=""/>
+<text text-anchor="middle" x="393.95" y="-495.5" font-family="Times,serif" font-size="14.00" style="">WB2</text>
+<polyline fill="none" stroke="black" points="443.23,-487.3 443.23,-512.1" style=""/>
+<text text-anchor="middle" x="493" y="-495.5" font-family="Times,serif" font-size="14.00" style="">WB3</text>
+<polyline fill="none" stroke="black" points="542.78,-487.3 542.78,-512.1" style=""/>
+<text text-anchor="middle" x="592.06" y="-495.5" font-family="Times,serif" font-size="14.00" style="">WB0</text>
+<polyline fill="none" stroke="black" points="641.33,-487.3 641.33,-512.1" style=""/>
+<text text-anchor="middle" x="691.11" y="-495.5" font-family="Times,serif" font-size="14.00" style="">WB1</text>
+</g>
+<!-- Reg1D&#45;&gt;CPU1 -->
+<g id="edge17" class="edge" data-name="Reg1D-&gt;CPU1:regi" data-comment="Reg1D-&gt;CPU1">
+
+<path fill="none" stroke="black" d="M202,-608.52C202,-598.73 202,-585.97 202,-573.49" style=""/>
+<polygon fill="black" stroke="black" points="205.5,-573.71 202,-563.71 198.5,-573.71 205.5,-573.71" style=""/>
+</g>
+<!-- PC1D&#45;&gt;CPU1 -->
+<g id="edge21" class="edge" data-name="PC1D-&gt;CPU1:pci" data-comment="PC1D-&gt;CPU1">
+
+<path fill="none" stroke="black" d="M273.16,-608.53C272.74,-598.74 272.28,-585.98 272.09,-573.49" style=""/>
+<polygon fill="black" stroke="black" points="275.59,-573.68 272.01,-563.71 268.59,-573.74 275.59,-573.68" style=""/>
+</g>
+<!-- OP1&#45;&gt;CPU1 -->
+<g id="edge22" class="edge" data-name="OP1-&gt;CPU1:op" data-comment="OP1-&gt;CPU1">
+
+<path fill="none" stroke="black" d="M352.9,-597.64C353.3,-590.13 353.67,-581.82 353.86,-573.62" style=""/>
+<polygon fill="black" stroke="black" points="357.36,-573.76 353.98,-563.71 350.36,-573.67 357.36,-573.76" style=""/>
+</g>
+<!-- X1&#45;&gt;CPU1 -->
+<g id="edge24" class="edge" data-name="X1-&gt;CPU1:x" data-comment="X1-&gt;CPU1">
+
+<path fill="none" stroke="black" d="M445.14,-597.84C447.7,-590.34 449.98,-581.97 451.16,-573.58" style=""/>
+<polygon fill="black" stroke="black" points="454.64,-573.94 451.89,-563.71 447.66,-573.42 454.64,-573.94" style=""/>
+</g>
+<!-- WB12D&#45;&gt;CPU1 -->
+<g id="edge26" class="edge" data-name="WB12D-&gt;CPU1b2i" data-comment="WB12D-&gt;CPU1">
+
+<path fill="none" stroke="black" d="M538.09,-608.55C539.14,-598.77 540.29,-586.02 540.77,-573.52" style=""/>
+<polygon fill="black" stroke="black" points="544.26,-573.78 540.97,-563.71 537.27,-573.64 544.26,-573.78" style=""/>
+</g>
+<!-- WB13D&#45;&gt;CPU1 -->
+<g id="edge28" class="edge" data-name="WB13D-&gt;CPU1b3i" data-comment="WB13D-&gt;CPU1">
+
+<path fill="none" stroke="black" d="M624.49,-608.57C623.23,-598.79 621.85,-586.04 621.28,-573.53" style=""/>
+<polygon fill="black" stroke="black" points="624.78,-573.62 621.04,-563.71 617.78,-573.8 624.78,-573.62" style=""/>
+</g>
+<!-- WB10D&#45;&gt;CPU1 -->
+<g id="edge30" class="edge" data-name="WB10D-&gt;CPU1b0i" data-comment="WB10D-&gt;CPU1">
+
+<path fill="none" stroke="black" d="M702.16,-608.53C701.74,-598.74 701.28,-585.98 701.09,-573.49" style=""/>
+<polygon fill="black" stroke="black" points="704.59,-573.68 701.01,-563.71 697.59,-573.74 704.59,-573.68" style=""/>
+</g>
+<!-- Label1 -->
+<g id="node23" class="node" pointer-events="visible" data-name="Label1">
+
+<text text-anchor="middle" x="118" y="-520.3" font-family="Times,serif" font-size="14.00" style="">CPU #1</text>
+</g>
+<!-- Reg2D -->
+<g id="node25" class="node" pointer-events="visible" data-name="Reg2D">
+
+<polygon fill="none" stroke="black" stroke-width="2" points="193,-440.2 139,-440.2 139,-404.2 193,-404.2 193,-440.2" style=""/>
+<text text-anchor="middle" x="166" y="-418" font-family="Times,serif" font-size="14.00" style="">FF</text>
+</g>
+<!-- CPU1&#45;&gt;Reg2D -->
+<g id="edge31" class="edge" data-name="CPU1-&gt;Reg2D">
+
+<path fill="none" stroke="black" d="M212,-486.5C212,-477.97 200.94,-462.59 189.67,-449.13" style=""/>
+<polygon fill="black" stroke="black" points="192.52,-447.07 183.34,-441.79 187.22,-451.65 192.52,-447.07" style=""/>
+</g>
+<!-- PC2D -->
+<g id="node26" class="node" pointer-events="visible" data-name="PC2D">
+
+<polygon fill="none" stroke="black" stroke-width="2" points="265,-440.2 211,-440.2 211,-404.2 265,-404.2 265,-440.2" style=""/>
+<text text-anchor="middle" x="238" y="-418" font-family="Times,serif" font-size="14.00" style="">FF</text>
+</g>
+<!-- CPU1&#45;&gt;PC2D -->
+<g id="edge33" class="edge" data-name="CPU1:pco-&gt;PC2D" data-comment="CPU1-&gt;PC2D">
+
+<path fill="none" stroke="black" d="M301,-486.5C301,-485.8 280.84,-465.63 263.33,-448.25" style=""/>
+<polygon fill="black" stroke="black" points="266.19,-446.16 256.62,-441.6 261.26,-451.13 266.19,-446.16" style=""/>
+</g>
+<!-- OP2 -->
+<g id="node27" class="node" pointer-events="visible" data-name="OP2">
+
+<path fill="none" stroke="black" stroke-width="2" d="M346.55,-445.68C346.55,-448.56 332.41,-450.9 315,-450.9 297.59,-450.9 283.45,-448.56 283.45,-445.68 283.45,-445.68 283.45,-398.72 283.45,-398.72 283.45,-395.84 297.59,-393.5 315,-393.5 332.41,-393.5 346.55,-395.84 346.55,-398.72 346.55,-398.72 346.55,-445.68 346.55,-445.68" style=""/>
+<path fill="none" stroke="black" stroke-width="2" d="M346.55,-445.68C346.55,-442.8 332.41,-440.46 315,-440.46 297.59,-440.46 283.45,-442.8 283.45,-445.68" style=""/>
+<text text-anchor="middle" x="315" y="-426.4" font-family="Times,serif" font-size="14.00" style="">Bank #2</text>
+<text text-anchor="middle" x="315" y="-409.6" font-family="Times,serif" font-size="14.00" style="">OpCode</text>
+</g>
+<!-- CPU1&#45;&gt;OP2 -->
+<g id="edge34" class="edge" data-name="CPU1:pco-&gt;OP2" data-comment="CPU1-&gt;OP2">
+
+<path fill="none" stroke="black" d="M301,-486.5C301,-476.39 302.72,-465.58 304.96,-455.8" style=""/>
+<polygon fill="black" stroke="black" points="308.29,-456.93 307.38,-446.38 301.51,-455.19 308.29,-456.93" style=""/>
+</g>
+<!-- X2 -->
+<g id="node28" class="node" pointer-events="visible" data-name="X2">
+
+<path fill="none" stroke="black" stroke-width="2" d="M429.2,-445.68C429.2,-448.56 414.77,-450.9 397,-450.9 379.23,-450.9 364.8,-448.56 364.8,-445.68 364.8,-445.68 364.8,-398.72 364.8,-398.72 364.8,-395.84 379.23,-393.5 397,-393.5 414.77,-393.5 429.2,-395.84 429.2,-398.72 429.2,-398.72 429.2,-445.68 429.2,-445.68" style=""/>
+<path fill="none" stroke="black" stroke-width="2" d="M429.2,-445.68C429.2,-442.8 414.77,-440.46 397,-440.46 379.23,-440.46 364.8,-442.8 364.8,-445.68" style=""/>
+<text text-anchor="middle" x="397" y="-426.4" font-family="Times,serif" font-size="14.00" style="">Bank #2</text>
+<text text-anchor="middle" x="397" y="-409.6" font-family="Times,serif" font-size="14.00" style="">Operand</text>
+</g>
+<!-- CPU1&#45;&gt;X2 -->
+<g id="edge35" class="edge" data-name="CPU1:pco-&gt;X2" data-comment="CPU1-&gt;X2">
+
+<path fill="none" stroke="black" d="M301,-486.5C301,-459.13 333.27,-474.05 356,-458.8 359.05,-456.75 362.13,-454.5 365.15,-452.16" style=""/>
+<polygon fill="black" stroke="black" points="367.26,-454.95 372.78,-445.92 362.83,-449.53 367.26,-454.95" style=""/>
+</g>
+<!-- CPU1&#45;&gt;X2 -->
+<g id="edge38" class="edge" data-name="CPU1b2o-&gt;X2" data-comment="CPU1-&gt;X2">
+
+<path fill="none" stroke="black" d="M394,-486.5C394,-476.72 394.36,-466.11 394.83,-456.41" style=""/>
+<polygon fill="black" stroke="black" points="398.31,-456.85 395.36,-446.67 391.33,-456.46 398.31,-456.85" style=""/>
+</g>
+<!-- WB23D -->
+<g id="node29" class="node" pointer-events="visible" data-name="WB23D">
+
+<polygon fill="none" stroke="black" stroke-width="2" points="523,-440.2 469,-440.2 469,-404.2 523,-404.2 523,-440.2" style=""/>
+<text text-anchor="middle" x="496" y="-418" font-family="Times,serif" font-size="14.00" style="">FF</text>
+</g>
+<!-- CPU1&#45;&gt;WB23D -->
+<g id="edge40" class="edge" data-name="CPU1b3o-&gt;WB23D" data-comment="CPU1-&gt;WB23D">
+
+<path fill="none" stroke="black" d="M493,-486.5C493,-475.23 493.48,-462.84 494.06,-452.04" style=""/>
+<polygon fill="black" stroke="black" points="497.54,-452.35 494.64,-442.16 490.56,-451.94 497.54,-452.35" style=""/>
+</g>
+<!-- WB20D -->
+<g id="node30" class="node" pointer-events="visible" data-name="WB20D">
+
+<polygon fill="none" stroke="black" stroke-width="2" points="614,-440.2 560,-440.2 560,-404.2 614,-404.2 614,-440.2" style=""/>
+<text text-anchor="middle" x="587" y="-418" font-family="Times,serif" font-size="14.00" style="">FF</text>
+</g>
+<!-- CPU1&#45;&gt;WB20D -->
+<g id="edge42" class="edge" data-name="CPU1b0o-&gt;WB20D" data-comment="CPU1-&gt;WB20D">
+
+<path fill="none" stroke="black" d="M592,-486.5C592,-475.21 591.2,-462.81 590.24,-452.01" style=""/>
+<polygon fill="black" stroke="black" points="593.73,-451.75 589.27,-442.14 586.76,-452.44 593.73,-451.75" style=""/>
+</g>
+<!-- WB21D -->
+<g id="node31" class="node" pointer-events="visible" data-name="WB21D">
+
+<polygon fill="none" stroke="black" stroke-width="2" points="699,-440.2 645,-440.2 645,-404.2 699,-404.2 699,-440.2" style=""/>
+<text text-anchor="middle" x="672" y="-418" font-family="Times,serif" font-size="14.00" style="">FF</text>
+</g>
+<!-- CPU1&#45;&gt;WB21D -->
+<g id="edge44" class="edge" data-name="CPU1b1o-&gt;WB21D" data-comment="CPU1-&gt;WB21D">
+
+<path fill="none" stroke="black" d="M691,-486.5C691,-474.58 687.87,-461.91 684.15,-451.06" style=""/>
+<polygon fill="black" stroke="black" points="687.51,-450.05 680.7,-441.93 680.96,-452.53 687.51,-450.05" style=""/>
+</g>
+<!-- CPU2 -->
+<g id="node33" class="node" pointer-events="visible" data-name="CPU2">
+
+<polygon fill="none" stroke="black" points="130,-282.7 130,-357.1 706,-357.1 706,-282.7 130,-282.7" style=""/>
+<text text-anchor="middle" x="166.28" y="-340.5" font-family="Times,serif" font-size="14.00" style="">Reg</text>
+<polyline fill="none" stroke="black" points="202.55,-332.3 202.55,-357.1" style=""/>
+<text text-anchor="middle" x="236.11" y="-340.5" font-family="Times,serif" font-size="14.00" style="">PC</text>
+<polyline fill="none" stroke="black" points="269.68,-332.3 269.68,-357.1" style=""/>
+<text text-anchor="middle" x="318.01" y="-340.5" font-family="Times,serif" font-size="14.00" style="">OpCode</text>
+<polyline fill="none" stroke="black" points="366.34,-332.3 366.34,-357.1" style=""/>
+<text text-anchor="middle" x="415.94" y="-340.5" font-family="Times,serif" font-size="14.00" style="">Operand</text>
+<polyline fill="none" stroke="black" points="465.54,-332.3 465.54,-357.1" style=""/>
+<text text-anchor="middle" x="505.31" y="-340.5" font-family="Times,serif" font-size="14.00" style="">WB3</text>
+<polyline fill="none" stroke="black" points="545.09,-332.3 545.09,-357.1" style=""/>
+<text text-anchor="middle" x="584.87" y="-340.5" font-family="Times,serif" font-size="14.00" style="">WB0</text>
+<polyline fill="none" stroke="black" points="624.64,-332.3 624.64,-357.1" style=""/>
+<text text-anchor="middle" x="664.92" y="-340.5" font-family="Times,serif" font-size="14.00" style="">WB1</text>
+<polyline fill="none" stroke="black" points="130,-332.3 705.19,-332.3" style=""/>
+<text text-anchor="middle" x="417.6" y="-315.7" font-family="Times,serif" font-size="14.00" style="">Execution Unit (Combinational Logic)</text>
+<polyline fill="none" stroke="black" points="130,-307.5 705.19,-307.5" style=""/>
+<text text-anchor="middle" x="175.78" y="-290.9" font-family="Times,serif" font-size="14.00" style="">Reg</text>
+<polyline fill="none" stroke="black" points="221.55,-282.7 221.55,-307.5" style=""/>
+<text text-anchor="middle" x="265.11" y="-290.9" font-family="Times,serif" font-size="14.00" style="">PC</text>
+<polyline fill="none" stroke="black" points="308.68,-282.7 308.68,-307.5" style=""/>
+<text text-anchor="middle" x="357.95" y="-290.9" font-family="Times,serif" font-size="14.00" style="">WB3</text>
+<polyline fill="none" stroke="black" points="407.23,-282.7 407.23,-307.5" style=""/>
+<text text-anchor="middle" x="457" y="-290.9" font-family="Times,serif" font-size="14.00" style="">WB0</text>
+<polyline fill="none" stroke="black" points="506.78,-282.7 506.78,-307.5" style=""/>
+<text text-anchor="middle" x="556.06" y="-290.9" font-family="Times,serif" font-size="14.00" style="">WB1</text>
+<polyline fill="none" stroke="black" points="605.33,-282.7 605.33,-307.5" style=""/>
+<text text-anchor="middle" x="655.11" y="-290.9" font-family="Times,serif" font-size="14.00" style="">WB2</text>
+</g>
+<!-- Reg2D&#45;&gt;CPU2 -->
+<g id="edge32" class="edge" data-name="Reg2D-&gt;CPU2:regi" data-comment="Reg2D-&gt;CPU2">
+
+<path fill="none" stroke="black" d="M166,-403.92C166,-394.13 166,-381.37 166,-368.89" style=""/>
+<polygon fill="black" stroke="black" points="169.5,-369.11 166,-359.11 162.5,-369.11 169.5,-369.11" style=""/>
+</g>
+<!-- PC2D&#45;&gt;CPU2 -->
+<g id="edge36" class="edge" data-name="PC2D-&gt;CPU2:pci" data-comment="PC2D-&gt;CPU2">
+
+<path fill="none" stroke="black" d="M237.16,-403.93C236.74,-394.14 236.28,-381.38 236.09,-368.89" style=""/>
+<polygon fill="black" stroke="black" points="239.59,-369.08 236.01,-359.11 232.59,-369.14 239.59,-369.08" style=""/>
+</g>
+<!-- OP2&#45;&gt;CPU2 -->
+<g id="edge37" class="edge" data-name="OP2-&gt;CPU2:op" data-comment="OP2-&gt;CPU2">
+
+<path fill="none" stroke="black" d="M316.9,-393.04C317.3,-385.53 317.67,-377.22 317.86,-369.02" style=""/>
+<polygon fill="black" stroke="black" points="321.36,-369.16 317.98,-359.11 314.36,-369.07 321.36,-369.16" style=""/>
+</g>
+<!-- X2&#45;&gt;CPU2 -->
+<g id="edge39" class="edge" data-name="X2-&gt;CPU2:x" data-comment="X2-&gt;CPU2">
+
+<path fill="none" stroke="black" d="M409.14,-393.24C411.7,-385.74 413.98,-377.37 415.16,-368.98" style=""/>
+<polygon fill="black" stroke="black" points="418.64,-369.34 415.89,-359.11 411.66,-368.82 418.64,-369.34" style=""/>
+</g>
+<!-- WB23D&#45;&gt;CPU2 -->
+<g id="edge41" class="edge" data-name="WB23D-&gt;CPU2b3i" data-comment="WB23D-&gt;CPU2">
+
+<path fill="none" stroke="black" d="M499.82,-403.75C501.69,-394 503.74,-381.35 504.59,-368.89" style=""/>
+<polygon fill="black" stroke="black" points="508.08,-369.23 504.94,-359.11 501.08,-368.98 508.08,-369.23" style=""/>
+</g>
+<!-- WB20D&#45;&gt;CPU2 -->
+<g id="edge43" class="edge" data-name="WB20D-&gt;CPU2b0i" data-comment="WB20D-&gt;CPU2">
+
+<path fill="none" stroke="black" d="M586.16,-403.93C585.74,-394.14 585.28,-381.38 585.09,-368.89" style=""/>
+<polygon fill="black" stroke="black" points="588.59,-369.08 585.01,-359.11 581.59,-369.14 588.59,-369.08" style=""/>
+</g>
+<!-- WB21D&#45;&gt;CPU2 -->
+<g id="edge45" class="edge" data-name="WB21D-&gt;CPU2b1i" data-comment="WB21D-&gt;CPU2">
+
+<path fill="none" stroke="black" d="M669.03,-403.71C667.57,-393.95 665.98,-381.29 665.32,-368.86" style=""/>
+<polygon fill="black" stroke="black" points="668.83,-369.01 665.04,-359.11 661.83,-369.21 668.83,-369.01" style=""/>
+</g>
+<!-- Label2 -->
+<g id="node32" class="node" pointer-events="visible" data-name="Label2">
+
+<text text-anchor="middle" x="82" y="-315.7" font-family="Times,serif" font-size="14.00" style="">CPU #2</text>
+</g>
+<!-- Reg3D -->
+<g id="node34" class="node" pointer-events="visible" data-name="Reg3D">
+
+<polygon fill="none" stroke="black" stroke-width="2" points="157,-235.6 103,-235.6 103,-199.6 157,-199.6 157,-235.6" style=""/>
+<text text-anchor="middle" x="130" y="-213.4" font-family="Times,serif" font-size="14.00" style="">FF</text>
+</g>
+<!-- CPU2&#45;&gt;Reg3D -->
+<g id="edge46" class="edge" data-name="CPU2-&gt;Reg3D">
+
+<path fill="none" stroke="black" d="M176,-281.9C176,-273.37 164.94,-257.99 153.67,-244.53" style=""/>
+<polygon fill="black" stroke="black" points="156.52,-242.47 147.34,-237.19 151.22,-247.05 156.52,-242.47" style=""/>
+</g>
+<!-- PC3D -->
+<g id="node35" class="node" pointer-events="visible" data-name="PC3D">
+
+<polygon fill="none" stroke="black" stroke-width="2" points="229,-235.6 175,-235.6 175,-199.6 229,-199.6 229,-235.6" style=""/>
+<text text-anchor="middle" x="202" y="-213.4" font-family="Times,serif" font-size="14.00" style="">FF</text>
+</g>
+<!-- CPU2&#45;&gt;PC3D -->
+<g id="edge48" class="edge" data-name="CPU2:pco-&gt;PC3D" data-comment="CPU2-&gt;PC3D">
+
+<path fill="none" stroke="black" d="M265,-281.9C265,-281.2 244.84,-261.03 227.33,-243.65" style=""/>
+<polygon fill="black" stroke="black" points="230.19,-241.56 220.62,-237 225.26,-246.53 230.19,-241.56" style=""/>
+</g>
+<!-- OP3 -->
+<g id="node36" class="node" pointer-events="visible" data-name="OP3">
+
+<path fill="none" stroke="black" stroke-width="2" d="M310.55,-241.08C310.55,-243.96 296.41,-246.3 279,-246.3 261.59,-246.3 247.45,-243.96 247.45,-241.08 247.45,-241.08 247.45,-194.12 247.45,-194.12 247.45,-191.24 261.59,-188.9 279,-188.9 296.41,-188.9 310.55,-191.24 310.55,-194.12 310.55,-194.12 310.55,-241.08 310.55,-241.08" style=""/>
+<path fill="none" stroke="black" stroke-width="2" d="M310.55,-241.08C310.55,-238.2 296.41,-235.86 279,-235.86 261.59,-235.86 247.45,-238.2 247.45,-241.08" style=""/>
+<text text-anchor="middle" x="279" y="-221.8" font-family="Times,serif" font-size="14.00" style="">Bank #3</text>
+<text text-anchor="middle" x="279" y="-205" font-family="Times,serif" font-size="14.00" style="">OpCode</text>
+</g>
+<!-- CPU2&#45;&gt;OP3 -->
+<g id="edge49" class="edge" data-name="CPU2:pco-&gt;OP3" data-comment="CPU2-&gt;OP3">
+
+<path fill="none" stroke="black" d="M265,-281.9C265,-271.79 266.72,-260.98 268.96,-251.2" style=""/>
+<polygon fill="black" stroke="black" points="272.29,-252.33 271.38,-241.78 265.51,-250.59 272.29,-252.33" style=""/>
+</g>
+<!-- X3 -->
+<g id="node37" class="node" pointer-events="visible" data-name="X3">
+
+<path fill="none" stroke="black" stroke-width="2" d="M393.2,-241.08C393.2,-243.96 378.77,-246.3 361,-246.3 343.23,-246.3 328.8,-243.96 328.8,-241.08 328.8,-241.08 328.8,-194.12 328.8,-194.12 328.8,-191.24 343.23,-188.9 361,-188.9 378.77,-188.9 393.2,-191.24 393.2,-194.12 393.2,-194.12 393.2,-241.08 393.2,-241.08" style=""/>
+<path fill="none" stroke="black" stroke-width="2" d="M393.2,-241.08C393.2,-238.2 378.77,-235.86 361,-235.86 343.23,-235.86 328.8,-238.2 328.8,-241.08" style=""/>
+<text text-anchor="middle" x="361" y="-221.8" font-family="Times,serif" font-size="14.00" style="">Bank #3</text>
+<text text-anchor="middle" x="361" y="-205" font-family="Times,serif" font-size="14.00" style="">Operand</text>
+</g>
+<!-- CPU2&#45;&gt;X3 -->
+<g id="edge50" class="edge" data-name="CPU2:pco-&gt;X3" data-comment="CPU2-&gt;X3">
+
+<path fill="none" stroke="black" d="M265,-281.9C265,-254.53 297.27,-269.45 320,-254.2 323.05,-252.15 326.13,-249.9 329.15,-247.56" style=""/>
+<polygon fill="black" stroke="black" points="331.26,-250.35 336.78,-241.32 326.83,-244.93 331.26,-250.35" style=""/>
+</g>
+<!-- CPU2&#45;&gt;X3 -->
+<g id="edge53" class="edge" data-name="CPU2b3o-&gt;X3" data-comment="CPU2-&gt;X3">
+
+<path fill="none" stroke="black" d="M358,-281.9C358,-272.12 358.36,-261.51 358.83,-251.81" style=""/>
+<polygon fill="black" stroke="black" points="362.31,-252.25 359.36,-242.07 355.33,-251.86 362.31,-252.25" style=""/>
+</g>
+<!-- WB30D -->
+<g id="node38" class="node" pointer-events="visible" data-name="WB30D">
+
+<polygon fill="none" stroke="black" stroke-width="2" points="487,-235.6 433,-235.6 433,-199.6 487,-199.6 487,-235.6" style=""/>
+<text text-anchor="middle" x="460" y="-213.4" font-family="Times,serif" font-size="14.00" style="">FF</text>
+</g>
+<!-- CPU2&#45;&gt;WB30D -->
+<g id="edge55" class="edge" data-name="CPU2b0o-&gt;WB30D" data-comment="CPU2-&gt;WB30D">
+
+<path fill="none" stroke="black" d="M457,-281.9C457,-270.63 457.48,-258.24 458.06,-247.44" style=""/>
+<polygon fill="black" stroke="black" points="461.54,-247.75 458.64,-237.56 454.56,-247.34 461.54,-247.75" style=""/>
+</g>
+<!-- WB31D -->
+<g id="node39" class="node" pointer-events="visible" data-name="WB31D">
+
+<polygon fill="none" stroke="black" stroke-width="2" points="578,-235.6 524,-235.6 524,-199.6 578,-199.6 578,-235.6" style=""/>
+<text text-anchor="middle" x="551" y="-213.4" font-family="Times,serif" font-size="14.00" style="">FF</text>
+</g>
+<!-- CPU2&#45;&gt;WB31D -->
+<g id="edge57" class="edge" data-name="CPU2b1o-&gt;WB31D" data-comment="CPU2-&gt;WB31D">
+
+<path fill="none" stroke="black" d="M556,-281.9C556,-270.61 555.2,-258.21 554.24,-247.41" style=""/>
+<polygon fill="black" stroke="black" points="557.73,-247.15 553.27,-237.54 550.76,-247.84 557.73,-247.15" style=""/>
+</g>
+<!-- WB32D -->
+<g id="node40" class="node" pointer-events="visible" data-name="WB32D">
+
+<polygon fill="none" stroke="black" stroke-width="2" points="663,-235.6 609,-235.6 609,-199.6 663,-199.6 663,-235.6" style=""/>
+<text text-anchor="middle" x="636" y="-213.4" font-family="Times,serif" font-size="14.00" style="">FF</text>
+</g>
+<!-- CPU2&#45;&gt;WB32D -->
+<g id="edge59" class="edge" data-name="CPU2b2o-&gt;WB32D" data-comment="CPU2-&gt;WB32D">
+
+<path fill="none" stroke="black" d="M655,-281.9C655,-269.98 651.87,-257.31 648.15,-246.46" style=""/>
+<polygon fill="black" stroke="black" points="651.51,-245.45 644.7,-237.33 644.96,-247.93 651.51,-245.45" style=""/>
+</g>
+<!-- CPU3 -->
+<g id="node42" class="node" pointer-events="visible" data-name="CPU3">
+
+<polygon fill="none" stroke="black" points="94,-78.1 94,-152.5 670,-152.5 670,-78.1 94,-78.1" style=""/>
+<text text-anchor="middle" x="130.28" y="-135.9" font-family="Times,serif" font-size="14.00" style="">Reg</text>
+<polyline fill="none" stroke="black" points="166.55,-127.7 166.55,-152.5" style=""/>
+<text text-anchor="middle" x="200.11" y="-135.9" font-family="Times,serif" font-size="14.00" style="">PC</text>
+<polyline fill="none" stroke="black" points="233.68,-127.7 233.68,-152.5" style=""/>
+<text text-anchor="middle" x="282.01" y="-135.9" font-family="Times,serif" font-size="14.00" style="">OpCode</text>
+<polyline fill="none" stroke="black" points="330.34,-127.7 330.34,-152.5" style=""/>
+<text text-anchor="middle" x="379.94" y="-135.9" font-family="Times,serif" font-size="14.00" style="">Operand</text>
+<polyline fill="none" stroke="black" points="429.54,-127.7 429.54,-152.5" style=""/>
+<text text-anchor="middle" x="469.31" y="-135.9" font-family="Times,serif" font-size="14.00" style="">WB0</text>
+<polyline fill="none" stroke="black" points="509.09,-127.7 509.09,-152.5" style=""/>
+<text text-anchor="middle" x="548.87" y="-135.9" font-family="Times,serif" font-size="14.00" style="">WB1</text>
+<polyline fill="none" stroke="black" points="588.64,-127.7 588.64,-152.5" style=""/>
+<text text-anchor="middle" x="628.92" y="-135.9" font-family="Times,serif" font-size="14.00" style="">WB2</text>
+<polyline fill="none" stroke="black" points="94,-127.7 669.19,-127.7" style=""/>
+<text text-anchor="middle" x="381.6" y="-111.1" font-family="Times,serif" font-size="14.00" style="">Execution Unit (Combinational Logic)</text>
+<polyline fill="none" stroke="black" points="94,-102.9 669.19,-102.9" style=""/>
+<text text-anchor="middle" x="139.78" y="-86.3" font-family="Times,serif" font-size="14.00" style="">Reg</text>
+<polyline fill="none" stroke="black" points="185.55,-78.1 185.55,-102.9" style=""/>
+<text text-anchor="middle" x="229.11" y="-86.3" font-family="Times,serif" font-size="14.00" style="">PC</text>
+<polyline fill="none" stroke="black" points="272.68,-78.1 272.68,-102.9" style=""/>
+<text text-anchor="middle" x="321.95" y="-86.3" font-family="Times,serif" font-size="14.00" style="">WB0</text>
+<polyline fill="none" stroke="black" points="371.23,-78.1 371.23,-102.9" style=""/>
+<text text-anchor="middle" x="421" y="-86.3" font-family="Times,serif" font-size="14.00" style="">WB1</text>
+<polyline fill="none" stroke="black" points="470.78,-78.1 470.78,-102.9" style=""/>
+<text text-anchor="middle" x="520.06" y="-86.3" font-family="Times,serif" font-size="14.00" style="">WB2</text>
+<polyline fill="none" stroke="black" points="569.33,-78.1 569.33,-102.9" style=""/>
+<text text-anchor="middle" x="619.11" y="-86.3" font-family="Times,serif" font-size="14.00" style="">WB3</text>
+</g>
+<!-- Reg3D&#45;&gt;CPU3 -->
+<g id="edge47" class="edge" data-name="Reg3D-&gt;CPU3:regi" data-comment="Reg3D-&gt;CPU3">
+
+<path fill="none" stroke="black" d="M130,-199.32C130,-189.53 130,-176.77 130,-164.29" style=""/>
+<polygon fill="black" stroke="black" points="133.5,-164.51 130,-154.51 126.5,-164.51 133.5,-164.51" style=""/>
+</g>
+<!-- PC3D&#45;&gt;CPU3 -->
+<g id="edge51" class="edge" data-name="PC3D-&gt;CPU3:pci" data-comment="PC3D-&gt;CPU3">
+
+<path fill="none" stroke="black" d="M201.16,-199.33C200.74,-189.54 200.28,-176.78 200.09,-164.29" style=""/>
+<polygon fill="black" stroke="black" points="203.59,-164.48 200.01,-154.51 196.59,-164.54 203.59,-164.48" style=""/>
+</g>
+<!-- OP3&#45;&gt;CPU3 -->
+<g id="edge52" class="edge" data-name="OP3-&gt;CPU3:op" data-comment="OP3-&gt;CPU3">
+
+<path fill="none" stroke="black" d="M280.9,-188.44C281.3,-180.93 281.67,-172.62 281.86,-164.42" style=""/>
+<polygon fill="black" stroke="black" points="285.36,-164.56 281.98,-154.51 278.36,-164.47 285.36,-164.56" style=""/>
+</g>
+<!-- X3&#45;&gt;CPU3 -->
+<g id="edge54" class="edge" data-name="X3-&gt;CPU3:x" data-comment="X3-&gt;CPU3">
+
+<path fill="none" stroke="black" d="M373.14,-188.64C375.7,-181.14 377.98,-172.77 379.16,-164.38" style=""/>
+<polygon fill="black" stroke="black" points="382.64,-164.74 379.89,-154.51 375.66,-164.22 382.64,-164.74" style=""/>
+</g>
+<!-- WB30D&#45;&gt;CPU3 -->
+<g id="edge56" class="edge" data-name="WB30D-&gt;CPU3b0i" data-comment="WB30D-&gt;CPU3">
+
+<path fill="none" stroke="black" d="M463.82,-199.15C465.69,-189.4 467.74,-176.75 468.59,-164.29" style=""/>
+<polygon fill="black" stroke="black" points="472.08,-164.63 468.94,-154.51 465.08,-164.38 472.08,-164.63" style=""/>
+</g>
+<!-- WB31D&#45;&gt;CPU3 -->
+<g id="edge58" class="edge" data-name="WB31D-&gt;CPU3b1i" data-comment="WB31D-&gt;CPU3">
+
+<path fill="none" stroke="black" d="M550.16,-199.33C549.74,-189.54 549.28,-176.78 549.09,-164.29" style=""/>
+<polygon fill="black" stroke="black" points="552.59,-164.48 549.01,-154.51 545.59,-164.54 552.59,-164.48" style=""/>
+</g>
+<!-- WB32D&#45;&gt;CPU3 -->
+<g id="edge60" class="edge" data-name="WB32D-&gt;CPU3b2i" data-comment="WB32D-&gt;CPU3">
+
+<path fill="none" stroke="black" d="M633.03,-199.11C631.57,-189.35 629.98,-176.69 629.32,-164.26" style=""/>
+<polygon fill="black" stroke="black" points="632.83,-164.41 629.04,-154.51 625.83,-164.61 632.83,-164.41" style=""/>
+</g>
+<!-- Label3 -->
+<g id="node41" class="node" pointer-events="visible" data-name="Label3">
+
+<text text-anchor="middle" x="46" y="-111.1" font-family="Times,serif" font-size="14.00" style="">CPU #3</text>
+</g>
+<!-- Reg4 -->
+<g id="node43" class="node" pointer-events="visible" data-name="Reg4">
+
+<text text-anchor="middle" x="140" y="-16.6" font-family="Times,serif" font-size="14.00" style="">Reg</text>
+</g>
+<!-- CPU3&#45;&gt;Reg4 -->
+<g id="edge61" class="edge" data-name="CPU3:rego-&gt;Reg4" data-comment="CPU3-&gt;Reg4">
+
+<path fill="none" stroke="black" d="M140,-77.3C140,-68.29 140,-58.46 140,-49.61" style=""/>
+<polygon fill="black" stroke="black" points="143.5,-49.83 140,-39.83 136.5,-49.83 143.5,-49.83" style=""/>
+</g>
+<!-- PC4 -->
+<g id="node44" class="node" pointer-events="visible" data-name="PC4">
+
+<text text-anchor="middle" x="229" y="-16.6" font-family="Times,serif" font-size="14.00" style="">PC</text>
+</g>
+<!-- CPU3&#45;&gt;PC4 -->
+<g id="edge62" class="edge" data-name="CPU3:pco-&gt;PC4" data-comment="CPU3-&gt;PC4">
+
+<path fill="none" stroke="black" d="M229,-77.3C229,-68.29 229,-58.46 229,-49.61" style=""/>
+<polygon fill="black" stroke="black" points="232.5,-49.83 229,-39.83 225.5,-49.83 232.5,-49.83" style=""/>
+</g>
+<!-- WB40 -->
+<g id="node45" class="node" pointer-events="visible" data-name="WB40">
+
+<text text-anchor="middle" x="322" y="-25" font-family="Times,serif" font-size="14.00" style="">Bank #0</text>
+<text text-anchor="middle" x="322" y="-8.2" font-family="Times,serif" font-size="14.00" style="">WriteBack</text>
+</g>
+<!-- CPU3&#45;&gt;WB40 -->
+<g id="edge63" class="edge" data-name="CPU3b0o-&gt;WB40" data-comment="CPU3-&gt;WB40">
+
+<path fill="none" stroke="black" d="M322,-77.3C322,-69.37 322,-60.79 322,-52.81" style=""/>
+<polygon fill="black" stroke="black" points="325.5,-52.83 322,-42.83 318.5,-52.83 325.5,-52.83" style=""/>
+</g>
+<!-- WB41 -->
+<g id="node46" class="node" pointer-events="visible" data-name="WB41">
+
+<text text-anchor="middle" x="421" y="-25" font-family="Times,serif" font-size="14.00" style="">Bank #1</text>
+<text text-anchor="middle" x="421" y="-8.2" font-family="Times,serif" font-size="14.00" style="">WriteBack</text>
+</g>
+<!-- CPU3&#45;&gt;WB41 -->
+<g id="edge64" class="edge" data-name="CPU3b1o-&gt;WB41" data-comment="CPU3-&gt;WB41">
+
+<path fill="none" stroke="black" d="M421,-77.3C421,-69.37 421,-60.79 421,-52.81" style=""/>
+<polygon fill="black" stroke="black" points="424.5,-52.83 421,-42.83 417.5,-52.83 424.5,-52.83" style=""/>
+</g>
+<!-- WB42 -->
+<g id="node47" class="node" pointer-events="visible" data-name="WB42">
+
+<text text-anchor="middle" x="520" y="-25" font-family="Times,serif" font-size="14.00" style="">Bank #2</text>
+<text text-anchor="middle" x="520" y="-8.2" font-family="Times,serif" font-size="14.00" style="">WriteBack</text>
+</g>
+<!-- CPU3&#45;&gt;WB42 -->
+<g id="edge65" class="edge" data-name="CPU3b2o-&gt;WB42" data-comment="CPU3-&gt;WB42">
+
+<path fill="none" stroke="black" d="M520,-77.3C520,-69.37 520,-60.79 520,-52.81" style=""/>
+<polygon fill="black" stroke="black" points="523.5,-52.83 520,-42.83 516.5,-52.83 523.5,-52.83" style=""/>
+</g>
+<!-- WB43 -->
+<g id="node48" class="node" pointer-events="visible" data-name="WB43">
+
+<text text-anchor="middle" x="619" y="-25" font-family="Times,serif" font-size="14.00" style="">Bank #3</text>
+<text text-anchor="middle" x="619" y="-8.2" font-family="Times,serif" font-size="14.00" style="">WriteBack</text>
+</g>
+<!-- CPU3&#45;&gt;WB43 -->
+<g id="edge66" class="edge" data-name="CPU3b3o-&gt;WB43" data-comment="CPU3-&gt;WB43">
+
+<path fill="none" stroke="black" d="M619,-77.3C619,-69.37 619,-60.79 619,-52.81" style=""/>
+<polygon fill="black" stroke="black" points="622.5,-52.83 619,-42.83 615.5,-52.83 622.5,-52.83" style=""/>
+</g>
+</g>
+</svg>

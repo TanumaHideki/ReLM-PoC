@@ -1,0 +1,145 @@
+<?xml version="1.0" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="350pt" height="272pt" viewBox="0.00 0.00 350.00 272.40">
+<g id="graph0" class="graph" transform="translate(4,268.3999938964844) scale(1)" data-name="bankmem">
+
+<polygon fill="white" stroke="none" points="-4,4 -4,-268.4 346,-268.4 346,4 -4,4" style=""/>
+<g id="clust1" class="cluster" data-name="%3">
+
+<polygon fill="none" stroke="black" points="8,-141.6 8,-256.4 334,-256.4 334,-141.6 8,-141.6" style=""/>
+<text text-anchor="middle" x="171" y="-239.8" font-family="Times,serif" font-size="14.00" style="">Shared Memory divided into Memory Banks;</text>
+<text text-anchor="middle" x="171" y="-223" font-family="Times,serif" font-size="14.00" style="">Each Memory Bank is connected to a CPU</text>
+</g>
+<!-- BM0 -->
+<g id="node1" class="node" pointer-events="visible" data-name="BM0">
+
+<path fill="none" stroke="black" d="M80.21,-201.68C80.21,-204.56 65.78,-206.9 48,-206.9 30.22,-206.9 15.79,-204.56 15.79,-201.68 15.79,-201.68 15.79,-154.72 15.79,-154.72 15.79,-151.84 30.22,-149.5 48,-149.5 65.78,-149.5 80.21,-151.84 80.21,-154.72 80.21,-154.72 80.21,-201.68 80.21,-201.68" style=""/>
+<path fill="none" stroke="black" d="M80.21,-201.68C80.21,-198.8 65.78,-196.46 48,-196.46 30.22,-196.46 15.79,-198.8 15.79,-201.68" style=""/>
+<text text-anchor="middle" x="48" y="-182.4" font-family="Times,serif" font-size="14.00" style="">Memory</text>
+<text text-anchor="middle" x="48" y="-165.6" font-family="Times,serif" font-size="14.00" style="">Bank #0</text>
+</g>
+<!-- CPU0 -->
+<g id="node5" class="node" pointer-events="visible" data-name="CPU0">
+
+<polygon fill="none" stroke="black" points="82.23,-113.6 25.77,-113.6 21.77,-109.6 21.77,-77.6 78.23,-77.6 82.23,-81.6 82.23,-113.6" style=""/>
+<polyline fill="none" stroke="black" points="78.23,-109.6 21.77,-109.6" style=""/>
+<polyline fill="none" stroke="black" points="78.23,-109.6 78.23,-77.6" style=""/>
+<polyline fill="none" stroke="black" points="78.23,-109.6 82.23,-113.6" style=""/>
+<text text-anchor="middle" x="52" y="-91.4" font-family="Times,serif" font-size="14.00" style="">CPU #0</text>
+</g>
+<!-- BM0&#45;&gt;CPU0 -->
+<g id="edge4" class="edge" data-name="BM0-&gt;CPU0">
+
+<path fill="none" stroke="black" d="M49.97,-137.53C50.17,-133.41 50.38,-129.28 50.57,-125.32" style=""/>
+<polygon fill="black" stroke="black" points="46.47,-137.34 49.47,-147.5 53.47,-137.68 46.47,-137.34" style=""/>
+<polygon fill="black" stroke="black" points="54.06,-125.76 51.06,-115.6 47.07,-125.41 54.06,-125.76" style=""/>
+</g>
+<!-- BM1 -->
+<g id="node2" class="node" pointer-events="visible" data-name="BM1">
+
+<path fill="none" stroke="black" d="M162.21,-201.68C162.21,-204.56 147.78,-206.9 130,-206.9 112.22,-206.9 97.79,-204.56 97.79,-201.68 97.79,-201.68 97.79,-154.72 97.79,-154.72 97.79,-151.84 112.22,-149.5 130,-149.5 147.78,-149.5 162.21,-151.84 162.21,-154.72 162.21,-154.72 162.21,-201.68 162.21,-201.68" style=""/>
+<path fill="none" stroke="black" d="M162.21,-201.68C162.21,-198.8 147.78,-196.46 130,-196.46 112.22,-196.46 97.79,-198.8 97.79,-201.68" style=""/>
+<text text-anchor="middle" x="130" y="-182.4" font-family="Times,serif" font-size="14.00" style="">Memory</text>
+<text text-anchor="middle" x="130" y="-165.6" font-family="Times,serif" font-size="14.00" style="">Bank #1</text>
+</g>
+<!-- CPU1 -->
+<g id="node6" class="node" pointer-events="visible" data-name="CPU1">
+
+<polygon fill="none" stroke="black" points="161.23,-113.6 104.77,-113.6 100.77,-109.6 100.77,-77.6 157.23,-77.6 161.23,-81.6 161.23,-113.6" style=""/>
+<polyline fill="none" stroke="black" points="157.23,-109.6 100.77,-109.6" style=""/>
+<polyline fill="none" stroke="black" points="157.23,-109.6 157.23,-77.6" style=""/>
+<polyline fill="none" stroke="black" points="157.23,-109.6 161.23,-113.6" style=""/>
+<text text-anchor="middle" x="131" y="-91.4" font-family="Times,serif" font-size="14.00" style="">CPU #1</text>
+</g>
+<!-- BM1&#45;&gt;CPU1 -->
+<g id="edge5" class="edge" data-name="BM1-&gt;CPU1">
+
+<path fill="none" stroke="black" d="M130.49,-137.53C130.54,-133.41 130.59,-129.28 130.64,-125.32" style=""/>
+<polygon fill="black" stroke="black" points="126.99,-137.45 130.37,-147.5 133.99,-137.54 126.99,-137.45" style=""/>
+<polygon fill="black" stroke="black" points="134.14,-125.65 130.76,-115.6 127.14,-125.56 134.14,-125.65" style=""/>
+</g>
+<!-- BM2 -->
+<g id="node3" class="node" pointer-events="visible" data-name="BM2">
+
+<path fill="none" stroke="black" d="M244.21,-201.68C244.21,-204.56 229.78,-206.9 212,-206.9 194.22,-206.9 179.79,-204.56 179.79,-201.68 179.79,-201.68 179.79,-154.72 179.79,-154.72 179.79,-151.84 194.22,-149.5 212,-149.5 229.78,-149.5 244.21,-151.84 244.21,-154.72 244.21,-154.72 244.21,-201.68 244.21,-201.68" style=""/>
+<path fill="none" stroke="black" d="M244.21,-201.68C244.21,-198.8 229.78,-196.46 212,-196.46 194.22,-196.46 179.79,-198.8 179.79,-201.68" style=""/>
+<text text-anchor="middle" x="212" y="-182.4" font-family="Times,serif" font-size="14.00" style="">Memory</text>
+<text text-anchor="middle" x="212" y="-165.6" font-family="Times,serif" font-size="14.00" style="">Bank #2</text>
+</g>
+<!-- CPU2 -->
+<g id="node7" class="node" pointer-events="visible" data-name="CPU2">
+
+<polygon fill="none" stroke="black" points="241.23,-113.6 184.77,-113.6 180.77,-109.6 180.77,-77.6 237.23,-77.6 241.23,-81.6 241.23,-113.6" style=""/>
+<polyline fill="none" stroke="black" points="237.23,-109.6 180.77,-109.6" style=""/>
+<polyline fill="none" stroke="black" points="237.23,-109.6 237.23,-77.6" style=""/>
+<polyline fill="none" stroke="black" points="237.23,-109.6 241.23,-113.6" style=""/>
+<text text-anchor="middle" x="211" y="-91.4" font-family="Times,serif" font-size="14.00" style="">CPU #2</text>
+</g>
+<!-- BM2&#45;&gt;CPU2 -->
+<g id="edge6" class="edge" data-name="BM2-&gt;CPU2">
+
+<path fill="none" stroke="black" d="M211.51,-137.53C211.46,-133.41 211.41,-129.28 211.36,-125.32" style=""/>
+<polygon fill="black" stroke="black" points="208.01,-137.54 211.63,-147.5 215.01,-137.45 208.01,-137.54" style=""/>
+<polygon fill="black" stroke="black" points="214.86,-125.56 211.24,-115.6 207.86,-125.65 214.86,-125.56" style=""/>
+</g>
+<!-- BM3 -->
+<g id="node4" class="node" pointer-events="visible" data-name="BM3">
+
+<path fill="none" stroke="black" d="M326.21,-201.68C326.21,-204.56 311.78,-206.9 294,-206.9 276.22,-206.9 261.79,-204.56 261.79,-201.68 261.79,-201.68 261.79,-154.72 261.79,-154.72 261.79,-151.84 276.22,-149.5 294,-149.5 311.78,-149.5 326.21,-151.84 326.21,-154.72 326.21,-154.72 326.21,-201.68 326.21,-201.68" style=""/>
+<path fill="none" stroke="black" d="M326.21,-201.68C326.21,-198.8 311.78,-196.46 294,-196.46 276.22,-196.46 261.79,-198.8 261.79,-201.68" style=""/>
+<text text-anchor="middle" x="294" y="-182.4" font-family="Times,serif" font-size="14.00" style="">Memory</text>
+<text text-anchor="middle" x="294" y="-165.6" font-family="Times,serif" font-size="14.00" style="">Bank #3</text>
+</g>
+<!-- CPU3 -->
+<g id="node8" class="node" pointer-events="visible" data-name="CPU3">
+
+<polygon fill="none" stroke="black" points="320.23,-113.6 263.77,-113.6 259.77,-109.6 259.77,-77.6 316.23,-77.6 320.23,-81.6 320.23,-113.6" style=""/>
+<polyline fill="none" stroke="black" points="316.23,-109.6 259.77,-109.6" style=""/>
+<polyline fill="none" stroke="black" points="316.23,-109.6 316.23,-77.6" style=""/>
+<polyline fill="none" stroke="black" points="316.23,-109.6 320.23,-113.6" style=""/>
+<text text-anchor="middle" x="290" y="-91.4" font-family="Times,serif" font-size="14.00" style="">CPU #3</text>
+</g>
+<!-- BM3&#45;&gt;CPU3 -->
+<g id="edge7" class="edge" data-name="BM3-&gt;CPU3">
+
+<path fill="none" stroke="black" d="M292.03,-137.53C291.83,-133.41 291.62,-129.28 291.43,-125.32" style=""/>
+<polygon fill="black" stroke="black" points="288.53,-137.68 292.53,-147.5 295.53,-137.34 288.53,-137.68" style=""/>
+<polygon fill="black" stroke="black" points="294.93,-125.41 290.94,-115.6 287.94,-125.76 294.93,-125.41" style=""/>
+</g>
+<!-- CPU0&#45;&gt;CPU1 -->
+<g id="edge1" class="edge" data-name="CPU0-&gt;CPU1">
+
+<path fill="none" stroke="black" d="M82.55,-95.6C84.68,-95.6 86.81,-95.6 88.94,-95.6" style=""/>
+<polygon fill="black" stroke="black" points="88.83,-99.1 98.83,-95.6 88.83,-92.1 88.83,-99.1" style=""/>
+</g>
+<!-- CPU1&#45;&gt;CPU2 -->
+<g id="edge2" class="edge" data-name="CPU1-&gt;CPU2">
+
+<path fill="none" stroke="black" d="M161.62,-95.6C164.18,-95.6 166.74,-95.6 169.3,-95.6" style=""/>
+<polygon fill="black" stroke="black" points="169.01,-99.1 179.01,-95.6 169.01,-92.1 169.01,-99.1" style=""/>
+</g>
+<!-- CPU2&#45;&gt;CPU3 -->
+<g id="edge3" class="edge" data-name="CPU2-&gt;CPU3">
+
+<path fill="none" stroke="black" d="M241.55,-95.6C243.68,-95.6 245.81,-95.6 247.94,-95.6" style=""/>
+<polygon fill="black" stroke="black" points="247.83,-99.1 257.83,-95.6 247.83,-92.1 247.83,-99.1" style=""/>
+</g>
+<!-- LOOP -->
+<g id="node9" class="node" pointer-events="visible" data-name="LOOP">
+
+<text text-anchor="middle" x="171" y="-25" font-family="Times,serif" font-size="14.00" style="">Threads move through</text>
+<text text-anchor="middle" x="171" y="-8.2" font-family="Times,serif" font-size="14.00" style="">the ring of CPUs</text>
+</g>
+<!-- CPU3&#45;&gt;LOOP -->
+<g id="edge8" class="edge" data-name="CPU3-&gt;LOOP">
+
+<path fill="none" stroke="black" d="M308,-77.6C331.92,-53.68 294.95,-39.6 253.42,-31.57" style=""/>
+<polygon fill="black" stroke="black" points="254.17,-28.15 243.71,-29.83 252.93,-35.04 254.17,-28.15" style=""/>
+</g>
+<!-- LOOP&#45;&gt;CPU0 -->
+<g id="edge9" class="edge" data-name="LOOP-&gt;CPU0">
+
+<path fill="none" stroke="black" d="M99.78,-29.56C59.85,-36.21 19.48,-48.05 27.47,-68.37" style=""/>
+<polygon fill="black" stroke="black" points="24.5,-70.22 33.13,-76.36 30.21,-66.18 24.5,-70.22" style=""/>
+</g>
+</g>
+</svg>
