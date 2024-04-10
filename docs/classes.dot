@@ -1,0 +1,114 @@
+digraph "classes" {
+    rankdir = RL;
+    charset = "utf-8";
+    subgraph cluster_relm {
+        "relm.Define" [color = "black";fontcolor = "black";label = <Define>;shape = "record";style = "solid";];
+        "relm.Thread" [color = "black";fontcolor = "black";label = <Thread>;shape = "record";style = "solid";];
+        "relm.Loader" [color = "black";fontcolor = "black";label = <Loader>;shape = "record";style = "solid";];
+        "relm.ReLM" [color = "black";fontcolor = "black";label = <ReLM>;shape = "record";style = "solid";];
+        "relm.Mnemonic" [color = "black";fontcolor = "black";label = <Mnemonic>;shape = "record";style = "solid";];
+    }
+    "relm.Statement" [color = "black";fontcolor = "black";label = <Statement>;shape = "record";style = "solid";];
+    "relm.ErrorStatement" [color = "black";fontcolor = "black";label = <ErrorStatement>;shape = "record";style = "solid";];
+    "relm.AccExpr" [color = "black";fontcolor = "black";label = <AccExpr>;shape = "record";style = "solid";];
+    "relm.RegBType" [color = "black";fontcolor = "black";label = <RegBType>;shape = "record";style = "solid";];
+    "relm.Bool" [color = "black";fontcolor = "black";label = <Bool>;shape = "record";style = "solid";];
+    "relm.ExprB" [color = "black";fontcolor = "black";label = <ExprB>;shape = "record";style = "solid";];
+    "relm.BinaryOp" [color = "black";fontcolor = "black";label = <BinaryOp>;shape = "record";style = "solid";];
+    "relm.Expr" [color = "black";fontcolor = "black";label = <Expr>;shape = "record";style = "solid";];
+    "relm.Int" [color = "black";fontcolor = "black";label = <Int>;shape = "record";style = "solid";];
+    "relm.FIFO" [color = "black";fontcolor = "black";label = <FIFO>;shape = "record";style = "solid";];
+    "relm_font.Console" [color = "black";fontcolor = "black";label = <Console>;shape = "record";style = "solid";];
+    "relm.Table" [color = "black";fontcolor = "black";label = <Table>;shape = "record";style = "solid";];
+    "relm.Block" [color = "black";fontcolor = "black";label = <Block>;shape = "record";style = "solid";];
+    "relm_de0cv.ReLMLoader" [color = "black";fontcolor = "black";label = <ReLMLoader>;shape = "record";style = "solid";];
+    subgraph cluster_array {
+        "relm.Array" [color = "black";fontcolor = "black";label = <Array>;shape = "record";style = "solid";];
+        "relm.ArrayElement" [color = "black";fontcolor = "black";label = <ArrayElement>;shape = "record";style = "solid";];
+        "relm.ArrayOffset" [color = "black";fontcolor = "black";label = <ArrayOffset>;shape = "record";style = "solid";];
+    }
+    subgraph cluster_code {
+        "relm.Code" [color = "black";fontcolor = "black";label = <Code>;shape = "record";style = "solid";];
+        "relm.Label" [color = "black";fontcolor = "black";label = <Label>;shape = "record";style = "solid";];
+        "relm.Align" [color = "black";fontcolor = "black";label = <Align>;shape = "record";style = "solid";];
+    }
+    subgraph cluster_if {
+        "relm.If" [color = "black";fontcolor = "black";label = <If>;shape = "record";style = "solid";];
+        "relm.IfThen" [color = "black";fontcolor = "black";label = <IfThen>;shape = "record";style = "solid";];
+        "relm.IfThenElse" [color = "black";fontcolor = "black";label = <IfThenElse>;shape = "record";style = "solid";];
+    }
+    subgraph cluster_sram {
+        "relm.SRAM" [color = "black";fontcolor = "black";label = <SRAM>;shape = "record";style = "solid";];
+        "relm.SRAMElement" [color = "black";fontcolor = "black";label = <SRAMElement>;shape = "record";style = "solid";];
+        "relm.SRAMOffset" [color = "black";fontcolor = "black";label = <SRAMOffset>;shape = "record";style = "solid";];
+    }
+    subgraph cluster_func {
+        "relm.Function" [color = "black";fontcolor = "black";label = <Function>;shape = "record";style = "solid";];
+        "relm.IntFunction" [color = "black";fontcolor = "black";label = <IntFunction>;shape = "record";style = "solid";];
+        "relm.VoidFunction" [color = "black";fontcolor = "black";label = <VoidFunction>;shape = "record";style = "solid";];
+    }
+    subgraph cluster_loop {
+        "relm.Do" [color = "black";fontcolor = "black";label = <Do>;shape = "record";style = "solid";];
+        "relm.DoLoop" [color = "black";fontcolor = "black";label = <DoLoop>;shape = "record";style = "solid";];
+        "relm.DoWhile" [color = "black";fontcolor = "black";label = <DoWhile>;shape = "record";style = "solid";];
+        "relm.Loop" [color = "black";fontcolor = "black";label = <Loop>;shape = "record";style = "solid";];
+        "relm.While" [color = "black";fontcolor = "black";label = <While>;shape = "record";style = "solid";];
+    }
+    "relm.AccExpr" -> "relm.Expr" [arrowhead = "empty"; arrowtail = "none";];
+    "relm.Align" -> "relm.Label" [arrowhead = "empty"; arrowtail = "none";];
+    "relm.Array" -> "relm.Statement" [arrowhead = "empty"; arrowtail = "none";];
+    "relm.ArrayElement" -> "relm.ExprB" [arrowhead = "empty"; arrowtail = "none";];
+    "relm.ArrayOffset" -> "relm.Expr" [arrowhead = "empty"; arrowtail = "none";];
+    "relm.BinaryOp" -> "relm.Statement" [arrowhead = "empty"; arrowtail = "none";];
+    "relm.Block" -> "relm.Statement" [arrowhead = "empty"; arrowtail = "none";];
+    "relm.Bool" -> "relm.ErrorStatement" [weight = 10000; arrowhead = "empty"; arrowtail = "none";];
+    "relm.Code" -> "relm.Statement" [arrowhead = "empty"; arrowtail = "none";];
+    "relm.Do" -> "relm.Loop" [arrowhead = "empty"; arrowtail = "none";];
+    "relm.DoLoop" -> "relm.Statement" [arrowhead = "empty"; arrowtail = "none";];
+    "relm.DoWhile" -> "relm.Statement" [arrowhead = "empty"; arrowtail = "none";];
+    "relm.ErrorStatement" -> "relm.Statement" [arrowhead = "empty"; arrowtail = "none";];
+    "relm.Expr" -> "relm.ExprB" [arrowhead = "empty"; arrowtail = "none";];
+    "relm.ExprB" -> "relm.BinaryOp" [arrowhead = "empty"; arrowtail = "none";];
+    "relm.Function" -> "relm.ErrorStatement" [arrowhead = "empty"; arrowtail = "none";];
+    "relm.If" -> "relm.ErrorStatement" [arrowhead = "empty"; arrowtail = "none";];
+    "relm.IfThen" -> "relm.Statement" [arrowhead = "empty"; arrowtail = "none";];
+    "relm.IfThenElse" -> "relm.Statement" [arrowhead = "empty"; arrowtail = "none";];
+    "relm.Int" -> "relm.BinaryOp" [arrowhead = "empty"; arrowtail = "none";];
+    "relm.IntFunction" -> "relm.Statement" [arrowhead = "empty"; arrowtail = "none";];
+    "relm.Label" -> "relm.Code" [arrowhead = "empty"; arrowtail = "none";];
+    "relm.Loop" -> "relm.ErrorStatement" [arrowhead = "empty"; arrowtail = "none";];
+    "relm.RegBType" -> "relm.BinaryOp" [arrowhead = "empty"; arrowtail = "none";];
+    "relm.SRAMElement" -> "relm.Expr" [arrowhead = "empty"; arrowtail = "none";];
+    "relm.SRAMOffset" -> "relm.Expr" [arrowhead = "empty"; arrowtail = "none";];
+    "relm.Table" -> "relm.Statement" [arrowhead = "empty"; arrowtail = "none";];
+    "relm.VoidFunction" -> "relm.IntFunction" [arrowhead = "empty"; arrowtail = "none";];
+    "relm.While" -> "relm.Loop" [arrowhead = "empty"; arrowtail = "none";];
+    "relm_de0cv.ReLMLoader" -> "relm.ReLM" [arrowhead = "empty"; arrowtail = "none";];
+    "relm.Block" -> "relm.Function" [arrowhead = "diamond"; arrowtail = "none"; fontcolor = "green"; label = "body"; style = "solid";];
+    "relm.Expr" -> "relm.Int" [arrowhead = "diamond"; arrowtail = "none"; fontcolor = "green"; label = "expr"; style = "solid";];
+    "relm.Label" -> "relm.Function" [arrowhead = "diamond"; arrowtail = "none"; fontcolor = "green"; label = "entry"; style = "solid";];
+    "relm.Label" -> "relm.Function" [arrowhead = "diamond"; arrowtail = "none"; fontcolor = "green"; label = "return_"; style = "solid";];
+    "relm.Label" -> "relm.Function" [arrowhead = "diamond"; arrowtail = "none"; fontcolor = "green"; label = "align"; style = "solid";];
+    "relm.Label" -> "relm.Loop" [arrowhead = "diamond"; arrowtail = "none"; fontcolor = "green"; label = "continue_"; style = "solid";];
+    "relm.Label" -> "relm.Loop" [arrowhead = "diamond"; arrowtail = "none"; fontcolor = "green"; label = "align"; style = "solid";];
+    "relm.Label" -> "relm.Loop" [arrowhead = "diamond"; arrowtail = "none"; fontcolor = "green"; label = "break_"; style = "solid";];
+    "relm.Label" -> "relm.Table" [arrowhead = "diamond"; arrowtail = "none"; fontcolor = "green"; label = "base"; style = "solid";];
+    "relm.Label" -> "relm.While" [arrowhead = "diamond"; arrowtail = "none"; fontcolor = "green"; label = "align"; style = "solid";];
+    "relm.Array" -> "relm.ArrayElement" [arrowhead = "odiamond"; arrowtail = "none"; fontcolor = "green"; label = "array"; style = "solid";];
+    "relm.Array" -> "relm.ArrayOffset" [arrowhead = "odiamond"; arrowtail = "none"; fontcolor = "green"; label = "array"; style = "solid";];
+    "relm.Array" -> "relm_font.Console" [arrowhead = "odiamond"; arrowtail = "none"; fontcolor = "green"; label = "vram"; style = "solid";];
+    "relm.BinaryOp" -> "relm.SRAMElement" [arrowhead = "odiamond"; arrowtail = "none"; fontcolor = "green"; label = "index"; style = "solid";];
+    "relm.Block" -> "relm.DoLoop" [arrowhead = "odiamond"; arrowtail = "none"; fontcolor = "green"; label = "block"; style = "solid";];
+    "relm.Block" -> "relm.DoWhile" [arrowhead = "odiamond"; arrowtail = "none"; fontcolor = "green"; label = "block"; style = "solid";];
+    "relm.ExprB" -> "relm.Bool" [arrowhead = "odiamond"; arrowtail = "none"; fontcolor = "green"; label = "expr"; style = "solid";];
+    "relm.FIFO" -> "relm_font.Console" [arrowhead = "odiamond"; arrowtail = "none"; fontcolor = "green"; label = "fifo_font"; style = "solid";];
+    "relm.FIFO" -> "relm_font.Console" [arrowhead = "odiamond"; arrowtail = "none"; fontcolor = "green"; label = "fifo_print"; style = "solid";];
+    "relm.Function" -> "relm.IntFunction" [arrowhead = "odiamond"; arrowtail = "none"; fontcolor = "green"; label = "func"; style = "solid";];
+    "relm.If" -> "relm.IfThen" [arrowhead = "odiamond"; arrowtail = "none"; fontcolor = "green"; label = "if_"; style = "solid";];
+    "relm.IfThen" -> "relm.IfThen" [arrowhead = "odiamond"; arrowtail = "none"; fontcolor = "green"; label = "Else"; style = "solid";];
+    "relm.Loop" -> "relm.DoLoop" [arrowhead = "odiamond"; arrowtail = "none"; fontcolor = "green"; label = "loop"; style = "solid";];
+    "relm.Loop" -> "relm.DoWhile" [arrowhead = "odiamond"; arrowtail = "none"; fontcolor = "green"; label = "loop"; style = "solid";];
+    "relm.SRAM" -> "relm.SRAMElement" [arrowhead = "odiamond"; arrowtail = "none"; fontcolor = "green"; label = "sram"; style = "solid";];
+    "relm.SRAM" -> "relm.SRAMOffset" [arrowhead = "odiamond"; arrowtail = "none"; fontcolor = "green"; label = "sram"; style = "solid";];
+    "relm.Table" -> "relm_font.Console" [arrowhead = "odiamond"; arrowtail = "none"; fontcolor = "green"; label = "font"; style = "solid";];
+}

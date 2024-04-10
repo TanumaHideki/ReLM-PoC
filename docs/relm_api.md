@@ -1,114 +1,121 @@
 # Python API Reference
 
+## Class Diagram
+
+![](classes.svg)
+
 ## ReLMLoader
 
-__with ReLMLoader( *release, dump=True, send=False, loader=False ):__
-
-* __*release__
-<BR>Folder path to create the memory image files (code??.txt, data??.txt).
-<BR>Specify __\_\_file\_\___ to create it in the same folder as the Python code.
-* __dump=Tree__
-<BR>False to suppress dump output.
-* __send=False__
-<BR>True to send program code to the FPGA via JTAG.
-* __loader=False__
-<BR>True to include the program loader in the memory image.
+__with ReLMLoader( *release, dump=True, loader=False, release_loader=False ):__
+* __*release__  
+Folder path to create the memory image files (code??.txt, data??.txt).  
+\_\_file\_\_: Create it in the same folder as the Python code.
+* __dump=Tree__  
+False: Suppress dump output.
+* __loader=False__  
+SVF file path: Configure FPGA by SVF file and send program code to the FPGA via JTAG.  
+True: Send program code to the FPGA via JTAG.  
+False: Create the memory image files.
+* __release_loader=False__  
+True: Include the program loader in the memory image.
 
 ## Block
 
-* __definition block__
-<BR>Define[ body ]
-* __thread block__
-<BR>Thread[ body ]
-* __loader block__
-<BR>Loader[ body ]
+* __definition block__  
+Define[ body ]
+* __thread block__  
+Thread[ body ]
+* __loader block__  
+Loader[ body ]
+* __block object__  
+block := Block[ body ]
 
 ## Variable
 
-* __signed integer definition__
-<BR>var := Int()
-<BR>var := Int( expr )
-* __unsigned integer definition__
-<BR>var := UInt()
-<BR>var := UInt( expr )
-* __assignment__
-<BR>var( expr )
+* __signed integer definition__  
+var := Int()  
+var := Int( expr )
+* __unsigned integer definition__  
+var := UInt()  
+var := UInt( expr )
+* __assignment__  
+var( expr )
 
 ## Conditional
 
-* __if-then__
-<BR>If( cond )[ body ]
-* __if-then-else__
-<BR>If( cond )[ body ].Else[ body ]
+* __if-then__  
+If( cond )[ body ]
+* __if-then-else__  
+If( cond )[ body ].Else[ body ]
 
 ## Loop
 
-* __loop__
-<BR>Do()[ body ]
-* __do-while__
-<BR>Do()[ body ].While( cond )
-* __while__
-<BR>While( cond )[ body ]
-* __continue__
-<BR>Continue()
-* __break__
-<BR>Break()
+* __loop__  
+Do()[ body ]
+* __do-while__  
+Do()[ body ].While( cond )
+* __while__  
+While( cond )[ body ]
+* __continue__  
+Continue()
+* __break__  
+Break()
 
 ## Function
 
-* __function returns value__
-<BR>func := Function(p1 := Int(), p2 := Int(), ...)[ body ].Return( expr )
-* __void function__
-<BR>func := Function(p1 := Int(), p2 := Int(), ...)[ body ]
-* __return value__
-<BR>Return( expr )
-* __return__
-<BR>Return()
-* __function call__
-<BR>func(p1, p2, ...) -> expr
+* __function returns value__  
+func := Function(p1 := Int(), p2 := Int(), ...)[ body ].Return( expr )
+* __void function__  
+func := Function(p1 := Int(), p2 := Int(), ...)[ body ]
+* __return value__  
+Return( expr )
+* __return__  
+Return()
+* __function call__  
+func(p1, p2, ...) -> expr
 
 ## Jump Table
 
-* __definition__
-<BR>table := Table( size )
-* __register case__
-<BR>table.Case( index, ... )
-* __register default__
-<BR>table.Default()
-* __return from case__
-<BR>table.Return()
-* __switch to case__
-<BR>table.Switch( expr, acc ) -> expr
+* __definition__  
+table := Table( size )
+* __register case__  
+table.Case( index, ... )
+* __register default__  
+table.Default()
+* __return from case__  
+table.Return()
+* __switch to case__  
+table.Switch( expr, acc ) -> expr
 
 ## FIFO
 
-* __allocation__
-<BR>fifo := FIFO.Alloc( size=0 )
-* __empty check__
-<BR>fifo.IsEmpty() -> cond
-* __pop__
-<BR>fifo.Pop() -> expr
-* __push__
-<BR>fifo.Push( expr, ... )
-* __lock (no empty check after this)__
-<BR>fifo.Lock()
+* __allocation__  
+fifo := FIFO.Alloc( size=0 )
+* __empty check__  
+fifo.IsEmpty() -> cond
+* __pop__  
+fifo.Pop() -> expr
+* __push__  
+fifo.Push( expr, ... )
+* __lock (no empty check after this)__  
+fifo.Lock()
 
 ### Array
-* __definition__
-<BR>array := Array( *data, op="PUSH" )
-* __read__
-<BR>array[ expr ] -> expr
-* __write__
-<BR>array\[ expr ]( expr )
+* __definition__  
+array := Array( *data, op="PUSH" )
+* __read__  
+array[ expr ] -> expr
+* __write__  
+array\[ expr ]( expr )
 
 ## SRAM
 
-* __allocation__
-<BR>sub := sram.Alloc( size )
-* __read__
-<BR>sram[ expr ] -> expr
-* __write__
-<BR>sram\[ expr ]( expr, ... )
+* __allocation__  
+sub := sram.Alloc( size )
+* __read__  
+sram[ expr ] -> expr
+* __write__  
+sram\[ expr ]( expr, ... )
 
 ## Array vs SRAM
 
@@ -130,15 +137,15 @@ SRAM
 
 ## Intrinsic (Register Access)
 
-* __get accumulator__
-<BR>Acc
-<BR>AccU
-* __set accumulator__
-<BR>Acc( expr )
-<BR>AccU( expr )
-* __get register B__
-<BR>RegB
-<BR>RegBU
-* __set register B__
-<BR>RegB( expr, acc=0 )
-<BR>RegBU( expr, acc=0 )
+* __get accumulator__  
+Acc  
+AccU
+* __set accumulator__  
+Acc( expr )  
+AccU( expr )
+* __get register B__  
+RegB  
+RegBU
+* __set register B__  
+RegB( expr, acc=0 )  
+RegBU( expr, acc=0 )

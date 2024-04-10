@@ -54,7 +54,7 @@ PS/2キーボード接続が望ましいが、本体ボタンでも代用可能�
 * ReLMの紹介 (English) [(Japanese)](relm_j.md)
 * ReLM命令セット (English) [(Japanese)](relm_isa_j.md)
 * ReLM開発環境 (English) [(Japanese)](relm_sdk_j.md)
-* ReLMアプリケーション開発 (English) (Japanese)
+* ReLMアプリケーション開発 (English) [(Japanese)](relm_app_j.md)
 * ReLMカスタマイズ (English) (Japanese)
 * [Python API Reference (English)](relm_api.md)
 
