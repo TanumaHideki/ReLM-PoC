@@ -56,7 +56,7 @@ The FPGA board has switches to change Human / CPU. ("SW0" corresponds to "You")
 * ReLM Introduction (English) [(Japanese)](relm_j.md)
 * ReLM Instruction Set (English) [(Japanese)](relm_isa_j.md)
 * ReLM Development Environment (English) [(Japanese)](relm_sdk_j.md)
-* ReLM Appplication Development (English) [(Japanese)](relm_app_j.md)
+* ReLM Application Development (English) [(Japanese)](relm_app_j.md)
 * ReLM Customizing (English) (Japanese)
 * [Python API Reference (English)](relm_api.md)
 
