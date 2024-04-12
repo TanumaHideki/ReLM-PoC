@@ -17,7 +17,7 @@ These devices have the OS and applications placed in their shared memories consi
 There's no need to pay attention to cache memory in software operation, letting users program so conveniently as if the programs were running on a huge lump of shared memory.
 
 The cost of this convenience, however, weighs heavily on hardware.  
-Cache memories occupy the largest part of processor circuits and increases electricity consumption accordingly, while giving users no benefit of direct use.  
+Cache memories occupy the largest part of processor circuits and increase electricity consumption accordingly, while giving users no benefit of direct use.  
 Specially in such a case that a couple of cache memories hold overlapping copies of part of the shared memory, it requires a complicated processing mechanism to sustain "[memory coherence](https://en.wikipedia.org/wiki/Memory_coherence)."  
 After all, this technique basically assumes an external large shared memory, being dedicated to relatively large-scale systems.
 
