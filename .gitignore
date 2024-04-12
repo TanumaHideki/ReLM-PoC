@@ -1,0 +1,10 @@
+# Python
+__pycache__/
+
+# Quartus Prime
+db/
+incremental_db/
+output_files/
+simulation/
+*.qws
+*.txt
