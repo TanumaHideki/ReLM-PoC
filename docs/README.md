@@ -53,7 +53,7 @@ The FPGA board has switches to change Human / CPU. ("SW0" corresponds to "You")
 
 ## For Further Reading...
 
-* ReLM Introduction (English) [(Japanese)](relm_j.md)
+* [ReLM Introduction (English)](relm_e.md) [(Japanese)](relm_j.md)
 * ReLM Instruction Set (English) [(Japanese)](relm_isa_j.md)
 * ReLM Development Environment (English) [(Japanese)](relm_sdk_j.md)
 * ReLM Application Development (English) [(Japanese)](relm_app_j.md)
