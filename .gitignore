@@ -8,3 +8,6 @@ output_files/
 simulation/
 *.qws
 *.txt
+
+# VS Code
+.vscode/
