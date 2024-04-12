@@ -7,7 +7,7 @@ ReLM is the soft-core multiprocessor technology based on the unique memory archi
 The most annoying task in developing on a FPGA board is logic synthesis, however, is not required for changing applications (software) with ReLM architecture.  
 This advantage of ReLM supports users in easily designing circuits on a FPGA board.  
 In the developing process, ReLM also enables debugging by loading applications from a host PC to the fixed circuit on the FPGA board, and finally realizes a stand-alone microcontroller, once the loaded application is fixed.  
-Furthermore, the ReLM with optimized circuit can be applied to ASIC development.
+Furthermore, ReLM with optimized circuit can be applied to ASIC development.
 
 ## Ordinary technique: Arbitration by cache memory
 
