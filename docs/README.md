@@ -6,6 +6,18 @@ ReLM is the soft-core multiprocessor technology based on the unique memory archi
 The most annoying task in developing on a FPGA board is logic synthesis, however, is not required for changing applications (software) with ReLM architecture.  
 This advantage of ReLM supports users in easily designing circuits on a FPGA board. 
 
+## For Further Reading...
+
+* [ReLM Introduction (English)](relm_e.md) [(Japanese)](relm_j.md)
+* ReLM Instruction Set (English) [(Japanese)](relm_isa_j.md)
+* ReLM Development Environment (English) [(Japanese)](relm_sdk_j.md)
+* ReLM Application Development (English) [(Japanese)](relm_app_j.md)
+* ReLM Customizing (English) (Japanese)
+* [Python API Reference (English)](relm_api.md)
+
+Very Old Article...
+* [relm.info - Register-less Multiprocessor Information (English)](http://relm.info/en/) [(Japanese)](http://relm.info/)
+
 ## Software Requirements
 
 * Windows (OS for running the following software)
@@ -46,19 +58,4 @@ A PS/2 keyboard would give better operability, but can be substituted by the but
 
 The FPGA board has switches to change Human / CPU. ("SW0" corresponds to "You")
 
-<details open><summary>Image of performing the game</summary>
-
-![](bubble_fpga.jpg)
-</details>
-
-## For Further Reading...
-
-* [ReLM Introduction (English)](relm_e.md) [(Japanese)](relm_j.md)
-* ReLM Instruction Set (English) [(Japanese)](relm_isa_j.md)
-* ReLM Development Environment (English) [(Japanese)](relm_sdk_j.md)
-* ReLM Application Development (English) [(Japanese)](relm_app_j.md)
-* ReLM Customizing (English) (Japanese)
-* [Python API Reference (English)](relm_api.md)
-
-Very Old Article...
-* [relm.info - Register-less Multiprocessor Information (English)](http://relm.info/en/) [(Japanese)](http://relm.info/)
+![Image of performing the game](bubble_fpga.jpg)
