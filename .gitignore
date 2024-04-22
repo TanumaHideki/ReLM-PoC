@@ -3,6 +3,7 @@ __pycache__/
 
 # Quartus Prime
 db/
+devkits/
 incremental_db/
 output_files/
 simulation/
