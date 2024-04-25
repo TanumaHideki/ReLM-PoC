@@ -251,11 +251,11 @@ In case of jumping to the bank next to JUMP instruction, the latency is 1 with n
 
 This cost is controllable to some extent at compile time, resulting in optimization to reduce the penalty as much as possible at code placement.
 
-## 比較命令
+## Comparison Instruction
 
-より複雑な条件分岐は、比較命令の結果を利用することになります。
+To construct more complex branches, combine the results of comparison instructions.
 
-この比較命令はLLVM IRの[icmp](https://llvm.org/docs/LangRef.html#icmp-instruction)に準じていますが、等号付きの比較結果（greater or equal等）についてはコンパイラ側での論理反転を想定していますので、命令セットからは削除しています。
+While conforming to LLVM IR's [icmp](https://llvm.org/docs/LangRef.html#icmp-instruction), the instruction sets exclude conditions with the equal sign (eg. greater __or equal__), assuming logic inversion at the compile time.
 
 | OpCode | Action | Comment |
 | --- | --- | --- |
@@ -264,9 +264,9 @@ This cost is controllable to some extent at compile time, resulting in optimizat
 | IGT | Acc := (Acc > XB) ? 1 : 0 | signed greater than |
 | ILT | Acc := (Acc < XB) ? 1 : 0 | signed less than |
 
-## I/Oアクセス
+## I/O Access
 
-I/Oアクセス関連の命令は以下になります。
+Instructions related to I/O access are as follows.
 
 | OpCode | Action |
 | --- | --- |
@@ -275,60 +275,59 @@ I/Oアクセス関連の命令は以下になります。
 | POP/IO | port(XB) <= Acc |
 | | if (retry) PC := PC else ++PC, Acc := result |
 
-PUSH/OUTはポートに値を出力するだけで結果を受け取らない形式で、ポート番号はアキュムレータ（Acc）で指定して、出力値はオペランド（XB）で指定します。
+PUSH/OUT only outputs the value to the port but not receiving the result.  
+The port number is specified by Acc, and the output value is specified by the operand (XB).
 
-この命令は、同じポートに連続してデータを出力することを想定していますが、デバイスからは値を返せない代わりにリトライを要請することが可能です。
+This instruction is on the assumption of continuous data output to the same port, enabling to receive retry request instead of accepting a return value from the device related to the port.
 
-デバイスが組み込みのFIFOの場合、バッファがフルになるとリトライを実行します。
+If the device is a built-in FIFO, it performs retries while the buffer is full.
 
-POP/IOは値の出力と同時に結果を受け取る形式で、ポート番号はオペランド（XB）で指定して、入出力値はともにアキュムレータ（Acc）になります。
+POP/IO receives the result along with outputting the value.  
+The port number is specified by Operand (XB), while assigning both input and output values to Acc.
 
-こちらもデバイスからの要請によるリトライが可能で、リトライ発生時はアキュムレータ（Acc）を更新しないので、同じ出力値でのアクセスを繰り返すことになります。
+This instruction also allows a retry upon a request from the device, enabling to repeat access with the same output value, since retry brings no update to Acc.
 
-デバイスが組み込みのFIFOの場合、出力値の最下位ビットは読み出し要求フラグになります。
+If the device is a built-in FIFO, the least significant bit (LSB) of the output value serves as the readout request flag.  
+If the readout request is 0, the return value, depending on the buffer status, will be 1 if the buffer is not empty, and will be 0 if it is empty.  
+If the readout request is 1, the first value will be read if the buffer is not empty, but if the buffer is empty, it will cause repeating retries until the buffer is not empty.  
+The MSB of the output value is a special command, once set to 1, it fixes readout request to 1 from the setting onwards regardless of the output value.
 
-読み出し要求が０の場合、戻り値はバッファの状況で、バッファが空でなければ１、空の時は０を返します。
+If different threads access the same port at the same time, the logical OR of all output values is sent to the device.
 
-読み出し要求が１の場合、バッファが空でなければ先頭値が読み出されますが、バッファが空の場合はリトライが発生し、バッファが空でなくなるまでリトライを繰り返します。
+For example, if thread A executes "PUSH 1" to a FIFO port, and at the same time thread B executes "PUSH 2" to the same FIFO port, the logical OR value (1 | 2) = 3 will be input.
 
-出力値の最上位ビットは特殊な指令で、これを１とすると以後は出力値に関わらず読み出し要求を１にロックします。
+However, even though assigned to the same port number, the PUSH/OUT port and POP/IO port are treated as completely different ports, causing no such interference.
 
-異なるスレッドで同時に同じポートへアクセスがあった場合、デバイスへは全ての出力値の論理和が送られます。
+Particularly, executing PUSH and POP instruction for the same FIFO by  different threads will cause no trouble, as is a very effective inter-thread communication tool.
 
-例えばスレッドAであるFIFOポートにPUSH 1 が実行され、同時にスレッドBで同じFIFOポートに対してPUSH 2 が実行されたとすると、そのFIFOには論理和で 1 | 2 = 3 が入力されることになります。
+## Exclusion Control
 
-ただし、PUSH/OUTのポートとPOP/IOのポートはポート番号が同じでも全く別のポートとして扱われるので、このような混信は起きません。
+Lazy writeback to an operand due to PUT instruction is executed along with the readout of the operand at instruction fetch, so writes and reads to the same address often conflict.
 
-特に、同じFIFOのPUSHとPOPは別々のスレッドで実行しても全く問題が起きないので、スレッド間通信の手段として非常に有効です。
+This case recognizes the written-in value as the latest and so employs it as the operand, while discarding the value read out from the memory.
 
-## 排他制御
+Retrieving a value from the memory before overwriting can easily realize [atomic swap](https://en.wikipedia.org/wiki/Linearizability#Primitive_atomic_instructions).
 
-PUT命令によるオペランドの遅延書き込みは、実際には命令フェッチ時のオペランド読み出しと同時に実行されますので、しばしば同じアドレスへの書き込みと読み出しが衝突します。
-
-この場合、書き込み値の方が最新だと考えられますので、こちらをオペランドとして採用した上で、メモリからの読み出し値は捨てられることになります。
-
-そこで、メモリからの読み出し値として書き込み前の値が取り出せれば、容易に[アトミックスワップ](https://en.wikipedia.org/wiki/Linearizability#Primitive_atomic_instructions)が実現できます。
-
-SWAP命令は、このメモリ出力の旧値を意図的に取り出す命令ですが、実際にはPUT命令と組み合わせて以下の様にアトミックスワップを構築することになります。
+SWAP instruction is to intentionally retrieve this old value output from the memory, but atomic swap is achievable by combination of PUT and SWAP instructions as shown below.
 
 | Address | Code | Action |
 | --- | --- | --- |
 | | PUT Atomic: | atomic_X := Acc |
 | Atomic: | SWAP atomic_X | Acc := old_X |
 
-このアトミックスワップをベースに、[クリティカルセクション](https://ja.wikipedia.org/wiki/%E3%82%AF%E3%83%AA%E3%83%86%E3%82%A3%E3%82%AB%E3%83%AB%E3%82%BB%E3%82%AF%E3%82%B7%E3%83%A7%E3%83%B3)や[ミューテックス](https://ja.wikipedia.org/wiki/%E3%83%9F%E3%83%A5%E3%83%BC%E3%83%86%E3%83%83%E3%82%AF%E3%82%B9)、スレッドプール等を構築することが可能です。
+The atomic swap can construct various building blocks such as [critical sections](https://en.wikipedia.org/wiki/Critical_section), [mutexes](https://en.wikipedia.org/wiki/Lock_(computer_science)) and thread pools.
 
-## カスタム拡張命令
+## Custom Extension Instructions
 
-基本命令では整数除算、浮動小数点等には未対応なので、カスタム拡張命令としてこれらの機能を追加することが可能です。
+The basic instructions are yet to support integer division, floating point, etc., enabling to extend these functions as custom instructions.
 
-以下に整数除算用サポート命令の拡張コード例を示します。
+HDL code for extension shown below is an example of instructions implemented to support integer division.
 
-Verilog HDLのモジュールをリンクするだけで容易に命令が追加できますが、乗算器を基本命令と共有できるので、コンパクトな回路実装が可能です。
+Just linking a Verilog HDL module helps add instructions so easily and enables compact circuit implementation by sharing multiplier circuit with the basic instructions.
 
-また、カスタム命令専用のレジスタ（C）が利用可能なので、内部状態を保持しながら複数ステージにわたるパイプライン処理を実装することも可能です。
+Additionally, since Custom register (C) dedicated to the custom instructions is available as a payload, it is also possible to implement pipeline processing that spans multiple stages while retaining the internal state.
 
-以下の例では、１ワード分のカスタムレジスタ（C）を割り当てています。
+In the example below, one-word-length Custom register (C) is allocated.
 
 ~~~ v
 module relm_custom(clk, op_in, a_in, cb_in, x_in, xb_in, opb_in, mul_ax_in, mul_a_out, mul_x_out, a_out, cb_out, retry_out);
