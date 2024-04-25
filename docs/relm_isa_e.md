@@ -35,9 +35,6 @@ In this way, replacing all such bothersome processes as [register selection and 
 
 In addition, operands of code memory practically play the act of [register file](https://en.wikipedia.org/wiki/Register_file), helping a drastic reduction in the number of registers within a CPU.
 
-
-また、オペランドが実質的に[レジスタファイル](https://ja.wikipedia.org/wiki/%E3%83%AC%E3%82%B8%E3%82%B9%E3%82%BF%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB)代りとなるため、CPU内部のレジスタ数を大幅に削減することが可能です。
-
 ## Register Structure
 
 The register structure of ReLM consists of the following elements:
