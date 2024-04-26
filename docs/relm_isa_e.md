@@ -182,7 +182,7 @@ To implement a shift operation using a multiplier, firstly, the shift amount is 
 
 In the case of a right shift, the procedure is to reverse the bit order and multiply the bits, and then to reverse the bit order again.
 
-Placing "MUL 8" is enough for left shift (Acc << 3), as an example, but right shift (Acc >> 3) requires either "SHR 8" or "SAR 8", respect to the integer type is unsigned or signed.
+Placing "MUL 8" is enough for left shift (Acc << 3), as an example, but right shift (Acc >> 3) requires either "SHR 8" or "SAR 8" according to the integer type of unsigned or signed.
 
 SHIFT instruction enables converting the shift amount to a power of 2.  
 But PUTS and BSLOAD instructions also enables transferring the result to the operand along with the conversion, resulting in downsizing the code amount.
