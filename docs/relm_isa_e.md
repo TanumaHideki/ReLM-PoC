@@ -204,7 +204,7 @@ The following instructions execute writing memory or transferring values from Ac
 
 When transfers to the same memory bank concur before completion, it may cause the penalty of a lap of CPUs' ring, depending on the hardware implementation.
 
-In addition, from other threads, memory update appears like delayed by up to a lap of CPUs' ring which requires caution.
+In addition, from other threads, memory update appears delayed by up to a lap of CPUs' ring which requires caution.
 
 In the case of having Register (B) as the operand instead of usual Operand (X), BLOAD and BSLOAD instructions correspond to PUT and PUTS.
 
