@@ -4,7 +4,7 @@ ReLM architecture boasts the below-mentioned features;
 
 * No need for a complex access arbitration mechanism
 * Good operability in using shared memory
-* Available for relatively small systems
+* Availability for relatively small systems
 
 These requirements are achieved by distinctive instruction sets.
 
@@ -234,15 +234,15 @@ The flow control instructions are an unconditional JUMP, and conditional JEQ and
 When the most significant bit (MSB) of JUMP instruction's destination address (assigned value to PC) is set (to 1), the running thread enters [getter](https://en.wikipedia.org/wiki/Mutator_method) mode to peek to an arbitrary operand.
 
 In the getter mode, the instruction at the destination is not executed but its operand value is assigned to Acc.  
-Then, the running thread jumps to the address pointed by the previous value of Acc had before the assignment, and returns from the getter mode.
+Then, the running thread jumps to the address pointed by the previous value of Acc before the assignment, and returns from the getter mode.
 
 On the software side, placing the return address to Acc in advance and then jumping to the address where MSB is set to 1 enables obtaining the operand value of the instruction at that address.
 
 As a normal instruction execution without flow control increments the program counter PC, so the lower bits of the address keep corresponding to the accessible memory bank.
 
-Change of PC by the flow control such as JUMP instruction may results in temporarily shifting this correspondence, and then the running thread loses sight of the memory bank to be executed.
+Change of PC by the flow control such as JUMP instruction may result in temporarily shifting this correspondence, and then the running thread loses sight of the memory bank to be executed.
 
-In such a case, instruction execution has to be suspended until the access to the memory bank of the next instruction restores.
+In such a case, instruction execution has to be suspended until restoring the access to the memory bank of the next instruction.
 
 In other words, executing JUMP instruction results in latency up to a lap of CPUs' ring at maximum.
 
@@ -253,9 +253,9 @@ This cost is controllable to some extent at compile time, resulting in optimizat
 
 ## Comparison Instruction
 
-To construct more complex branches, combine the results of comparison instructions.
+Comparison instruction is to calculate conditions to construct more complex branches.
 
-While conforming to LLVM IR's [icmp](https://llvm.org/docs/LangRef.html#icmp-instruction), the instruction sets exclude conditions with the equal sign (eg. greater __or equal__), assuming logic inversion at the compile time.
+While conforming to LLVM IR's [icmp](https://llvm.org/docs/LangRef.html#icmp-instruction), the instruction sets exclude conditions with the equal sign (e.g. greater __or equal__), assuming logic inversion at the compile time.
 
 | OpCode | Action | Comment |
 | --- | --- | --- |
@@ -315,7 +315,7 @@ SWAP instruction is to intentionally retrieve this old value output from the mem
 | | PUT Atomic: | atomic_X := Acc |
 | Atomic: | SWAP atomic_X | Acc := old_X |
 
-The atomic swap can construct various building blocks such as [critical sections](https://en.wikipedia.org/wiki/Critical_section), [mutexes](https://en.wikipedia.org/wiki/Lock_(computer_science)) and thread pools.
+The atomic swap serves as building blocks to construct concurrency control objects such as [critical sections](https://en.wikipedia.org/wiki/Critical_section), [mutexes](https://en.wikipedia.org/wiki/Lock_(computer_science)) and thread pools.
 
 ## Custom Extension Instructions
 
