@@ -9,7 +9,7 @@ This advantage of ReLM supports users in easily designing circuits on a FPGA boa
 ## For Further Reading...
 
 * [ReLM Introduction (English)](relm_e.md) [(Japanese)](relm_j.md)
-* ReLM Instruction Set (English) [(Japanese)](relm_isa_j.md)
+* [ReLM Instruction Set (English)](relm_isa_e.md) [(Japanese)](relm_isa_j.md)
 * ReLM Development Environment (English) [(Japanese)](relm_sdk_j.md)
 * ReLM Application Development (English) [(Japanese)](relm_app_j.md)
 * ReLM Customizing (English) (Japanese)
