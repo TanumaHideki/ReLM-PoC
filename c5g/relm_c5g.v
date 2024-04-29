@@ -83,7 +83,7 @@ module relm_custom(clk, op_in, a_in, cb_in, x_in, xb_in, opb_in, mul_ax_in, mul_
 	end
 endmodule
 
-module relm_c5g(clk, sw_in, key_in,
+module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 		hex3_out, hex2_out, hex1_out, hex0_out, ledr_out, ledg_out);
 	parameter WD = 32;
 	parameter WC = 32;
@@ -127,19 +127,71 @@ module relm_c5g(clk, sw_in, key_in,
 	end
 	wire hex_retry = 0;
 
+	(* chip_pin = "M9" *)
+	input uart_in;
+	(* chip_pin = "L9" *)
+	output reg uart_out = 1;
+	wire [WD:0] uart_d;
+	reg [1:0] uart_reg = 3;
+	reg [7:0] uart_count = 128;
+	wire [7:0] uart_cnext = uart_count + {7'd0, uart_reg[1]};
+	reg [7:0] uart_rclk = 255;
+	wire [8:0] uart_rnext = {1'b0, uart_rclk} + 9'd1;
+	reg [1:0] uart_tclk = 1;
+	wire [2:0] uart_tnext = {1'b0, uart_tclk} + 3'd1;
+	reg [28:0] uart_r = ~29'd0;
+	reg [8:0] uart_rdata = 0;
+	reg [8:0] uart_t = 0;
+	reg [8:0] uart_tdata = 0;
+	wire [WD:0] uart_q = {1'b0, ~uart_tdata[8], uart_rdata[8], {WD-10{1'b0}}, uart_rdata[7:0]};
+	always @(posedge clk) begin
+		uart_reg <= {uart_reg[0], uart_in};
+		if (uart_rnext[8]) begin
+			uart_rclk <= 111;
+			uart_count <= 55;
+			if (uart_tnext[2]) uart_tclk <= 1;
+			else uart_tclk <= uart_tnext[1:0];
+		end
+		else begin
+			uart_rclk <= uart_rnext[7:0];
+			uart_count <= uart_cnext;
+		end
+		if (uart_rnext[8] && uart_r[2:0] == 3'b001 && uart_reg[1]) begin
+			uart_r <= ~29'd0;
+			uart_rdata <= {1'b1, uart_r[26], uart_r[23], uart_r[20], uart_r[17], uart_r[14], uart_r[11], uart_r[8], uart_r[5]};
+		end
+		else begin
+			if (uart_rnext[8]) uart_r <= {uart_reg[1], uart_r[28:1]};
+			if (uart_d[WD-2]) uart_rdata <= 0;
+		end
+		if (uart_rnext[8] && uart_tnext[2]) begin
+			if (uart_t[8:1]) begin
+				uart_out <= uart_t[0];
+				uart_t <= {1'b0, uart_t[8:1]};
+			end
+			else if (uart_tdata[8]) begin
+				uart_out <= 0;
+				uart_t <= {1'b1, uart_tdata[7:0]};
+				uart_tdata[8] <= 0;
+			end
+			else uart_out <= 1;
+		end
+		if (!uart_tdata[8] && uart_d[WD-1]) uart_tdata <= {1'b1, uart_d[7:0]};
+	end
+
 	parameter WID = 4;
 	parameter WAD = 12;
 	parameter WOP = 5;
 
 	parameter NPUSH = 2;
-	parameter NPOP = 1;
+	parameter NPOP = 2;
 
 	wire [NPUSH*(WD+1)-1:0] push_d;
 	assign {hex_d, led_d} = push_d;
 	wire [NPUSH-1:0] push_retry = {hex_retry, led_retry};
 	wire [NPOP*(WD+1)-1:0] pop_d;
-	assign {key_d} = pop_d;
-	wire [NPOP*(WD+1)-1:0] pop_q = {key_q};
+	assign {key_d, uart_d} = pop_d;
+	wire [NPOP*(WD+1)-1:0] pop_q = {key_q, uart_q};
 
 `ifdef NO_LOADER
 	relm #(
