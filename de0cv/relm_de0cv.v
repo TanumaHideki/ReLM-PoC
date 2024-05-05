@@ -83,6 +83,12 @@ module relm_custom(clk, op_in, a_in, cb_in, x_in, xb_in, opb_in, mul_ax_in, mul_
 	end
 endmodule
 
+module relm_unused(d_in, q_out);
+	parameter WD = 32;
+	input [WD:0] d_in;
+	output [WD:0] q_out = d_in;
+endmodule
+
 module relm_de0cv(clk, sw_in, key_in, ps2_inout, vga_r_out, vga_g_out, vga_b_out, vga_s_out,
 		hex5_out, hex4_out, hex3_out, hex2_out, hex1_out, hex0_out, led_out);
 	parameter WD = 32;
@@ -96,6 +102,7 @@ module relm_de0cv(clk, sw_in, key_in, ps2_inout, vga_r_out, vga_g_out, vga_b_out
 	(* chip_pin = "M6, M7, W9, U7, P22" *)
 	input [4:0] key_in;
 	wire [WD:0] key_d;
+	relm_unused unused(key_d);
 	reg [14:0] key;
 	always @(posedge clk) key <= {sw_in, ~key_in};
 	wire [WD:0] key_q = {{WD-14{1'b0}}, key};
