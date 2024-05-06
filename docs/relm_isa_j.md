@@ -125,20 +125,20 @@ OPB命令のオペランドは命令コードで、レジスタ（B）をオペ�
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 0x00 | LOAD | SWAP/SHIFT | BLOAD | BSLOAD | ADD | AND | XOR | OR |
 | 0x08 | PUSH/OUT | POP/IO | PUT | PUTS | RSUB | JEQ | JNE | JUMP |
-| 0x10 | UGT | ULT | IGT | ILT | SUB | MUL | SAR | SHR |
+| 0x10 | UGT | ULT | IGT | ILT | SUB | MUL | SHR | SAR |
 | 0x18 | custom0 | custom1 | custom2 | custom3 | custom4 | custom5 | custom6 | OPB/HALT |
-
-SWAP/SHIFTは同一のコードが割り当てられていますが、OPBの有無で全く動作が異なる命令の例になります。
-
-SWAPは[アトミックスワップ](https://en.wikipedia.org/wiki/Linearizability#Primitive%20atomic%20instructions)を実現するための命令ですが、OPB付きでは意味のある動作をしないので、OPB SHIFTでオペランドを必要としない演算 Acc := 1 << Acc に割り当てています。
-
-OPB/HALTは、もしOPB命令のオペランドに再びOPB命令のコードを指定した場合、動作を停止するHALT命令と解釈されることを表しています。
-
-PUSH/OUTとPOP/IOはI/Oポート関連の命令ですが、デバイスとして[FIFO](https://ja.wikipedia.org/wiki/FIFO)を指定した場合、わかりやすさのため[ニーモニック](https://ja.wikipedia.org/wiki/%E3%82%A2%E3%82%BB%E3%83%B3%E3%83%96%E3%83%AA%E8%A8%80%E8%AA%9E#%E3%83%8B%E3%83%BC%E3%83%A2%E3%83%8B%E3%83%83%E3%82%AF)にPUSHとPOPを割り当てて区別しています。
 
 custom0～custom6はカスタム拡張命令用の空きコードになります。
 
 上記のカスタム拡張以外の命令を、ReLMアーキテクチャの基本命令とします。
+
+SWAP/SHIFTは同一のコードが割り当てられていますが、OPBの有無で全く動作が異なる命令の例になります。
+
+SWAPは[アトミックスワップ](https://en.wikipedia.org/wiki/Linearizability#Primitive_atomic_instructions)を実現するための命令ですが、OPB付きでは意味のある動作をしないので、OPB SHIFTでオペランドを必要としない演算 Acc := 1 << Acc に割り当てています。
+
+OPB/HALTは、もしOPB命令のオペランドに再びOPB命令のコードを指定した場合、動作を停止するHALT命令と解釈されることを表しています。
+
+PUSH/OUTとPOP/IOはI/Oポート関連の命令ですが、デバイスとして[FIFO](https://ja.wikipedia.org/wiki/FIFO)を指定した場合、わかりやすさのため[ニーモニック](https://ja.wikipedia.org/wiki/%E3%82%A2%E3%82%BB%E3%83%B3%E3%83%96%E3%83%AA%E8%A8%80%E8%AA%9E#%E3%83%8B%E3%83%BC%E3%83%A2%E3%83%8B%E3%83%83%E3%82%AF)にPUSHとPOPを割り当てて区別しています。
 
 ## 演算命令
 
@@ -306,7 +306,7 @@ PUT命令によるオペランドの遅延書き込みは、実際には命令�
 
 この場合、書き込み値の方が最新だと考えられますので、こちらをオペランドとして採用した上で、メモリからの読み出し値は捨てられることになります。
 
-そこで、メモリからの読み出し値として書き込み前の値が取り出せれば、容易に[アトミックスワップ](https://en.wikipedia.org/wiki/Linearizability#Primitive%20atomic%20instructions)が実現できます。
+そこで、メモリからの読み出し値として書き込み前の値が取り出せれば、容易に[アトミックスワップ](https://en.wikipedia.org/wiki/Linearizability#Primitive_atomic_instructions)が実現できます。
 
 SWAP命令は、このメモリ出力の旧値を意図的に取り出す命令ですが、実際にはPUT命令と組み合わせて以下の様にアトミックスワップを構築することになります。
 

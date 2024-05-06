@@ -1437,7 +1437,7 @@ ReLM[:] = (
     "ILT",
     "SUB",
     "MUL",
-    "SAR",
     "SHR",
+    "SAR",
 )
 ReLM[0x1F] = "OPB", "HALT"

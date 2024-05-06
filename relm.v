@@ -267,7 +267,7 @@ module relm_pe(clk, pc_in, pc_out, a_in, a_out, cb_in, cb_out,
 		.cb_out(cb_custom),
 		.retry_out(retry_custom)
 	);
-	wire sar_sign = a[WD-1] & ~op[0];
+	wire sar_sign = a[WD-1] & op[0];
 	reg [WD-1:0] sar_a;
 	reg [WD-1:0] sar_ax;
 	integer i;
