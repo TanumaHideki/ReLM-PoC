@@ -32,13 +32,13 @@ ReLM[:] = (
     "SRAM",
 )[::-1]
 ReLM[0x1D::0x20] = "DIV", "DIVX"
-BinaryOp.useB.add("DIV")
+BinaryOp.useB |= {"DIV", "DIVX"}
 
 
 def Div():
     return Function(num := UInt(), denom := UInt())[
-        D := UInt(denom),
-        s := UInt(RegBU(AccU, num).opb("DIVX")),
+        D := UInt(RegBU(num, denom)),
+        s := UInt(AccU.opb("DIVX")),
         d := UInt(RegBU - AccU),
         RegBU(0, 0),
         Do()[
