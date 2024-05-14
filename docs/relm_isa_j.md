@@ -368,7 +368,7 @@ module relm_custom(clk, op_in, a_in, cb_in, x_in, xb_in, opb_in, mul_ax_in, mul_
 	always @*
 	begin
 		casez ({opb_in, x_in[WOP], op_in[2:0]})
-			5'b11101: begin // OPB DIVX
+			5'b10101: begin // OPB DIV
 				mul_a_out <= {WD{1'bx}};
 				mul_x_out <= {WD{1'bx}};
 				a_out <= a_lower ^ (a_lower >> 1);
@@ -380,7 +380,7 @@ module relm_custom(clk, op_in, a_in, cb_in, x_in, xb_in, opb_in, mul_ax_in, mul_
 				a_out <= div_nn;
 				cb_out <= {div_nn, cb_in[0+:WD] + a_in};
 			end
-			5'b10101: begin // OPB DIV
+			5'b11101: begin // OPB DIVX
 				mul_a_out <= {WD{1'bx}};
 				mul_x_out <= {WD{1'bx}};
 				a_out <= div_m;
