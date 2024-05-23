@@ -1440,5 +1440,4 @@ ReLM[:] = (
     "SHR",
     "SAR",
 )
-ReLM[0x36:] = "SHRX", "SARX"
 ReLM[0x1F] = "OPB", "HALT"
