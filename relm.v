@@ -268,15 +268,13 @@ module relm_pe(clk, pc_in, pc_out, a_in, a_out, cb_in, cb_out,
 		.retry_out(retry_custom)
 	);
 	wire sar_sign = a[WD-1] & op[0];
-	wire sar_sticky = |((cb[WD-2:0] - 1) & a[WD-2:0]) & opb & x[WOP];
 	reg [WD-1:0] sar_a;
 	reg [WD-1:0] sar_ax;
 	integer i;
 	always @*
 	begin
 		for (i = 0; i < WD; i = i + 1) sar_a[i] <= a[WD-1-i] ^ sar_sign;
-		for (i = 0; i < WD-1; i = i + 1) sar_ax[i] <= mul_ax[WD-1-i] ^ sar_sign;
-		sar_ax[WD-1] <= (mul_ax[0] ^ sar_sign) | sar_sticky;
+		for (i = 0; i < WD; i = i + 1) sar_ax[i] <= mul_ax[WD-1-i] ^ sar_sign;
 		casez (op)
 			5'b10101: begin // MUL
 				mul_a <= a;
