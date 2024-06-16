@@ -31,23 +31,31 @@ ReLM[:] = (
     "FIFO1",
     "SRAM",
 )[::-1]
-ReLM[0x1D::0x20] = "DIV", "DIVX"
-BinaryOp.useB |= {"DIV"}
+ReLM[0x1D::0x20] = "DIV", "DIVX", "DIVPRE", "DIVPREX", "DIVINIT"
+BinaryOp.useB |= {"DIV", "DIVX", "DIVINIT"}
 
 
 def Div():
     return Function(num := UInt(), denom := UInt())[
-        D := UInt(RegBU(num, denom)),
-        s := UInt(AccU.opb("DIV")),
-        d := UInt(RegBU - AccU),
-        RegBU(0, 0),
+        s := UInt(RegBU(num, denom).opb("DIVINIT")),
+        AccU.opb("BLOAD").opb("SHR"),
+        AccU.opb("DIVPRE").opb("SHR"),
+        AccU.opb("DIVPRE").opb("SHR"),
+        AccU.opb("DIVPRE").opb("SHR"),
+        AccU.opb("DIVPRE").opb("SHR"),
+        AccU.opb("DIVPREX").opb("SHR"),
         Do()[
-            Code("DIV", D.put()),
+            AccU.opb("DIV").opb("SHR"),
+            AccU.opb("DIV").opb("SHR"),
+            AccU.opb("DIV").opb("SHR"),
+            AccU.opb("DIV").opb("SHR"),
+            AccU.opb("DIV").opb("SHR"),
+            AccU.opb("DIV").opb("SHR"),
+            AccU.opb("DIVX"),
             Code("SHR", s.put()),
-            (AccU * d).opb("DIVX"),
-            Code("SHR", s.put()),
+            Code("DIV", s.put()),
         ].While(AccU != 0),
-    ].Return(RegBU)
+    ].Return(+RegBU)
 
 
 def LED(hex5=None, hex4=None, hex3=None, hex2=None, hex1=None, hex0=None, led=None):
