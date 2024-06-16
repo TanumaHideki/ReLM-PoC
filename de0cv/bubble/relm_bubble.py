@@ -374,6 +374,7 @@ with ReLMLoader(__file__, loader=loader):
             If(k01 & 0b00010 != 0)[keyboard.Push(0x74)],
             If(k01 & 0b00001 != 0)[keyboard.Push(0x5A)],
             k0(k1),
+            Out("LED0", (k1 >> 4) | 1),
         ],
     ]
     dir = sram.Alloc(15 * 9)

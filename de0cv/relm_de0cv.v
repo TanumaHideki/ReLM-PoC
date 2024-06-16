@@ -17,72 +17,6 @@ module relm_dpmem(clk, we_in, wa_in, ra_in, d_in, q_out);
 	end
 endmodule
 
-module relm_lower(d_in, q_out);
-	parameter WD = 32;
-	input [WD-1:0] d_in;
-	output [WD-1:0] q_out;
-	wire [WD-1:0] d1 = d_in | (d_in >> 1);
-	wire [WD-1:0] d2 = d1 | (d1 >> 2);
-	wire [WD-1:0] d4 = d2 | (d2 >> 4);
-	wire [WD-1:0] d8 = d4 | (d4 >> 8);
-	assign q_out = d8 | (d8 >> 16);
-endmodule
-
-module relm_custom(clk, op_in, a_in, cb_in, x_in, xb_in, opb_in, mul_ax_in, mul_a_out, mul_x_out, a_out, cb_out, retry_out);
-	parameter WD = 32;
-	parameter WOP = 5;
-	parameter WC = 32;
-	input clk;
-	input [WOP-1:0] op_in;
-	input [WD-1:0] a_in;
-	input [WC+WD-1:0] cb_in;
-	input [WD-1:0] x_in;
-	input [WD-1:0] xb_in;
-	input opb_in;
-	input [WD*2-1:0] mul_ax_in;
-	output reg [WD-1:0] mul_a_out;
-	output reg [WD-1:0] mul_x_out;
-	output reg [WD-1:0] a_out;
-	output reg [WC+WD-1:0] cb_out;
-	output retry_out;
-	assign retry_out = 0;
-	wire [WD-1:0] div_r = cb_in[WD+:WD] - a_in;
-	wire [WD-1:0] div_n = cb_in[WD+:WD] >> 1;
-	wire [WD-1:0] div_m = (div_r > div_n) ? div_r : div_n;
-	wire [WD-1:0] div_nn = cb_in[WD+:WD] - mul_ax_in[0+:WD];
-	wire [WD-1:0] a_lower;
-	relm_lower lower(a_in, a_lower);
-	always @*
-	begin
-		casez ({opb_in, x_in[WOP], op_in[2:0]})
-			5'b10101: begin // OPB DIV
-				mul_a_out <= {WD{1'bx}};
-				mul_x_out <= {WD{1'bx}};
-				a_out <= a_lower ^ (a_lower >> 1);
-				cb_out <= {cb_in[0+:WD], a_in};
-			end
-			5'b0?101: begin // DIV
-				mul_a_out <= a_in;
-				mul_x_out <= xb_in;
-				a_out <= div_nn;
-				cb_out <= {div_nn, cb_in[0+:WD] + a_in};
-			end
-			5'b11101: begin // OPB DIVX
-				mul_a_out <= {WD{1'bx}};
-				mul_x_out <= {WD{1'bx}};
-				a_out <= div_m;
-				cb_out <= cb_in;
-			end
-			default: begin
-				mul_a_out <= {WD{1'bx}};
-				mul_x_out <= {WD{1'bx}};
-				a_out <= a_in;
-				cb_out <= cb_in;
-			end
-		endcase
-	end
-endmodule
-
 module relm_unused(d_in, q_out);
 	parameter WD = 32;
 	input [WD:0] d_in;
@@ -92,7 +26,7 @@ endmodule
 module relm_de0cv(clk, sw_in, key_in, ps2_inout, vga_r_out, vga_g_out, vga_b_out, vga_s_out,
 		hex5_out, hex4_out, hex3_out, hex2_out, hex1_out, hex0_out, led_out);
 	parameter WD = 32;
-	parameter WC = 32;
+	parameter WC = 64;
 
 	(* chip_pin = "M9" *)
 	input clk;
