@@ -32,30 +32,6 @@ ReLM[:] = (
     "SRAM",
 )[::-1]
 ReLM[0x1D::0x20] = "DIV", "DIVX", "DIVPRE", "DIVPREX", "DIVINIT"
-BinaryOp.useB |= {"DIV", "DIVX", "DIVINIT"}
-
-
-def Div():
-    return Function(num := UInt(), denom := UInt())[
-        s := UInt(RegBU(num, denom).opb("DIVINIT")),
-        AccU.opb("BLOAD").opb("SHR"),
-        AccU.opb("DIVPRE").opb("SHR"),
-        AccU.opb("DIVPRE").opb("SHR"),
-        AccU.opb("DIVPRE").opb("SHR"),
-        AccU.opb("DIVPRE").opb("SHR"),
-        AccU.opb("DIVPREX").opb("SHR"),
-        Do()[
-            AccU.opb("DIV").opb("SHR"),
-            AccU.opb("DIV").opb("SHR"),
-            AccU.opb("DIV").opb("SHR"),
-            AccU.opb("DIV").opb("SHR"),
-            AccU.opb("DIV").opb("SHR"),
-            AccU.opb("DIV").opb("SHR"),
-            AccU.opb("DIVX"),
-            Code("SHR", s.put()),
-            Code("DIV", s.put()),
-        ].While(AccU != 0),
-    ].Return(+RegBU)
 
 
 def LED(hex5=None, hex4=None, hex3=None, hex2=None, hex1=None, hex0=None, led=None):

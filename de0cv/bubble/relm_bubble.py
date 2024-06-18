@@ -388,7 +388,6 @@ with ReLMLoader(__file__, loader=loader):
     dice_pos = sram.Alloc(7)
     Define[
         goal := 100000,
-        div := Div(),
         dispBar := Function(index := Int())[
             a0 := Int(estate[0] + money[0]),
             a1 := Int(estate[1] + money[1]),
@@ -406,8 +405,8 @@ with ReLMLoader(__file__, loader=loader):
                 e(estate[index]),
                 m(money[index]),
             ],
-            ec := Int(div(e * 80, scale)),
-            mc := Int(div((e + m) * 80, scale)),
+            ec := Int(e * 80 // scale),
+            mc := Int((e + m) * 80 // scale),
             i := Int(0),
             While(i < ec)[console.Print(" "), i(i + 1)],
             While(i < mc)[console.Print("$"), i(i + 1)],

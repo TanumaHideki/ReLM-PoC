@@ -29,13 +29,17 @@ class Code(Statement):
         else:
             self.operand = operand
             self.ref = []
-        if not debug or isinstance(debug, str):
-            self.debug = debug
+        if not debug:
+            self.debug = False
         elif ReLM.on_render:
-            self.debug = ""
+            self.debug = "    " + ReLM.on_render.__name__
         else:
-            debug = inspect.stack()[-1]
-            self.debug = f"{debug.lineno}:\t{debug.code_context[0][:-1]}"
+            if not isinstance(debug, str):
+                debug = ""
+            d = inspect.stack()[-1]
+            lineno = f"{d.lineno}:"
+            lineno += " " * (8 - len(lineno))
+            self.debug = f"{lineno}{debug}{d.code_context[0][:-1].strip()}"
 
     def render(self, codes: list[Code]) -> list[Code]:
         codes.append(self)
@@ -89,6 +93,18 @@ class BinaryOp(Statement):
     def __ror__(rhs, lhs: int | str | BinaryOp) -> ExprB:
         return rhs.rbinary(lhs, "OR")
 
+    def __floordiv__(lhs, rhs: int | BinaryOp) -> ExprB:
+        return lhs.div(rhs, False)
+
+    def __rfloordiv__(rhs, lhs: int | BinaryOp) -> ExprB:
+        return rhs.rdiv(lhs, False)
+
+    def __mod__(lhs, rhs: int | BinaryOp) -> ExprB:
+        return lhs.div(rhs, True)
+
+    def __rmod__(rhs, lhs: int | BinaryOp) -> ExprB:
+        return rhs.rdiv(lhs, True)
+
     def __pos__(self) -> ExprB:
         return self
 
@@ -134,7 +150,7 @@ class BinaryOp(Statement):
         else:
             return Bool(lhs ^ rhs, True)
 
-    useB = {"BLOAD", "BSLOAD"}
+    useB = {"BLOAD", "BSLOAD", "DIV", "DIVX", "DIVINIT"}
 
     def __getitem__(self, codes: Any) -> ExprB:
         t = Expr
@@ -144,9 +160,6 @@ class BinaryOp(Statement):
         for code in codes:
             match code:
                 case ExprB():
-                    if c and code.acc:
-                        c.insert(0, Code("PUT"))
-                        c.append(Code("LOAD", c[0]))
                     c.extend(code.codes)
                     if not isinstance(code, Expr):
                         t = ExprB
@@ -157,11 +170,7 @@ class BinaryOp(Statement):
                         c.append(code)
                     else:
                         rhs, op = code.start, code.stop
-                        if rhs.acc:
-                            c.insert(0, Code("PUT"))
-                            c.append(Code(op, c[0]))
-                        else:
-                            rhs = rhs.bload(op)
+                        rhs = rhs.bload(op)
                         c.extend(rhs.codes)
                         t = ExprB
                         continue
@@ -175,18 +184,9 @@ class BinaryOp(Statement):
 
 
 class ExprB(BinaryOp):
-    setA = {"SWAP", "LOAD", "BLOAD", "BSLOAD", "POP", "IN"}
-
     def __init__(self, *codes: Code, unsigned: bool = False):
         super().__init__(unsigned)
         self.codes = codes
-        self.acc = True
-        for c in codes:
-            if isinstance(c, Label):
-                continue
-            else:
-                self.acc = not (c.op in self.setA or c.operand in self.setA)
-                break
 
     def render(self, codes: list[Code]) -> list[Code]:
         codes.extend(self.codes)
@@ -199,11 +199,11 @@ class ExprB(BinaryOp):
             case Int():
                 return lhs[lhs, op[0] : rhs.put()]
             case Expr():
-                return lhs[lhs, rhs:"BLOAD", "OPB" : op[-1]]
+                return lhs[RegB(lhs, rhs).opb(op[-1])]
             case ExprB():
-                return lhs[lhs, put := Code("PUT"), rhs, op[-1] : put]
+                return lhs[l := Int(lhs), rhs, op[-1] : l.put()]
             case RegBType():
-                return lhs[+rhs, put := Code("PUT"), lhs, op[0] : put]
+                return lhs[r := Int(rhs), lhs, op[0] : r.put()]
             case _:
                 return NotImplemented
 
@@ -212,13 +212,37 @@ class ExprB(BinaryOp):
             case int() | str():
                 return rhs[rhs, op[-1] : lhs]
             case Int():
-                return rhs[rhs, op[-1] : lhs.put()]
+                return lhs[rhs, op[-1] : lhs.put()]
             case Expr():
-                return lhs[rhs, lhs:"BLOAD", "OPB" : op[0]]
+                return lhs[RegB(rhs, lhs).opb(op[0])]
+            case ExprB() | RegBType():
+                return lhs[l := Int(lhs), rhs, op[-1] : l.put()]
+            case _:
+                return NotImplemented
+
+    def div(lhs: ExprB, rhs: int | BinaryOp, mod: bool) -> ExprB:
+        match rhs:
+            case int():
+                return lhs[lhs, RegB.div(rhs, mod, "BLOAD")]
+            case Int() | Expr():
+                return lhs[RegB(lhs, rhs), RegB.div(Acc, mod)]
             case ExprB():
-                return lhs[lhs, put := Code("PUT"), rhs, op[-1] : put]
+                return lhs[r := Int(rhs), RegB(lhs, r), RegB.div(Acc, mod)]
             case RegBType():
-                return lhs[+lhs, put := Code("PUT"), rhs, op[-1] : put]
+                return lhs[rhs.rdiv(lhs, mod)]
+            case _:
+                return NotImplemented
+
+    def rdiv(rhs: ExprB, lhs: int | BinaryOp, mod: bool) -> ExprB:
+        match lhs:
+            case int():
+                return rhs[RegB(rhs, lhs), RegB.rdiv(Acc, mod)]
+            case Int() | Expr():
+                return lhs[RegB(rhs, lhs), RegB.rdiv(Acc, mod)]
+            case ExprB():
+                return lhs[r := Int(rhs), RegB(lhs, r), RegB.div(Acc, mod)]
+            case RegBType():
+                return lhs.div(rhs, mod)
             case _:
                 return NotImplemented
 
@@ -229,9 +253,9 @@ class ExprB(BinaryOp):
             case Int():
                 return lhs[lhs, op : rhs.puts()]
             case Expr():
-                return lhs[lhs, rhs:"BLOAD", "OPB":"BSLOAD", "OPB":op]
+                return lhs[RegB(lhs, rhs).swapAB("BSLOAD").opb(op)]
             case ExprB():
-                return lhs[rhs, puts := Code("PUTS"), lhs, op:puts]
+                return lhs[r := Int(rhs), lhs, op : r.puts()]
             case _:
                 return NotImplemented
 
@@ -244,33 +268,32 @@ class ExprB(BinaryOp):
     def rshift(rhs: ExprB, lhs: int | str | BinaryOp, op: str) -> ExprB:
         match lhs:
             case Expr():
-                return lhs[rhs, lhs:"BSLOAD", "OPB":op]
+                return lhs[RegB(rhs, lhs, "BSLOAD").opb(op)]
             case ExprB():
-                return lhs[rhs, puts := Code("PUTS"), lhs, op:puts]
+                return lhs[r := Int(rhs), lhs, op : r.puts()]
             case _:
                 return NotImplemented
 
     def __rlshift__(rhs: ExprB, lhs: int | str | BinaryOp) -> ExprB:
-        op = "MUL"
         match lhs:
             case int() | str():
                 if lhs == 1:
-                    return rhs[rhs, "OPB":"SHIFT"]
+                    return rhs[rhs.opb("SHIFT")]
                 else:
-                    return rhs[rhs, "OPB":"SHIFT", op:lhs]
+                    return rhs[rhs.opb("SHIFT") * lhs]
             case Int():
-                return lhs[rhs, "OPB":"SHIFT", op : lhs.put()]
+                return lhs[rhs.opb("SHIFT") * lhs]
             case _:
-                return rhs.rshift(lhs, op)
+                return rhs.rshift(lhs, "MUL")
 
     def __rrshift__(rhs: ExprB, lhs: int | str | BinaryOp) -> ExprB:
         unsigned = rhs.unsigned if isinstance(lhs, int) else lhs.unsigned
         op = "SHR" if unsigned else "SAR"
         match lhs:
             case int() | str():
-                return rhs[rhs, "BSLOAD":lhs, "OPB":op]
+                return rhs[RegB(rhs, lhs, "BSLOAD").opb(op)]
             case Int():
-                return lhs[rhs, "BSLOAD" : lhs.put(), "OPB":op]
+                return lhs[RegB(rhs, lhs, "BSLOAD").opb(op)]
             case _:
                 return rhs.rshift(lhs, op)
 
@@ -298,32 +321,50 @@ class Expr(ExprB):
             case Expr():
                 return super().binary(rhs, *op)
             case ExprB():
-                return lhs[rhs, lhs:"BLOAD", "OPB" : op[0]]
+                return lhs[RegB(rhs, lhs).opb(op[0])]
             case RegBType():
-                return lhs[lhs, "OPB" : op[0]]
+                return lhs[lhs.opb(op[0])]
             case _:
                 return super().binary(rhs, *op)
 
     def rbinary(rhs: Expr, lhs: int | str | BinaryOp, *op: str) -> ExprB:
         match lhs:
             case ExprB():
-                return lhs[lhs, rhs:"BLOAD", "OPB" : op[-1]]
+                return lhs[RegB(lhs, rhs).opb(op[-1])]
             case RegBType():
-                return lhs[rhs, "OPB" : op[-1]]
+                return lhs[rhs.opb(op[-1])]
             case _:
                 return super().rbinary(lhs, *op)
+
+    def div(lhs: Expr, rhs: int | BinaryOp, mod: bool) -> ExprB:
+        match rhs:
+            case Expr():
+                return super().div(rhs, mod)
+            case ExprB():
+                return lhs[RegB(rhs, lhs), RegB.rdiv(Acc, mod)]
+            case _:
+                return super().div(rhs, mod)
+
+    def rdiv(rhs: Expr, lhs: int | BinaryOp, mod: bool) -> ExprB:
+        match lhs:
+            case int():
+                return rhs[RegB(lhs, rhs), RegB.div(Acc, mod)]
+            case Int() | ExprB():
+                return lhs[RegB(lhs, rhs), RegB.div(Acc, mod)]
+            case _:
+                return super().rdiv(lhs, mod)
 
     def shift(lhs: Expr, rhs: int | BinaryOp, op: str) -> ExprB:
         match rhs:
             case ExprB():
-                return lhs[rhs, lhs:"BSLOAD", "OPB":op]
+                return lhs[RegB(rhs, lhs, "BSLOAD").opb(op)]
             case _:
                 return super().shift(rhs, op)
 
     def rshift(rhs: Expr, lhs: int | str | BinaryOp, op: str) -> ExprB:
         match lhs:
             case ExprB():
-                return lhs[lhs, rhs:"BLOAD", "OPB":"BSLOAD", "OPB":op]
+                return lhs[RegB(lhs, rhs).swapAB("BSLOAD").opb(op)]
             case _:
                 return NotImplemented
 
@@ -353,7 +394,7 @@ class Int(BinaryOp):
         super().__init__(unsigned)
         match value:
             case int() | str():
-                self.expr = Expr(Code("LOAD", value))
+                self.expr = self["LOAD":value]
             case BinaryOp():
                 self.expr = +value
             case None:
@@ -361,11 +402,6 @@ class Int(BinaryOp):
             case _:
                 raise TypeError(f"{type(value)} is not supported")
         self.ref = []
-        if ReLM.on_render:
-            self.debug = ""
-        else:
-            debug = inspect.stack()[-1]
-            self.debug = f"{debug.lineno}:\t{debug.code_context[0][:-1]}"
 
     def __pos__(self) -> Expr:
         return self["LOAD" : self.put()]
@@ -383,11 +419,11 @@ class Int(BinaryOp):
         return var
 
     def put(self) -> Code:
-        self.ref.append(code := Code("PUT", debug=self.debug))
+        self.ref.append(code := Code("PUT", debug="->      "))
         return code
 
     def puts(self) -> Code:
-        self.ref.append(code := Code("PUTS", debug=self.debug))
+        self.ref.append(code := Code("PUTS", debug="->      "))
         return code
 
     def binary(lhs: Int, rhs: int | str | BinaryOp, *op: str) -> ExprB:
@@ -413,6 +449,32 @@ class Int(BinaryOp):
                 return lhs[lhs, op[0] : rhs.put()]
             case RegBType():
                 return lhs[+lhs, op[0] : rhs.put()]
+            case _:
+                return NotImplemented
+
+    def div(lhs: Int, rhs: int | BinaryOp, mod: bool) -> ExprB:
+        match rhs:
+            case int():
+                return lhs[+lhs, RegBU.div(rhs, mod, "BLOAD")]
+            case Int():
+                return lhs[+lhs, "BLOAD" : rhs.put(), RegBU.div(AccU, mod)]
+            case Expr():
+                return lhs[+lhs, rhs:"BLOAD", RegBU.div(AccU, mod)]
+            case ExprB():
+                return lhs[rhs, "BLOAD" : lhs.put(), RegBU.rdiv(AccU, mod)]
+            case RegBType():
+                return rhs.rdiv(lhs, mod)
+            case _:
+                return NotImplemented
+
+    def rdiv(rhs: Int, lhs: int | BinaryOp, mod: bool) -> ExprB:
+        match lhs:
+            case int():
+                return rhs["LOAD":lhs, "BLOAD" : rhs.put(), RegBU.div(AccU, mod)]
+            case Int() | ExprB():
+                return lhs[+lhs, "BLOAD" : rhs.put(), RegBU.div(AccU, mod)]
+            case RegBType():
+                return lhs.div(rhs, mod)
             case _:
                 return NotImplemented
 
@@ -496,6 +558,83 @@ class RegBType(BinaryOp):
                 return lhs[lhs, "OPB" : op[0]]
             case ExprB():
                 return lhs[+rhs, put := Code("PUT"), lhs, op[0] : put]
+            case _:
+                return NotImplemented
+
+    def div(lhs: RegBType, rhs: int | BinaryOp, mod: bool, op: str = "LOAD") -> ExprB:
+        match rhs:
+            case int():
+                pre = lhs[op:rhs, "OPB":"DIVINIT"]
+                D = rhs
+                s1 = s2 = 1 << (rhs.bit_length() - 1)
+            case Int() | Expr():
+                D = Code("PUT") if mod else Label()
+                pre = lhs[
+                    +rhs,
+                    D,
+                    "OPB":"DIVINIT",
+                    s1 := Code("PUT"),
+                    s2 := Code("PUT"),
+                ]
+            case ExprB():
+                return lhs[
+                    N := Int(lhs),
+                    RegB(rhs, N).swapAB(),
+                    lhs.div(Acc, mod),
+                ]
+            case _:
+                return NotImplemented
+        return lhs[
+            pre,
+            "OPB":"BLOAD",
+            "OPB":"SHR",
+            "OPB":"DIVPRE",
+            "OPB":"SHR",
+            "OPB":"DIVPRE",
+            "OPB":"SHR",
+            "OPB":"DIVPRE",
+            "OPB":"SHR",
+            "OPB":"DIVPRE",
+            "OPB":"SHR",
+            "OPB":"DIVPREX",
+            "OPB":"SHR",
+            loop := Label(),
+            "OPB":"DIV",
+            "OPB":"SHR",
+            "OPB":"DIV",
+            "OPB":"SHR",
+            "OPB":"DIV",
+            "OPB":"SHR",
+            "OPB":"DIV",
+            "OPB":"SHR",
+            "OPB":"DIV",
+            "OPB":"SHR",
+            "OPB":"DIV",
+            "OPB":"SHR",
+            "OPB":"DIVX",
+            "SHR":s1,
+            "DIV":s2,
+            loop << "JNE",
+            (
+                lhs[
+                    "OPB":"DIVPRE",
+                    "OPB":"BLOAD",
+                    "MUL":D,
+                    "OPB":"RSUB",
+                ]
+                if mod
+                else lhs["OPB":"LOAD"]
+            ),
+        ]
+
+    def rdiv(rhs: RegBType, lhs: int | BinaryOp, mod: bool) -> ExprB:
+        match lhs:
+            case int():
+                return rhs[Acc(lhs).swapAB(), rhs.div(Acc, mod)]
+            case Int() | Expr():
+                return lhs[Acc(lhs).swapAB(), rhs.div(Acc, mod)]
+            case ExprB():
+                return lhs[D := Int(rhs), RegB(lhs, D), rhs.div(Acc, mod)]
             case _:
                 return NotImplemented
 
@@ -665,8 +804,12 @@ class Block(Statement):
         return self._terminal
 
     def render(self, codes: list[Code]) -> list[Code]:
+        on_render = ReLM.on_render
         for s in self.block:
+            if on_render:
+                ReLM.on_render = type(s)
             s.render(codes)
+        ReLM.on_render = on_render
         return codes
 
     def __getitem__(self, item: Any) -> Block:
@@ -1310,7 +1453,7 @@ class Mnemonic(type):
 
 class ReLM(metaclass=Mnemonic):
     mnemonic = Mnemonic.mnemonic
-    on_render = False
+    on_render = None
     ncpu = 0
 
     def __init__(self, ncpu: int, loader: bool = True):
@@ -1333,7 +1476,7 @@ class ReLM(metaclass=Mnemonic):
         pending: list[list[Code]] = []
         aligned: tuple[list[list[Code]]] = tuple([] for _ in range(ReLM.ncpu))
         unaligned: list[list[Code]] = []
-        ReLM.on_render = True
+        ReLM.on_render = Block
         for b in thread.blocks:
             codes = b.render([])
             split = [i for i, c in enumerate(codes) if isinstance(c, Align)]
@@ -1365,7 +1508,7 @@ class ReLM(metaclass=Mnemonic):
                 elif any(aligned):
                     self.memory.append(Code("OPB", "HALT"))
                 else:
-                    ReLM.on_render = False
+                    ReLM.on_render = None
                     assert not pending, "unresolved alignment"
                     return
             while codes and codes[0].deploy(self.memory, ReLM.ncpu):
@@ -1377,8 +1520,10 @@ class ReLM(metaclass=Mnemonic):
         def tab(s: str, w: int = 8) -> str:
             return s + " " * (w - len(s))
 
+        omit = False
         for i, c in enumerate(self.memory):
             if isinstance(c.debug, str):
+                omit = False
                 if isinstance(c.operand, int):
                     operand = c.operand & 0xFFFFFFFF
                     operand = (
@@ -1390,6 +1535,9 @@ class ReLM(metaclass=Mnemonic):
                 else:
                     operand = tab(c.operand, 16)
                 print(tab(f"{i:04X}:") + tab(c.op) + operand + c.debug, file=file)
+            elif not omit:
+                omit = True
+                print("...", file=file)
         return self
 
     def save(self, *path: str, code="code{:02d}.txt", data="data{:02d}.txt") -> ReLM:
