@@ -48,6 +48,10 @@
 
 * relm.v  
 _ReLMアーキテクチャ基本回路実装_
+* relm_custom_none.v  
+_カスタム命令無し_
+* relm_custom_div.v  
+_カスタム命令（整数除算）_
 * relm.py  
 _Python DSL基本ライブラリ_
 * relm_jtag.py  
