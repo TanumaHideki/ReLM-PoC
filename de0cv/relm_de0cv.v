@@ -215,46 +215,20 @@ module relm_de0cv(clk, sw_in, key_in, ps2_inout, vga_r_out, vga_g_out, vga_b_out
 		.pop_q(pop3_q)
 	);
 
-	wire [WD:0] push4_d, pop4_d, pop4_q;
-	wire push4_retry;
-	relm_fifo_io #(
-		.WAD(8),
-		.WD(WD)
-	) fifo4(
-		.clk(clk),
-		.push_d(push4_d),
-		.push_retry(push4_retry),
-		.pop_d(pop4_d),
-		.pop_q(pop4_q)
-	);
-
-	wire [WD:0] push5_d, pop5_d, pop5_q;
-	wire push5_retry;
-	relm_fifo_io #(
-		.WAD(8),
-		.WD(WD)
-	) fifo5(
-		.clk(clk),
-		.push_d(push5_d),
-		.push_retry(push5_retry),
-		.pop_d(pop5_d),
-		.pop_q(pop5_q)
-	);
-
 	parameter WID = 3;
 	parameter WAD = 13;
 	parameter WOP = 5;
 
-	parameter NPUSH = 10;
-	parameter NPOP = 8;
+	parameter NPUSH = 8;
+	parameter NPOP = 6;
 
 	wire [NPUSH*(WD+1)-1:0] push_d;
-	assign {led1_d, led0_d, vgapal_d, vga_d, push5_d, push4_d, push3_d, push2_d, push1_d, sram_wr_d} = push_d;
+	assign {led1_d, led0_d, vgapal_d, vga_d, push3_d, push2_d, push1_d, sram_wr_d} = push_d;
 	wire [NPUSH-1:0] push_retry = {led1_retry, led0_retry, vgapal_retry, vga_retry,
-		push5_retry, push4_retry, push3_retry, push2_retry, push1_retry, sram_retry};
+		push3_retry, push2_retry, push1_retry, sram_retry};
 	wire [NPOP*(WD+1)-1:0] pop_d;
-	assign {key_d, ps2_d, pop5_d, pop4_d, pop3_d, pop2_d, pop1_d, sram_ad_d} = pop_d;
-	wire [NPOP*(WD+1)-1:0] pop_q = {key_q, ps2_q, pop5_q, pop4_q, pop3_q, pop2_q, pop1_q, sram_rd_q};
+	assign {key_d, ps2_d, pop3_d, pop2_d, pop1_d, sram_ad_d} = pop_d;
+	wire [NPOP*(WD+1)-1:0] pop_q = {key_q, ps2_q, pop3_q, pop2_q, pop1_q, sram_rd_q};
 
 `ifdef NO_LOADER
 	relm #(

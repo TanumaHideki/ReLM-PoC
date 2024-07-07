@@ -3,7 +3,7 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent))
 
-from relm import *
+from relm_float import *
 from relm_jtag import USBBlaster
 
 
@@ -13,8 +13,6 @@ ReLM[:] = (
     "LED0",
     "VGAPAL",
     "VGA",
-    "FIFO5",
-    "FIFO4",
     "FIFO3",
     "FIFO2",
     "FIFO1",
@@ -24,14 +22,18 @@ ReLM[:] = (
     "JTAG",
     "KEY",
     "PS2",
-    "FIFO5",
-    "FIFO4",
     "FIFO3",
     "FIFO2",
     "FIFO1",
     "SRAM",
 )[::-1]
+ReLM[0x18::0x20] = "ITOF", "ITOFX"
+ReLM[0x19::0x20] = "FMUL", "FSQU"
+ReLM[0x1A::0x20] = "FADD", "FADDX"
+ReLM[0x1B::0x20] = ("ROUND", "TRUNC"), "FTOI"
+ReLM[0x1C] = "FCOMP"
 ReLM[0x1D::0x20] = "DIV", "DIVX", "DIVPRE", "DIVPREX", "DIVINIT"
+ReLM[0x1E] = "FDIV"
 
 
 def LED(hex5=None, hex4=None, hex3=None, hex2=None, hex1=None, hex0=None, led=None):
@@ -117,8 +119,6 @@ def SendPS2():
 FIFO("FIFO1", 2048)
 FIFO("FIFO2", 2048)
 FIFO("FIFO3", 2048)
-FIFO("FIFO4", 256)
-FIFO("FIFO5", 256)
 sram = SRAM("SRAM", 0, 8192)
 
 

@@ -3,6 +3,7 @@ from typing import Iterable, Any
 import inspect
 from pathlib import Path
 import itertools
+import ctypes
 
 
 class Statement:
@@ -20,12 +21,20 @@ class ErrorStatement(Statement):
 
 class Code(Statement):
     def __init__(
-        self, op: str, operand: Code | int | str = 0, debug: str | bool = True
+        self,
+        op: str,
+        operand: Code | tuple[Code] | int | str = 0,
+        debug: str | bool = True,
+        offset: int = 0,
     ):
         self.op = op
+        self.offset = offset
         if isinstance(operand, Code):
             self.operand = operand.operand
             self.ref = [operand]
+        elif isinstance(operand, tuple):
+            self.operand = operand[0].operand
+            self.ref = list(operand)
         else:
             self.operand = operand
             self.ref = []
@@ -48,7 +57,7 @@ class Code(Statement):
     def deploy(self, memory: list[Code], ncpu: int) -> bool:
         address = len(memory)
         for c in self.ref:
-            c.operand = address
+            c.operand = address + c.offset
         memory.append(self)
         return True
 
@@ -150,37 +159,41 @@ class BinaryOp(Statement):
         else:
             return Bool(lhs ^ rhs, True)
 
-    useB = {"BLOAD", "BSLOAD", "DIV", "DIVX", "DIVINIT"}
+    useB = {"BLOAD", "BSLOAD", "BLOADX", "BSLOADX", "DIV", "DIVX", "DIVINIT"}
 
-    def __getitem__(self, codes: Any) -> ExprB:
+    def getitem(self, items: Any, codes: list[Code]) -> type:
         t = Expr
-        c = []
-        if not isinstance(codes, tuple):
-            codes = (codes,)
-        for code in codes:
+        if not isinstance(items, tuple):
+            items = (items,)
+        for code in items:
             match code:
                 case ExprB():
-                    c.extend(code.codes)
+                    codes.extend(code.codes)
                     if not isinstance(code, Expr):
                         t = ExprB
                     continue
                 case slice():
                     if isinstance(code.start, str):
-                        code = Code(code.start, code.stop)
-                        c.append(code)
+                        code = [Code(code.start, code.stop)]
                     else:
                         rhs, op = code.start, code.stop
                         rhs = rhs.bload(op)
-                        c.extend(rhs.codes)
+                        codes.extend(rhs.codes)
                         t = ExprB
                         continue
-                case Code():
-                    c.append(code)
+                case Statement():
+                    code = code.render([])
                 case _:
                     raise TypeError(f"{type(code)} is not supported")
-            if code.op in self.useB or code.operand in self.useB:
-                t = ExprB
-        return t(*c, unsigned=self.unsigned)
+            codes.extend(code)
+            for c in code:
+                if c.op in self.useB or c.operand in self.useB:
+                    t = ExprB
+        return t
+
+    def __getitem__(self, items: Any) -> ExprB:
+        codes = []
+        return self.getitem(items, codes)(*codes, unsigned=self.unsigned)
 
 
 class ExprB(BinaryOp):
@@ -302,6 +315,15 @@ class ExprB(BinaryOp):
 
     def swapAB(self, op: str = "BLOAD") -> ExprB:
         return self.opb(op)
+
+    def bit_count(self) -> ExprB:
+        return self[
+            self,
+            (AccU.opb("BLOADX") >> 1) & 0x55555555,
+            (((RegBU - AccU).opb("BLOADX") >> 2) & 0x33333333) * 3,
+            (RegBU - AccU).opb("BLOADX") >> 4,
+            (((RegBU + AccU) & 0xF0F0F0F) * 0x1010101) >> 24,
+        ]
 
 
 class Expr(ExprB):
@@ -713,8 +735,7 @@ RegBU = RegBType(True)
 
 class Label(Code):
     def __init__(self, offset: int = 0):
-        super().__init__("", "")
-        self.offset = offset
+        super().__init__("", "", offset=offset)
 
     def __lshift__(self, rhs: str | Bool | Iterable[Code]) -> Code:
         match rhs:
@@ -1307,17 +1328,17 @@ class Array(Statement):
         self.data = data
         self.op = op
         self.unsigned = unsigned
-        self.label = {}
+        self.label = []
 
     def render(self, codes: list[Code]) -> list[Code]:
-        codes.extend(self.label.values())
+        codes.extend(self.label)
         for i, d in enumerate(self.data):
             codes.append(Code(self.op, d, debug=(i < 10)))
         return codes
 
     def offset(self, index: int) -> Label:
-        index |= 0x80000000
-        return self.label.setdefault(index, Label(index))
+        self.label.append(l := Label(index))
+        return l
 
     def __getitem__(self, index: int | BinaryOp) -> ArrayOffset | ArrayElement:
         if not isinstance(index, tuple):
@@ -1331,9 +1352,15 @@ class Array(Statement):
             else:
                 expr += i
         if expr is None:
-            return ArrayOffset(self, offset)
+            return self.OffsetExpr(offset)
         else:
-            return ArrayElement(self, expr, offset)
+            return self.ElementExpr(expr, offset)
+
+    def OffsetExpr(self, offset: int) -> ArrayOffset:
+        return ArrayOffset(self, offset)
+
+    def ElementExpr(self, index: BinaryOp, offset: int) -> ArrayElement:
+        return ArrayElement(self, index, offset)
 
 
 class ArrayOffset(Expr):
@@ -1407,6 +1434,8 @@ class ArrayElement(ExprB):
                         value,
                         "PUT":put,
                     ]
+            case _:
+                raise TypeError(f"{type(value)} is not supported")
 
 
 def Wait(align: int, loop: int = 0) -> Block:
@@ -1528,12 +1557,17 @@ class ReLM(metaclass=Mnemonic):
                     operand = c.operand & 0xFFFFFFFF
                     operand = (
                         f"{operand:04X}:"
-                        if c.op in {"PUT", "PUTS", "JEQ", "JNE", "JUMP", "GET"}
-                        else f"{operand:08X}"
+                        if c.op in {"PUT", "PUTS", "PUTM", "JEQ", "JNE", "JUMP", "GET"}
+                        else (
+                            f"{ctypes.c_float.from_buffer(ctypes.c_uint(operand)).value:+E}"
+                            if c.op
+                            in {"ITOF", "FMUL", "FADD", "ROUND", "FCOMP", "FDIV"}
+                            else f"{operand:08X}"
+                        )
                     )
-                    operand = tab(operand, 16)
+                    operand = tab(operand, 24)
                 else:
-                    operand = tab(c.operand, 16)
+                    operand = tab(c.operand, 24)
                 print(tab(f"{i:04X}:") + tab(c.op) + operand + c.debug, file=file)
             elif not omit:
                 omit = True
@@ -1574,7 +1608,7 @@ ReLM[:] = (
     ("OUT", "PUSH"),
     ("IO", "IN", "POP"),
     "PUT",
-    "PUTS",
+    ("PUTS", "PUTM"),
     "RSUB",
     "JEQ",
     "JNE",
@@ -1589,3 +1623,5 @@ ReLM[:] = (
     "SAR",
 )
 ReLM[0x1F] = "OPB", "HALT"
+ReLM[0x22:] = "BLOADX", "BSLOADX"
+ReLM[0x8000000B] = "PUTMX"

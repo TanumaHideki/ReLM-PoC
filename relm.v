@@ -199,7 +199,7 @@ module relm_pe(clk, pc_in, pc_out, a_in, a_out, cb_in, cb_out,
 		.q_out(a_shift),
 		.r_out(push_decode)
 	);
-	wire [WD-1:0] a_put = op[0] ? a_shift[WD-1:0] : a;
+	wire [WD-1:0] a_put = (op[0] && !x[WD-1]) ? a_shift[WD-1:0] : {op[0] ^ a[WD-1], a[WD-2:0]};
 
 	reg put;
 	wire [NID-1:0] put_stb = put_decode & {NID{put}};
@@ -329,8 +329,8 @@ module relm_pe(clk, pc_in, pc_out, a_in, a_out, cb_in, cb_out,
 	always @*
 	begin
 		casez (op)
-			5'b00000, 5'b0001?: // LOAD, BLOAD, BSLOAD
-				a_out <= xb;
+			5'b00000, 5'b0001?: // LOAD, BLOAD, BSLOAD, BLOADX, BSLOADX
+				a_out <= (opb && x[WOP]) ? a : xb;
 			5'b00001: // SWAP/SHIFT
 				a_out <= opb ? a_shift[WD-1:0] : x_mem;
 			5'b0?100, 5'b10100: // ADD, RSUB, SUB
