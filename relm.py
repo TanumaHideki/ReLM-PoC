@@ -161,7 +161,7 @@ class BinaryOp(Statement):
 
     useB = {"BLOAD", "BSLOAD", "BLOADX", "BSLOADX", "DIV", "DIVX", "DIVINIT"}
 
-    def getitem(self, items: Any, codes: list[Code]) -> type:
+    def getitem(self, items: Any, codes: list[Code | list[Code]]) -> type:
         t = Expr
         if not isinstance(items, tuple):
             items = (items,)
@@ -171,6 +171,9 @@ class BinaryOp(Statement):
                     codes.extend(code.codes)
                     if not isinstance(code, Expr):
                         t = ExprB
+                    continue
+                case list():
+                    codes.append(code)
                     continue
                 case slice():
                     if isinstance(code.start, str):
@@ -197,12 +200,16 @@ class BinaryOp(Statement):
 
 
 class ExprB(BinaryOp):
-    def __init__(self, *codes: Code, unsigned: bool = False):
+    def __init__(self, *codes: Code | list[Code], unsigned: bool = False):
         super().__init__(unsigned)
         self.codes = codes
 
     def render(self, codes: list[Code]) -> list[Code]:
-        codes.extend(self.codes)
+        for c in self.codes:
+            if isinstance(c, list):
+                codes.extend(c)
+            else:
+                codes.append(c)
         return codes
 
     def binary(lhs: ExprB, rhs: int | str | BinaryOp, *op: str) -> ExprB:
@@ -329,7 +336,7 @@ class ExprB(BinaryOp):
 class Expr(ExprB):
     def bload(self, op: str = "BLOAD") -> ExprB:
         for c in self.codes:
-            if isinstance(c, Label):
+            if isinstance(c, (Label, list)):
                 continue
             elif c.op == "LOAD":
                 c.op = op
@@ -435,10 +442,9 @@ class Int(BinaryOp):
             self.expr = None
         return codes
 
-    def __call__(self, value: int | str | BinaryOp) -> Int:
-        var = Int(value, self.unsigned)
-        var.ref = self.ref
-        return var
+    def __call__(self, value: int | str | BinaryOp) -> ExprB:
+        expr = Int(value, self.unsigned).expr
+        return self[expr, self.ref]
 
     def put(self) -> Code:
         self.ref.append(code := Code("PUT", debug="->      "))

@@ -7,7 +7,7 @@ BinaryOp.useB |= {"ITOF", "ITOFX", "FMUL", "FSQU", "FADD", "ROUND"}
 
 
 class FloatExprB(ExprB):
-    def __init__(self, *codes: Code, minus: bool = False, sign: int = 0):
+    def __init__(self, *codes: Code | list[Code], minus: bool = False, sign: int = 0):
         super().__init__(*codes)
         self.minus = minus
         self.sign = sign
@@ -262,14 +262,14 @@ class Float(Int):
         match value:
             case float():
                 assert sign * value >= 0, "Sign mismatch"
-                self.expr = AccF(value)
+                self.expr = AccF[AccF(value)]._sign(1 if value >= 0 else -1)
             case Float():
                 assert sign * value.sign >= 0, "Sign mismatch"
-                self.expr = +value
+                self.expr = AccF[+value]._sign(sign | value.sign)
             case FloatExprB():
                 assert sign * value.sign >= 0, "Sign mismatch"
                 self.minus = value.minus
-                self.expr = value
+                self.expr = value[value]._sign(sign | value.sign)
             case None:
                 self.expr = None
             case _:
@@ -302,11 +302,9 @@ class Float(Int):
             self.expr = None
         return codes
 
-    def __call__(self, value: float | BinaryOp) -> Float:
-        var = Float(value, self.sign)
-        var.ref = self.ref
-        var.refm = self.refm
-        return var
+    def __call__(self, value: float | BinaryOp) -> FloatExprB:
+        expr = Float(value, self.sign).expr
+        return expr[expr, self.refm if self.minus else self.ref]._sign(expr.sign)
 
     def fadd(
         lhs: Float, rhs: float | BinaryOp, sub: bool = False, rsub: bool = False
