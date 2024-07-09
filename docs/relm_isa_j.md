@@ -94,28 +94,25 @@ OPB命令のオペランドは命令コードで、レジスタ（B）をオペ�
 
 ただしここで、RHS で最初にアキュムレータを変更する命令がLOADとなる（コンパイラ出力では大体そうなる）場合に、これをBLOADに置き換えたものを RHS' とします。（もしそうならない場合、１命令増えるが RHS の前に BLOAD 0 を置く）
 
-基本的な命令でレジスタ（B）を変更できるのはBLOADとBSLOAD（後者はシフト演算関連）のみですが、OPBとの組み合わせで様々な操作が可能になります。
+基本的な命令でレジスタ（B）を変更できるのはBLOAD(X)とBSLOAD(X)（後者はシフト演算関連）のみですが、OPBとの組み合わせで様々な操作が可能になります。
 
 | Code | Action | Comment |
 | --- | --- | --- |
 | BLOAD X | B := Acc, Acc := X | |
 | OPB BLOAD | (Acc, B) := (B, Acc) | swap Acc <=> B |
+| OPB BLOADX | B := Acc | keep Acc, only with OPB |
 | BSLOAD X | B := 1 << Acc, Acc := X | used for shift operation |
 | OPB BSLOAD | (Acc, B) := (B, 1<<Acc) | used for shift operation |
+| OPB BSLOADX | B := 1<<Acc | keep Acc, only with OPB |
 | LOAD X | Acc := X | |
 | OPB LOAD | Acc := B | |
 
-レジスタ（B）の即値代入 B := X やアキュムレータを保持した代入 B := Acc の命令はありませんが、組合せで実現可能です。
+レジスタ（B）の即値代入 B := X の命令はありませんが、組合せで実現可能です。
 
 | Code | Action | Comment |
 | --- | --- | --- |
 | BLOAD X | B := Acc, Acc := X | |
 | OPB BLOAD | swap Acc <=> B | finally, B := X |
-
-| Code | Action | Comment |
-| --- | --- | --- |
-| BLOAD 0 | B := Acc, Acc := 0 | |
-| OPB LOAD | Acc := B | finally, B := Acc |
 
 ## 命令コード表
 

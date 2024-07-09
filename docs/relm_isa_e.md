@@ -93,28 +93,25 @@ Now, if it is obvious that RHS does not change Register (B), the code sequence c
 However, replace a LOAD instruction to BLOAD in the case that the LOAD is the first instruction to change Acc in RHS sequence (which is often the case in the compiler output), and rename it RHS'.  
 (If not, an additional instruction is to place "BLOAD 0" before RHS sequence.)
 
-Though BLOAD and BSLOAD, (the latter is related to shift operations), are the only two of basic instructions to change Register (B), they enable various operations in combination with OPB.
+Though BLOAD(X) and BSLOAD(X), (the latter is related to shift operations), are the only four of basic instructions to change Register (B), they enable various operations in combination with OPB.
 
 | Code | Action | Comment |
 | --- | --- | --- |
 | BLOAD X | B := Acc, Acc := X | |
 | OPB BLOAD | (Acc, B) := (B, Acc) | swap Acc <=> B |
+| OPB BLOADX | B := Acc | keep Acc, only with OPB |
 | BSLOAD X | B := 1 << Acc, Acc := X | used for shift operation |
 | OPB BSLOAD | (Acc, B) := (B, 1<<Acc) | used for shift operation |
+| OPB BSLOADX | B := 1<<Acc | keep Acc, only with OPB |
 | LOAD X | Acc := X | |
 | OPB LOAD | Acc := B | |
 
-No instruction enables assigning Register (B) either an immediate value as "B := X" or "B := Acc" directly with no change to the accumulator, however, the combination of two instructions with OPB realizes the same effects.
+No instruction enables assigning an immediate value to the Register (B) as "B := X", however, the combination of two instructions with OPB realizes the same effects.
 
 | Code | Action | Comment |
 | --- | --- | --- |
 | BLOAD X | B := Acc, Acc := X | |
 | OPB BLOAD | swap Acc <=> B | finally, B := X |
-
-| Code | Action | Comment |
-| --- | --- | --- |
-| BLOAD 0 | B := Acc, Acc := 0 | |
-| OPB LOAD | Acc := B | finally, B := Acc |
 
 ## OpCode Table
 
