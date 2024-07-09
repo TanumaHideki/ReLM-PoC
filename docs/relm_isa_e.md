@@ -119,7 +119,7 @@ Each OpCode consists of five bits, having an instruction assigned as follows.
 
 | OpCode | +0 | +1 | +2 | +3 | +4 | +5 | +6 | +7 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 0x00 | LOAD | SWAP/SHIFT | BLOAD | BSLOAD | ADD | AND | XOR | OR |
+| 0x00 | LOAD | SWAP/SHIFT | BLOAD BLOADX | BSLOAD BSLOADX | ADD | AND | XOR | OR |
 | 0x08 | PUSH/OUT | POP/IO | PUT | PUTS | RSUB | JEQ | JNE | JUMP |
 | 0x10 | UGT | ULT | IGT | ILT | SUB | MUL | SHR | SAR |
 | 0x18 | custom0 | custom1 | custom2 | custom3 | custom4 | custom5 | custom6 | OPB/HALT |

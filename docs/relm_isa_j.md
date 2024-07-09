@@ -124,8 +124,13 @@ OPB命令のオペランドは命令コードで、レジスタ（B）をオペ�
 | 0x08 | PUSH/OUT | POP/IO | PUT | PUTS | RSUB | JEQ | JNE | JUMP |
 | 0x10 | UGT | ULT | IGT | ILT | SUB | MUL | SHR | SAR |
 | 0x18 | custom0 | custom1 | custom2 | custom3 | custom4 | custom5 | custom6 | OPB/HALT |
+| 0x20 | | | (OPB) BLOADX | (OPB) BSLOADX | | | | |
 
 custom0～custom6はカスタム拡張命令用の空きコードになります。
+
+0x20以降はOPB形式専用の命令コードで、オペランド（X）の32ビット全体で命令コードを表現できるため、即値オペランドが使えない代わりに通常命令コードの５ビットを超えた種類の命令が拡張可能になります。
+
+カスタム拡張命令で浮動小数点等に対応する場合、custom0～custom6の７命令のみでは命令コードが不足しますので、このようなOPBによる命令ビット長拡張を併用することになります。
 
 上記のカスタム拡張以外の命令を、ReLMアーキテクチャの基本命令とします。
 
