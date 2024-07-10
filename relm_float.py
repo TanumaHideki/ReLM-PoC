@@ -104,12 +104,10 @@ class FloatExprB(ExprB):
     @staticmethod
     def fdiv() -> FloatExprB:
         return AccF[
-            x1 := Float(AccF - (3.0 / 2.0)),
-            x3 := Float((AccF**2 - (3.0 / 16.0)) * x1),
-            (AccF - (99.0 / 32.0))
-            * ((x1 - (3.0 / 4.0)) ** 2 + (3.0 / 2.0))
-            * (x3**2 + (1225.0 / 128.0))
-            * (-8388608.0 / 768398401.0),
+            D := Float(AccF, 1),
+            x := Float(((AccF - 1.5) ** 2 + 2.0) * (3.0 - D) * (128.0 / 577.0), 1),
+            e := Float(1.0 - AccF * D),
+            (AccF**2 + 1.0 + e) * x,
             Acc.opb("FMUL").opb("ITOFX"),
         ]
 

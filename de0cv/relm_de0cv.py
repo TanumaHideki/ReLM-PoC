@@ -32,7 +32,7 @@ ReLM[0x19::0x20] = "FMUL", "FSQU"
 ReLM[0x1A::0x20] = "FADD", "FADDX"
 ReLM[0x1B::0x20] = ("ROUND", "TRUNC"), "FTOI"
 ReLM[0x1C] = "FCOMP"
-ReLM[0x1D::0x20] = "DIV", "DIVX", "DIVPRE", "DIVPREX", "DIVINIT"
+ReLM[0x1D::0x20] = "DIV", "DIVINIT", "DIVLOOP", "DIVMOD"
 ReLM[0x1E] = "FDIV"
 
 
