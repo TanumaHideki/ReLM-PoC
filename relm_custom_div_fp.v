@@ -138,8 +138,6 @@ module relm_custom(clk, op_in, a_in, cb_in, x_in, xb_in, opb_in, mul_ax_in, mul_
 	wire fcomp_gt;
 	relm_compare #(WD) compare_fcomp(fcomp_a, fcomp_xb, fcomp_gt);
 
-	wire [WD-1:0] div_s = a_lower ^ (a_lower >> 1);
-	wire [WD:0] div_q = {1'b0, d_in} + {1'b0, mul_ax_in[0+:WD]};
 	integer i;
 	always @*
 	begin
