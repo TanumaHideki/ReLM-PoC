@@ -28,8 +28,8 @@ class FloatExprB(ExprB):
         return AccF[self ^ 0x80000000]._sign(self.sign) if self.minus else self
 
     def fadd(lhs: FloatExprB, rhs: float | BinaryOp, sub: bool = False) -> FloatExprB:
-        a = Acc.opb("FADDX").opb("ITOF").opb("ITOFX")
-        af = Acc.opb("FADDX").opb("ITOFX")
+        a = Acc.opb("ITOF").opb("ITOFX")
+        af = Acc.opb("ITOFX")
         match rhs:
             case float():
                 if sub:
@@ -159,9 +159,9 @@ class FloatExprB(ExprB):
             self,
             "ROUND":o,
             (
-                Acc.opb("FADD").opb("FADDX").opb("ITOFX").opb("TRUNC")
+                Acc.opb("FADD").opb("ITOFX").opb("TRUNC")
                 if offset == 0.5
-                else Acc.opb("TRUNC").opb("FADD").opb("FADDX").opb("ITOFX")
+                else Acc.opb("TRUNC").opb("FADD").opb("ITOFX")
             ),
         ]._sign(self.sign)
 
@@ -308,8 +308,8 @@ class Float(Int):
     def fadd(
         lhs: Float, rhs: float | BinaryOp, sub: bool = False, rsub: bool = False
     ) -> FloatExprB:
-        a = Acc.opb("FADDX").opb("ITOF").opb("ITOFX")
-        af = Acc.opb("FADDX").opb("ITOFX")
+        a = Acc.opb("ITOF").opb("ITOFX")
+        af = Acc.opb("ITOFX")
         sign = -lhs.sign if rsub else lhs.sign
         match rhs:
             case float():

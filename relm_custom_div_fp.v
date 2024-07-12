@@ -107,22 +107,28 @@ module relm_custom(clk, op_in, a_in, cb_in, x_in, xb_in, opb_in, mul_ax_in, mul_
 	wire fdiv_inf = (fdiv_e[9:8] == 2'b01) | xb_inf | a_zero;
 	wire fdiv_nan = (xb_zero & a_zero) | (xb_inf & a_inf) | xb_nan | a_nan;
 
+	wire fadd_gte;
+	relm_compare #(8) compare_fadd_e(a_exp, xb_exp, fadd_gte);
+	wire [7:0] fadd_d = fadd_gte ? a_exp - xb_exp : xb_exp - a_exp;
 	wire fadd_gt;
 	relm_compare #(WD-1) compare_fadd(a_in[30:0], xb_in[30:0], fadd_gt);
 	wire [31:0] fadd_max = fadd_gt ? a_in : xb_in;
-	wire fadd_inf = fadd_gt ? a_inf : xb_inf;
-	wire fadd_zero = fadd_gt ? a_zero | a_nan : xb_zero | xb_nan;
-	wire [7:0] fadd_d = fadd_gt ? a_exp - xb_exp : xb_exp - a_exp;
-	wire [4:0] fadd_dif = fadd_d[7:5] ? 5'd31 : fadd_d[4:0];
-	wire [23:0] fadd_m = (a_zero | xb_zero) ? 24'd0 : {1'b1, fadd_gt ? xb_in[22:0] : a_in[22:0]};
-
-	wire [24:0] faddx_m0 = cb_in[5] ? {1'd0, a_in[23:0]} : {a_in[23:0], 1'd0};
-	wire [26:0] faddx_m1 = cb_in[6] ? {2'd0, faddx_m0} : {faddx_m0, 2'd0};
-	wire [30:0] faddx_m2 = cb_in[7] ? {4'd0, faddx_m1} : {faddx_m1, 4'd0};
-	wire [30:0] faddx_m3 = cb_in[8] ? {8'd0, faddx_m2[30:9], |faddx_m2[8:0]} : faddx_m2;
-	wire [31:0] faddx_mr = {1'b0, b_in[9] ? {16'd0, faddx_m3[30:17], |faddx_m3[16:0]} : faddx_m3};
-	wire [31:0] faddx_ml = {2'b01, c_in[22:0], 7'd0};
-	wire [31:0] faddx_m = a_in[31] ? faddx_ml - faddx_mr : faddx_ml + faddx_mr;
+	wire fadd_inf = a_inf | xb_inf;
+	wire fadd_zero = (a_zero & xb_zero) | a_nan | xb_nan;
+	wire [23:0] fadd_xb = {1'b1, xb_in[22:0]};
+	wire [24:0] fadd_xb0 = fadd_d[0] ? {1'd0, fadd_xb} : {fadd_xb, 1'd0};
+	wire [26:0] fadd_xb1 = fadd_d[1] ? {2'd0, fadd_xb0} : {fadd_xb0, 2'd0};
+	wire [30:0] fadd_xb2 = fadd_d[2] ? {4'd0, fadd_xb1} : {fadd_xb1, 4'd0};
+	wire [23:0] fadd_a = {1'b1, a_in[22:0]};
+	wire [24:0] fadd_a0 = fadd_d[0] ? {1'd0, fadd_a} : {fadd_a, 1'd0};
+	wire [26:0] fadd_a1 = fadd_d[1] ? {2'd0, fadd_a0} : {fadd_a0, 2'd0};
+	wire [30:0] fadd_a2 = fadd_d[2] ? {4'd0, fadd_a1} : {fadd_a1, 4'd0};
+	wire [30:0] fadd_m2 = fadd_gt ? fadd_xb2 : fadd_a2;
+	wire [30:0] fadd_m3 = fadd_d[3] ? {8'd0, fadd_m2[30:9], |fadd_m2[8:0]} : fadd_m2;
+	wire [30:0] fadd_m4 = fadd_d[4] ? {16'd0, fadd_m3[30:17], |fadd_m3[16:0]} : fadd_m3;
+	wire [31:0] fadd_mr = {1'b0, fadd_d[7:5] ? {31'd1} : fadd_m4};
+	wire [31:0] fadd_ml = {2'b01, fadd_max[22:0], 7'd0};
+	wire [31:0] fadd_mlr = (a_zero | xb_zero) ? fadd_ml : (a_in[WD-1] ^ xb_in[WD-1]) ? fadd_ml - fadd_mr : fadd_ml + fadd_mr;
 
 	wire [22:0] trunc_m = (a_in[23] ? 23'h2AAAAA : 23'h555555) & (a_in[24] ? 23'h199999 : 23'h666666) & (a_in[25] ? 23'h078787 : 23'h787878) & (a_in[26] ? 23'h007F80 : 23'h7F807F) & (a_in[27] ? 23'h00007F : 23'h7FFF80);
 	wire [21:0] trunc_ml;
@@ -178,21 +184,13 @@ module relm_custom(clk, op_in, a_in, cb_in, x_in, xb_in, opb_in, mul_ax_in, mul_
 				b_out <= {1'b0, fsqu_e[9:8] ? 8'h7F : fsqu_e[7:0], fsqu_inf, fsqu_zero, {WD-16{1'bx}}, 5'd0};
 				a_out <= {fmul_ax[47:17], |fmul_ax[16:0]};
 			end
-			6'b0??010, 6'b1?0010: begin // (OPB) FADD
-				mul_a_out <= {WD{1'bx}};
-				mul_x_out <= {WD{1'bx}};
-				d_out <= d_in;
-				c_out <= {c_in[WD-1:23], fadd_max[22:0]};
-				b_out <= {fadd_max[31:23], fadd_inf, fadd_zero, {WD-21{1'bx}}, fadd_dif, 5'd0};
-				a_out <= {a_in[WD-1] ^ xb_in[WD-1], 7'bxxxxxxx, fadd_m};
-			end
-			6'b1?1010: begin // OPB FADDX
+			6'b???010: begin // (OPB) FADD
 				mul_a_out <= {WD{1'bx}};
 				mul_x_out <= {WD{1'bx}};
 				d_out <= d_in;
 				c_out <= c_in;
-				b_out <= b_in;
-				a_out <= faddx_m;
+				b_out <= {fadd_max[31:23], fadd_inf, fadd_zero, {WD-16{1'bx}}, 5'd0};
+				a_out <= fadd_mlr;
 			end
 			6'b0??011: begin // ROUND
 				mul_a_out <= {WD{1'bx}};
