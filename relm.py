@@ -458,7 +458,7 @@ class Int(BinaryOp):
         return code
 
     def puts(self) -> Code:
-        self.ref.append(code := Code("PUTS", debug="->      "))
+        self.ref.append(code := Code("PUTS", debug="->      "), offset=0x80000000)
         return code
 
     def binary(lhs: Int, rhs: int | str | BinaryOp, *op: str) -> ExprB:
@@ -628,7 +628,7 @@ class RegBType(BinaryOp):
             case Expr():
                 return lhs[+rhs, lhs:"BSLOAD", "OPB":op]
             case ExprB():
-                return lhs[+rhs, puts := Code("PUTS"), lhs, op:puts]
+                return lhs[r := Int(rhs), lhs, op : r.puts()]
             case _:
                 return NotImplemented
 
@@ -1568,4 +1568,3 @@ ReLM[:] = (
 )
 ReLM[0x1F] = "OPB", "HALT"
 ReLM[0x22:] = "BLOADX", "BSLOADX"
-ReLM[0x8000000B] = "PUTMX"

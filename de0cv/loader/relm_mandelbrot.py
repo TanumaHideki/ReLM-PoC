@@ -66,7 +66,7 @@ with ReLMLoader(loader="loader/output_files/relm_de0cv.svf"):
                 Do()[
                     pos := Int(iy * 80),
                     cy := Float((239.5 - ToFloat(iy)) * scale + center_y),
-                    qy2 := Float(AccF**2, 1),
+                    qy2 := Float(AccF**2),
                     ix := UInt(0),
                     Do()[
                         pixel := UInt(),
@@ -74,7 +74,7 @@ with ReLMLoader(loader="loader/output_files/relm_de0cv.svf"):
                         Do()[
                             cx := Float((ToFloat(ix) - 319.5) * scale + center_x),
                             qx := Float(AccF - 0.25),
-                            q := Float(AccF**2 + qy2, 1),
+                            q := Float(AccF**2 + qy2),
                             If(
                                 ((AccF + qx) * q * 4.0 <= qy2)
                                 | ((cx + 1.0) ** 2 + qy2 <= (1.0 / 16.0))
@@ -83,8 +83,8 @@ with ReLMLoader(loader="loader/output_files/relm_de0cv.svf"):
                             ].Else[
                                 iter := UInt(0),
                                 pindex := Int(Acc),
-                                x2 := Float(AccF, 1),
-                                y2 := Float(AccF, 1),
+                                x2 := Float(AccF),
+                                y2 := Float(AccF),
                                 x := Float(AccF),
                                 y := Float(AccF),
                                 Do()[

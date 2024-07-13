@@ -27,7 +27,7 @@ ReLM[:] = (
     "FIFO1",
     "SRAM",
 )[::-1]
-ReLM[0x18::0x20] = "ITOF", "ITOFX"
+ReLM[0x18::0x20] = "ITOF", "ISIGN"
 ReLM[0x19::0x20] = "FMUL", "FSQU"
 ReLM[0x1A] = "FADD"
 ReLM[0x1B::0x20] = ("ROUND", "TRUNC"), "FTOI"
