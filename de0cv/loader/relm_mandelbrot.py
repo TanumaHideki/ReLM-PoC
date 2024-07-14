@@ -38,13 +38,16 @@ with ReLMLoader(loader="loader/output_files/relm_de0cv.svf"):
         Do()[vram := Array(*([0] * 80 * 480))],
     ]
     Define[
-        lock := Array(*([1] * 6)),
+        rows := FIFO.Alloc(487),
+        mutex := Mutex(),
+        sem_start := Semaphore(),
+        sem_work := Semaphore(),
         scale := Float(),
         center_x := Float(),
         center_y := Float(),
     ]
 
-    def task(start: int, step: int, master: bool = False) -> None:
+    def task(master: bool = False) -> None:
         Define[
             px := ArrayF(*([0.0] * 60)),
             py := ArrayF(*([0.0] * 60)),
@@ -52,18 +55,60 @@ with ReLMLoader(loader="loader/output_files/relm_de0cv.svf"):
         Thread[
             (
                 Block[
+                    sem_start.Acquire(6),
                     scale(1.0),
                     center_x(-0.743643135),
                     center_y(0.131825963),
-                    i := Int(0),
-                    Do()[lock[i](0), i(i + 1)].While(Acc != start),
+                    sem_work.Release(6),
                 ]
                 if master
-                else Do()[...].While(lock[start] != 0)
+                else Block[
+                    sem_start.Release(),
+                    sem_work.Acquire(),
+                ]
             ),
             Do()[
-                iy := UInt(start),
+                (
+                    Block[
+                        sem_start.Acquire(6),
+                        Do()[...].While(
+                            (In("KEY") & 0b11111 == 0) & (In("KEY") & 0b100000 != 0)
+                        ),
+                        If(In("KEY") & 0b1 != 0)[scale(scale / 0.75)].Else[
+                            scale(scale * 0.75)
+                        ],
+                        If(In("KEY") & 0b10000 != 0)[
+                            center_x(-0.743643135),
+                            center_y(0.131825963),
+                            scale(1.0),
+                        ],
+                        If(In("KEY") & 0b1000 != 0)[
+                            center_x(-0.761574),
+                            center_y(-0.0847596),
+                            scale(1.0),
+                        ],
+                        If(In("KEY") & 0b100 != 0)[
+                            center_x(0.42884),
+                            center_y(-0.231345),
+                            scale(1.0),
+                        ],
+                        If(In("KEY") & 0b10 != 0)[
+                            center_x(-1.62917),
+                            center_y(-0.0203968),
+                            scale(1.0),
+                        ],
+                        rows.Push(*[i for i in range(480)], *([-1] * 7)),
+                        sem_work.Release(6),
+                    ]
+                    if master
+                    else Block[
+                        sem_start.Release(),
+                        sem_work.Acquire(),
+                    ]
+                ),
                 Do()[
+                    mutex[iy := Int(rows.Pop())],
+                    If(iy == -1)[Break()],
                     pos := Int(iy * 80),
                     cy := Float((239.5 - ToFloat(iy)) * scale + center_y),
                     qy2 := Float(AccF**2),
@@ -117,49 +162,10 @@ with ReLMLoader(loader="loader/output_files/relm_de0cv.svf"):
                         vram[pos](pixel),
                         pos(pos + 1),
                     ].While(ix < 640),
-                ].While(iy(iy + step) < 480),
-                (
-                    Block[
-                        i := Int(0),
-                        While(i != start)[If(lock[i] == 0)[i(0)].Else[i(i + 1)],],
-                        Do()[...].While(
-                            (In("KEY") & 0b11111 == 0) & (In("KEY") & 0b100000 != 0)
-                        ),
-                        If(In("KEY") & 0b1 != 0)[scale(scale / 0.75)].Else[
-                            scale(scale * 0.75)
-                        ],
-                        If(In("KEY") & 0b10000 != 0)[
-                            center_x(-0.743643135),
-                            center_y(0.131825963),
-                            scale(1.0),
-                        ],
-                        If(In("KEY") & 0b1000 != 0)[
-                            center_x(-0.761574),
-                            center_y(-0.0847596),
-                            scale(1.0),
-                        ],
-                        If(In("KEY") & 0b100 != 0)[
-                            center_x(0.42884),
-                            center_y(-0.231345),
-                            scale(1.0),
-                        ],
-                        If(In("KEY") & 0b10 != 0)[
-                            center_x(-1.62917),
-                            center_y(-0.0203968),
-                            scale(1.0),
-                        ],
-                        i := Int(0),
-                        While(i != start)[lock[i](0), i(i + 1)],
-                    ]
-                    if master
-                    else Block[
-                        lock[start](1),
-                        Do()[...].While(lock[start] != 0),
-                    ]
-                ),
+                ],
             ],
         ]
 
-    for i in range(6):
-        task(i, 7)
-    task(6, 7, True)
+    for _ in range(6):
+        task()
+    task(True)

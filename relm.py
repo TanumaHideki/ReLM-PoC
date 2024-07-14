@@ -928,6 +928,8 @@ class DoWhile(Statement):
             whilefalse = self.while_[False,]
             whilefalse.expr.render(codes)
             self.loop.continue_ << whilefalse
+        else:
+            assert not self.while_
         codes.append(self.loop.break_)
         return codes
 
@@ -1399,6 +1401,120 @@ def Wait(align: int, loop: int = 0) -> Block:
             return b[dest << "JUMP", Align(src), dest]
     wait = Label()
     return b[Acc(loop), wait, dest << "JEQ", Acc - 1, wait << "JUMP", Align(src), dest]
+
+
+class Atomic(Statement):
+    def __init__(self, init: int = 0, unsigned: bool = False):
+        self.init = init
+        self.unsigned = unsigned
+        self.entry = Label()
+        self.align = Label()
+
+    def render(self, codes: list[Code]) -> list[Code]:
+        swap = Label()
+        return Acc[
+            self.entry,
+            swap << "PUT",
+            swap,
+            "SWAP" : self.init,
+            "OPB":"JUMP",
+            self.align,
+        ].render(codes)
+
+    def __call__(self, value: int | str | BinaryOp) -> ExprB:
+        acc = AccU if self.unsigned else Acc
+        ret = Label()
+        match value:
+            case int() | str():
+                return acc[
+                    ret << "LOAD",
+                    "BLOAD":value,
+                    self.entry << "JUMP",
+                    Align(self.align),
+                    ret,
+                ]
+            case Int():
+                return acc[
+                    ret << "LOAD",
+                    "BLOAD" : value.put(),
+                    self.entry << "JUMP",
+                    Align(self.align),
+                    ret,
+                ]
+            case AccExpr():
+                return acc[
+                    ret << "BLOAD",
+                    "OPB":"BLOAD",
+                    self.entry << "JUMP",
+                    Align(self.align),
+                    ret,
+                ]
+            case BinaryOp():
+                value = +value
+                if isinstance(value, Expr):
+                    return acc[
+                        ret << "LOAD",
+                        value.bload(),
+                        self.entry << "JUMP",
+                        Align(self.align),
+                        ret,
+                    ]
+                else:
+                    return acc[
+                        value,
+                        ret << "BLOAD",
+                        "OPB":"BLOAD",
+                        self.entry << "JUMP",
+                        Align(self.align),
+                        ret,
+                    ]
+            case _:
+                raise TypeError(f"{type(value)} is not supported")
+
+
+class Mutex(Atomic):
+    def __init__(self, init: int = 1):
+        super().__init__(init)
+
+    def Acquire(self) -> Block:
+        return Block[Do()[...].While(self(0) == 0),]
+
+    def Release(self) -> Block:
+        return Block[self(1),]
+
+    def __getitem__(self, block: Any) -> Block:
+        return self.Acquire()[block][self.Release()]
+
+
+class Semaphore(Mutex):
+    def __init__(self, init: int = 0):
+        super().__init__(init + 1)
+
+    def Acquire(self, count: int = 1) -> Block:
+        if count == 1:
+            return Block[
+                Do()[
+                    Do()[...].While(self(0) == 0),
+                    If(Acc - 1 == 0)[self(1), Continue()],
+                    self(Acc),
+                ].While(False),
+            ]
+        else:
+            return Block[
+                rest := Int(-count),
+                Do()[
+                    Do()[...].While(self(0) == 0),
+                    If(rest(Acc - 1 + rest) < 0)[self(1), Continue()],
+                    self(rest + 1),
+                ].While(False),
+            ]
+
+    def Release(self, count: int = 1) -> Block:
+        return Block[
+            Do()[...].While(self(0) == 0),
+            Acc + count,
+            self(Acc),
+        ]
 
 
 class Mnemonic(type):
