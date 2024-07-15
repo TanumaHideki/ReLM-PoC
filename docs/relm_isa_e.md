@@ -120,7 +120,7 @@ Each OpCode consists of five bits, having an instruction assigned as follows.
 | OpCode | +0 | +1 | +2 | +3 | +4 | +5 | +6 | +7 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 0x00 | LOAD | SWAP/SHIFT | BLOAD | BSLOAD | ADD | AND | XOR | OR |
-| 0x08 | PUSH/OUT | POP/IO | PUT | PUTS | RSUB | JEQ | JNE | JUMP |
+| 0x08 | PUSH/OUT | POP/IO | PUT | PUTS/PUTM | RSUB | JEQ | JNE | JUMP |
 | 0x10 | UGT | ULT | IGT | ILT | SUB | MUL | SHR | SAR |
 | 0x18 | custom0 | custom1 | custom2 | custom3 | custom4 | custom5 | custom6 | OPB/HALT |
 | 0x20 | | | (OPB) BLOADX | (OPB) BSLOADX | | | | |
@@ -188,7 +188,7 @@ But PUTS and BSLOAD instructions also enables transferring the result to the ope
 | OpCode | Action | Comment |
 | --- | --- | --- |
 | OPB SHIFT | Acc := 1 << Acc | used for shift operation |
-| PUTS | Operand\[XB] := 1 << Acc | used for shift operation |
+| PUTS | Operand\[X ^ 0x80000000] := 1 << Acc | used for shift operation |
 | BSLOAD | B := 1 << Acc, Acc := XB | used for shift operation |
 
 ## Transfer Instruction
@@ -198,7 +198,8 @@ The following instructions execute writing memory or transferring values from Ac
 | OpCode | Action | Comment |
 | --- | --- | --- |
 | PUT | Operand\[XB] := Acc | |
-| PUTS | Operand\[XB] := 1 << Acc | used for shift operation |
+| PUTS | Operand\[X ^ 0x80000000] := 1 << Acc | used for shift operation |
+| PUTM | Operand\[XB] := Acc ^ 0x80000000 | used for floating point operation |
 
 When transfers to the same memory bank concur before completion, it may cause the penalty of a lap of CPUs' ring, depending on the hardware implementation.
 

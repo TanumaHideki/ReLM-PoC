@@ -27,7 +27,7 @@ with ReLMLoader(loader="loader/output_files/relm_de0cv.svf"):
             0x0F0F,
         ),
         LED(
-            hex5=0b1101101,  # m
+            hex5=0b1011011,  # m
             hex4=0b1111110,  # A
             hex3=0b0001110,  # n
             hex2=0b0011111,  # d

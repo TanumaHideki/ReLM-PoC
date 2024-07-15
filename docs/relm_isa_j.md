@@ -121,7 +121,7 @@ OPB命令のオペランドは命令コードで、レジスタ（B）をオペ�
 | OpCode | +0 | +1 | +2 | +3 | +4 | +5 | +6 | +7 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 0x00 | LOAD | SWAP/SHIFT | BLOAD | BSLOAD | ADD | AND | XOR | OR |
-| 0x08 | PUSH/OUT | POP/IO | PUT | PUTS | RSUB | JEQ | JNE | JUMP |
+| 0x08 | PUSH/OUT | POP/IO | PUT | PUTS/PUTM | RSUB | JEQ | JNE | JUMP |
 | 0x10 | UGT | ULT | IGT | ILT | SUB | MUL | SHR | SAR |
 | 0x18 | custom0 | custom1 | custom2 | custom3 | custom4 | custom5 | custom6 | OPB/HALT |
 | 0x20 | | | (OPB) BLOADX | (OPB) BSLOADX | | | | |
@@ -137,6 +137,8 @@ custom0～custom6はカスタム拡張命令用の空きコードになります
 SWAP/SHIFTは同一のコードが割り当てられていますが、OPBの有無で全く動作が異なる命令の例になります。
 
 SWAPは[アトミックスワップ](https://en.wikipedia.org/wiki/Linearizability#Primitive_atomic_instructions)を実現するための命令ですが、OPB付きでは意味のある動作をしないので、OPB SHIFTでオペランドを必要としない演算 Acc := 1 << Acc に割り当てています。
+
+PUTS/PUTMも同一のコードが割り当てられていますが、非OPB命令でオペランド（X）の最上位ビットが立っている場合はPUTSとして動作しますが、それ以外の場合は全てPUTMとして動作します。
 
 OPB/HALTは、もしOPB命令のオペランドに再びOPB命令のコードを指定した場合、動作を停止するHALT命令と解釈されることを表しています。
 
@@ -193,7 +195,7 @@ PUSH/OUTとPOP/IOはI/Oポート関連の命令ですが、デバイスとして
 | OpCode | Action | Comment |
 | --- | --- | --- |
 | OPB SHIFT | Acc := 1 << Acc | used for shift operation |
-| PUTS | Operand\[XB] := 1 << Acc | used for shift operation |
+| PUTS | Operand\[X ^ 0x80000000] := 1 << Acc | used for shift operation |
 | BSLOAD | B := 1 << Acc, Acc := XB | used for shift operation |
 
 ## 転送命令
@@ -203,7 +205,8 @@ PUSH/OUTとPOP/IOはI/Oポート関連の命令ですが、デバイスとして
 | OpCode | Action | Comment |
 | --- | --- | --- |
 | PUT | Operand\[XB] := Acc | |
-| PUTS | Operand\[XB] := 1 << Acc | used for shift operation |
+| PUTS | Operand\[X ^ 0x80000000] := 1 << Acc | used for shift operation |
+| PUTM | Operand\[XB] := Acc ^ 0x80000000 | used for floating point operation |
 
 ハードウェア実装に依存しますが、同一バンクへの転送が解決前に重複した場合、CPU一周分のペナルティが発生する可能性があります。
 

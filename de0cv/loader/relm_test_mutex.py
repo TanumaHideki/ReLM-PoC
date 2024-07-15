@@ -79,4 +79,12 @@ with ReLMLoader(loader="loader/output_files/relm_de0cv.svf"):
             console.Print("Thread3 End", pos=pos, color=0xF0),
             pos(pos + 640),
         ],
+        LED(
+            hex5=0b1010010,  # T
+            hex4=0b0111110,  # H
+            hex3=0b0001100,  # r
+            hex2=0b1101101,  # e
+            hex1=0b1111110,  # A
+            hex0=0b0011111,  # d
+        ),
     ],
