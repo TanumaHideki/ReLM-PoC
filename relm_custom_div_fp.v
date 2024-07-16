@@ -101,7 +101,8 @@ module relm_custom(clk, op_in, a_in, cb_in, x_in, xb_in, opb_in, mul_ax_in, mul_
 	wire [9:0] fsqu_e = {1'b0, a_exp, 1'b0} - 10'h7F;
 	wire fsqu_zero = fsqu_e[9] | a_zero | a_nan;
 	wire fsqu_inf = (fsqu_e[9:8] == 2'b01) | a_inf;
-	wire [47:0] fmul_ax = {1'd1, a_in[22:0]} * {1'd1, (opb_in && x_in[WOP]) ? a_in[22:0] : xb_in[22:0]};
+	wire [47:0] fmul_ax = {1'd1, a_in[22:0]} * {1'd1, (opb_in & x_in[WOP+1]) ? a_in[22:0] : xb_in[22:0]};
+	wire [31:0] fmul_c = (opb_in & x_in[WOP]) ? a_in : c_in;
 
 	wire [9:0] fdiv_e = {2'b00, xb_exp} - {2'b00, a_exp} + 10'h7F;
 	wire fdiv_zero = fdiv_e[9] | xb_zero | a_inf;
@@ -166,19 +167,19 @@ module relm_custom(clk, op_in, a_in, cb_in, x_in, xb_in, opb_in, mul_ax_in, mul_
 				b_out <= {a_in[WD-1], 8'd157, 2'd0, {WD-11{1'bx}}};
 				a_out <= a_in[WD-1] ? -a_in : a_in;
 			end
-			6'b0??001, 6'b1?0001: begin // (OPB) FMUL
+			6'b0??001, 6'b10?001: begin // (OPB) FMUL, OPB FMULB
 				mul_a_out <= {WD{1'bx}};
 				mul_x_out <= {WD{1'bx}};
 				d_out <= d_in;
-				c_out <= c_in;
+				c_out <= fmul_c;
 				b_out <= {a_in[WD-1] ^ xb_in[WD-1], fmul_e[9:8] ? 8'h7F : fmul_e[7:0], fmul_inf, fmul_zero, {WD-11{1'bx}}};
 				a_out <= {fmul_ax[47:17], |fmul_ax[16:0]};
 			end
-			6'b1?1001: begin // OPB FSQU
+			6'b11?001: begin // OPB FSQU, OPB FSQUB
 				mul_a_out <= {WD{1'bx}};
 				mul_x_out <= {WD{1'bx}};
 				d_out <= d_in;
-				c_out <= c_in;
+				c_out <= fmul_c;
 				b_out <= {1'b0, fsqu_e[9:8] ? 8'h7F : fsqu_e[7:0], fsqu_inf, fsqu_zero, {WD-11{1'bx}}};
 				a_out <= {fmul_ax[47:17], |fmul_ax[16:0]};
 			end
