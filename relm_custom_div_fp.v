@@ -270,9 +270,9 @@ module relm_custom(clk, op_in, a_in, cb_in, x_in, xb_in, opb_in, mul_ax_in, mul_
 				mul_a_out <= {WD{1'bx}};
 				mul_x_out <= {WD{1'bx}};
 				d_out <= itof_a;
-				c_out <= c_in;
+				c_out <= c_in; // N
 				b_out <= d_in;
-				a_out <= c_in;
+				a_out <= c_in; // N
 			end
 			6'b???110: begin // (OPB) FDIV
 				mul_a_out <= {WD{1'bx}};
