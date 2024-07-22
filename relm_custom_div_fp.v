@@ -277,9 +277,9 @@ module relm_custom(clk, op_in, a_in, cb_in, x_in, xb_in, opb_in, mul_ax_in, mul_
 			6'b???110: begin // (OPB) FDIV
 				mul_a_out <= {WD{1'bx}};
 				mul_x_out <= {WD{1'bx}};
-				d_out <= {a_in[WD-1] ^ xb_in[WD-1], fdiv_inf ? 8'hFF : fdiv_zero ? 8'h00 : fdiv_e[7:0], (fdiv_inf || fdiv_zero) ? {fdiv_nan, 21'd0} : xb_in[22:0]};
-				c_out <= {9'h7F, a_in[22:0]};
-				b_out <= b_in;
+				d_out <= {WD{1'bx}};
+				c_out <= {a_in[WD-1] ^ xb_in[WD-1], fdiv_inf ? 8'hFF : fdiv_zero ? 8'h00 : fdiv_e[7:0], (fdiv_inf || fdiv_zero) ? {fdiv_nan, 21'd0} : xb_in[22:0]};
+				b_out <= {WD{1'bx}};
 				a_out <= {9'h7F, a_in[22:0]};
 			end
 			default: begin

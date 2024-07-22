@@ -133,17 +133,30 @@ class FloatExprB(ExprB):
     @staticmethod
     def fdiv() -> FloatExprB:
         return AccF[
-            #D := Float(AccF),
-            #(((((AccF.op("ITOFS") - 3.0) + 1.5)**2).op("ITOFG") + 2.0) * RegBF * (-128.0 / 577.0)).op("FMULB", "ITOFGSX") * RegBF * D,
-            #((AccF.op("ITOFG") - 1.0).op("FMULB") * RegBF).op("FMULB") * RegBF
-            #-AccF + RegBF,
-            #-AccF + RegBF,
-            ((AccF - 1.5) ** 2 + 2.0) * (-RegBF + 3.0) * (128.0 / 577.0),
-            (AccF.op("FMULB") * RegBF).op("ITOFGSX") - 1.0,
-            ((AccF.op("ITOFG") * RegBF).op("FMULB", "ITOFGS") * RegBF).op("ITOFG")
-            * RegBF,
-            -AccF + RegBF,
-            -AccF + RegBF,
+            D := Float(AccF),
+            (
+                (
+                    (
+                        (
+                            (
+                                (
+                                    (((AccF.op("ITOFS") - 3.0) + 1.5) ** 2).op("ITOFG")
+                                    + 2.0
+                                )
+                                * RegBF
+                                * (-128.0 / 577.0)
+                            ).op("FMULB", "ITOFGSX")
+                            * RegBF
+                            * D
+                        ).op("ITOFG")
+                        - 1.0
+                    ).op("FMULB")
+                    * RegBF
+                ).op("FMULB")
+                * RegBF
+            ).op("ITOFG")
+            - RegBF
+            + RegBF,
         ]
 
     def __truediv__(lhs: FloatExprB, rhs: float | BinaryOp) -> FloatExprB:
