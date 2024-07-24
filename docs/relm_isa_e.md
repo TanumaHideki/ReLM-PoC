@@ -125,12 +125,22 @@ Each OpCode consists of five bits, having an instruction assigned as follows.
 | 0x18 | custom0 | custom1 | custom2 | custom3 | custom4 | custom5 | custom6 | OPB/HALT |
 | 0x20 | | | (OPB) BLOADX | (OPB) BSLOADX | | | | |
 
-The table shows the basic instruction set of ReLM architecture except the reserved codes assigned from custom0 to custom6.
+Custom0 to custom6 are vacant codes for custom extended instructions.
+
+Opcodes numbered 0x20 onwards, being dedicated to OPB-type instructions, make the whole 32 bits of operand (X) available for expressing opcodes.  
+Therefore, instead of being unable to use immediate operands, they expand the variety of possible instructions beyond what the 5 bits of regular opcodes enable.
+
+To expand floating point, etc. with custom extended instructions, it requires more instruction codes than the seven instructions custom0 to custom6 alone enable.  
+And so, it needs to employ this way of instruction bit length extension by OPB.
+
+The instructions listed above, except for custom extended instructinos, are basic instructions of ReLM architecture.
 
 SWAP/SHIFT is an example of instructions with the same assigned code but to bring completely different operations with or without OPB instruction.
 
 SWAP is an instruction to implement [atomic swap](https://en.wikipedia.org/wiki/Linearizability#Primitive_atomic_instructions).  
 Since it makes no meaningful operation in combination with OPB, it assigns "Acc := 1 << Acc", an operation requiring no operand, to "OPB SHIFT".
+
+PUTS/PUTM, also with the same assigned code, operates as PUTS when the MSB of the operand (X) which designates the destination address of a non-OPB instruction is asserted, otherwise operates as PUTM.
 
 OPB/HALT indicates that it will be interpreted as a HALT instruction to stop operation if OPB instruction code is specified again in the operand of OPB.
 
