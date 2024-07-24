@@ -159,7 +159,7 @@ class BinaryOp(Statement):
         else:
             return Bool(lhs ^ rhs, True)
 
-    useB = {"BLOAD", "BSLOAD", "BLOADX", "BSLOADX", "DIV", "DIVLOOP", "DIVINIT", "DIVMOD"}
+    useB = {"BLOAD", "BSLOAD", "BLOADX", "BSLOADX", "DIV", "DIVLOOP", "DIVINIT"}
 
     def getitem(self, items: Any, codes: list[Code | list[Code]]) -> type:
         t = Expr
@@ -1621,7 +1621,7 @@ class ReLM(metaclass=Mnemonic):
                         else (
                             f"{ctypes.c_float.from_buffer(ctypes.c_uint(operand)).value:+E}"
                             if c.op
-                            in {"FADD", "FMUL", "ROUND", "FCOMP", "FDIV", "ITOF"}
+                            in {"FADD", "FMUL", "ROUND", "FCOMP", "ITOF", "FDIV"}
                             else f"{operand:08X}"
                         )
                     )

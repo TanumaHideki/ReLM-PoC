@@ -10,9 +10,9 @@ with ReLMLoader(loader="loader/output_files/relm_de0cv.svf"):
         Out(
             "VGAPAL",
             0x0000,
-            0x0021,
-            0x0032,
-            0x0043,
+            0x9B01,
+            0xAC02,
+            0xBD03,
             0x0054,
             0x0065,
             0x0076,
@@ -120,42 +120,44 @@ with ReLMLoader(loader="loader/output_files/relm_de0cv.svf"):
                             cx := Float((ToFloat(ix) - 319.5) * scale + center_x),
                             qx := Float(AccF - 0.25),
                             q := Float(AccF**2 + qy2),
-                            If(
-                                ((AccF + qx) * q * 4.0 <= qy2)
-                                | ((cx + 1.0) ** 2 + qy2 <= (1.0 / 16.0))
-                            )[
-                                pixel(pixel * 16 + 15),
+                            If((AccF + qx) * q * 4.0 <= qy2)[
+                                pixel(pixel * 16 + 1)
                             ].Else[
-                                iter := UInt(0),
-                                pindex := Int(Acc),
-                                x2 := Float(AccF),
-                                y2 := Float(AccF),
-                                x := Float(AccF),
-                                y := Float(AccF),
-                                Do()[
-                                    iter(iter + 1),
-                                    If(Acc == 0xAAA)[Break()],
-                                    y(y * x * 2.0 + cy),
-                                    x(x2 - y2 + cx),
-                                    x2(AccF**2),
-                                    If(pindex == 60)[
-                                        pi := Int(0),
-                                        While(
-                                            (pi != 60)
-                                            & (
-                                                (px[pi] - x) ** 2 + (py[pi] - y) ** 2
-                                                > 1.0e-10
-                                            )
-                                        )[pi(pi + 1)],
-                                        If(pi != 60)[iter(0xAAA), Break()],
-                                        pindex(0),
-                                    ],
-                                    px[pindex](x),
-                                    py[pindex](y),
-                                    pindex(pindex + 1),
-                                ].While(y2(y**2) + x2 <= math.exp(math.tau)),
-                                ((+iter).opb("BLOADX") >> 1).opb("XOR"),
-                                pixel(Acc.bit_count() + 3 + pixel * 16),
+                                If((cx + 1.0) ** 2 + qy2 <= (1.0 / 16.0))[
+                                    pixel(pixel * 16 + 2)
+                                ].Else[
+                                    iter := UInt(0),
+                                    pindex := Int(Acc),
+                                    x2 := Float(AccF),
+                                    y2 := Float(AccF),
+                                    x := Float(AccF),
+                                    y := Float(AccF),
+                                    Do()[
+                                        iter(iter + 1),
+                                        If(Acc == 0xAAA)[Break()],
+                                        y(y * x * 2.0 + cy),
+                                        x(x2 - y2 + cx),
+                                        x2(AccF**2),
+                                        If(pindex == 60)[
+                                            pi := Int(0),
+                                            While(
+                                                (pi != 60)
+                                                & (
+                                                    (px[pi] - x) ** 2
+                                                    + (py[pi] - y) ** 2
+                                                    > 1.0e-10
+                                                )
+                                            )[pi(pi + 1)],
+                                            If(pi != 60)[iter(0), Break()],
+                                            pindex(0),
+                                        ],
+                                        px[pindex](x),
+                                        py[pindex](y),
+                                        pindex(pindex + 1),
+                                    ].While(y2(y**2) + x2 <= math.exp(math.tau)),
+                                    ((+iter).opb("BLOADX") >> 1).opb("XOR"),
+                                    pixel(Acc.bit_count() + 3 + pixel * 16),
+                                ],
                             ],
                             ix(ix + 1),
                         ].While(pcount(pcount - 1) != 0),
