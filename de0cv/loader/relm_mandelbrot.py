@@ -120,11 +120,9 @@ with ReLMLoader(loader="loader/output_files/relm_de0cv.svf"):
                             cx := Float((ToFloat(ix) - 319.5) * scale + center_x),
                             qx := Float(AccF - 0.25),
                             q := Float(AccF**2 + qy2),
-                            If((AccF + qx) * q * 4.0 <= qy2)[
-                                pixel(pixel * 16 + 1)
-                            ].Else[
+                            If((AccF + qx) * q * 4.0 <= qy2)[color := Int(1)].Else[
                                 If((cx + 1.0) ** 2 + qy2 <= (1.0 / 16.0))[
-                                    pixel(pixel * 16 + 2)
+                                    color(2)
                                 ].Else[
                                     iter := UInt(0),
                                     pindex := Int(Acc),
@@ -136,8 +134,7 @@ with ReLMLoader(loader="loader/output_files/relm_de0cv.svf"):
                                         iter(iter + 1),
                                         If(Acc == 0xAAA)[Break()],
                                         y(y * x * 2.0 + cy),
-                                        x(x2 - y2 + cx),
-                                        x2(AccF**2),
+                                        x2(x(x2 - y2 + cx) ** 2),
                                         If(pindex == 60)[
                                             pi := Int(0),
                                             While(
@@ -156,9 +153,10 @@ with ReLMLoader(loader="loader/output_files/relm_de0cv.svf"):
                                         pindex(pindex + 1),
                                     ].While(y2(y**2) + x2 <= math.exp(math.tau)),
                                     ((+iter).opb("BLOADX") >> 1).opb("XOR"),
-                                    pixel(Acc.bit_count() + 3 + pixel * 16),
+                                    color(Acc.bit_count() + 3),
                                 ],
                             ],
+                            pixel(pixel * 16 + color),
                             ix(ix + 1),
                         ].While(pcount(pcount - 1) != 0),
                         vram[pos](pixel),

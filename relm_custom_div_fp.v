@@ -218,10 +218,10 @@ module relm_custom(clk, op_in, a_in, cb_in, x_in, xb_in, opb_in, mul_ax_in, mul_
 				b_out <= {a_in[WD-1], 8'd157, 2'd0, {WD-11{1'bx}}};
 				a_out <= a_in[WD-1] ? -a_in : a_in;
 			end
-			6'b???100: begin // (OPB) ITOF, OPB ITOFB, OPB ITOFG, OPB ITOFGB
+			6'b???100: begin // (OPB) ITOF, OPB ITOF(S)(G)(B)
 				mul_a_out <= {WD{1'bx}};
 				mul_x_out <= {WD{1'bx}};
-				d_out <= d_in;
+				d_out <= (opb_in & x_in[WOP+2]) ? itof_a : d_in;
 				c_out <= fadd_rsub ? itof_a : c_in;
 				b_out <= fadd_sub ? d_in : c_in;
 				a_out <= itof_a;
@@ -261,10 +261,10 @@ module relm_custom(clk, op_in, a_in, cb_in, x_in, xb_in, opb_in, mul_ax_in, mul_
 			6'b???110: begin // (OPB) FDIV
 				mul_a_out <= {WD{1'bx}};
 				mul_x_out <= {WD{1'bx}};
-				d_out <= {a_in[WD-1] ^ xb_in[WD-1], fdiv_inf ? 8'hFF : fdiv_zero ? 8'h00 : fdiv_e[7:0], (fdiv_inf || fdiv_zero) ? {fdiv_nan, 21'd0} : xb_in[22:0]};
-				c_out <= {9'h7F, a_in[22:0]};
-				b_out <= {WD{1'bx}};
-				a_out <= {9'h7F, a_in[22:0]};
+				d_out <= {9'h7F, a_in[22:0]};
+				c_out <= {WD{1'bx}};
+				b_out <= {9'h7F, a_in[22:0]};
+				a_out <= {a_in[WD-1] ^ xb_in[WD-1], fdiv_inf ? 8'hFF : fdiv_zero ? 8'h00 : fdiv_e[7:0], (fdiv_inf || fdiv_zero) ? {fdiv_nan, 21'd0} : xb_in[22:0]};
 			end
 			default: begin
 				mul_a_out <= {WD{1'bx}};

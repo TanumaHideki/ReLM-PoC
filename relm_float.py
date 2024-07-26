@@ -34,10 +34,47 @@ class FloatExprB(ExprB):
         if not isinstance(self, AccFloatExprB):
             self.AccF = AccFM if minus else AccF
             self.RegBF = RegBFM if minus else RegBF
-        self.itof = "ITOF"
 
-    def op(self, itof: str) -> FloatExprB:
-        self.itof = itof
+    def itofb(self) -> FloatExprB:
+        match (self.codes[-1].operand):
+            case "ITOF":
+                self.codes[-1].operand = "ITOFB"
+            case "ITOFG":
+                self.codes[-1].operand = "ITOFGB"
+            case "ITOFS":
+                self.codes[-1].operand = "ITOFSB"
+            case "ITOFSG":
+                self.codes[-1].operand = "ITOFSGB"
+            case _:
+                raise ValueError(f"Invalid operand: {self.codes[-1].operand}")
+        return self
+
+    def itofg(self) -> FloatExprB:
+        match (self.codes[-1].operand):
+            case "ITOF":
+                self.codes[-1].operand = "ITOFG"
+            case "ITOFB":
+                self.codes[-1].operand = "ITOFGB"
+            case "ITOFS":
+                self.codes[-1].operand = "ITOFSG"
+            case "ITOFSB":
+                self.codes[-1].operand = "ITOFSGB"
+            case _:
+                raise ValueError(f"Invalid operand: {self.codes[-1].operand}")
+        return self
+
+    def itofs(self) -> FloatExprB:
+        match (self.codes[-1].operand):
+            case "ITOF":
+                self.codes[-1].operand = "ITOFS"
+            case "ITOFB":
+                self.codes[-1].operand = "ITOFSB"
+            case "ITOFG":
+                self.codes[-1].operand = "ITOFSG"
+            case "ITOFGB":
+                self.codes[-1].operand = "ITOFSGB"
+            case _:
+                raise ValueError(f"Invalid operand: {self.codes[-1].operand}")
         return self
 
     def __getitem__(self, items: Any) -> FloatExprB:
@@ -46,13 +83,15 @@ class FloatExprB(ExprB):
         return FloatExprB(*codes, minus=self.minus)
 
     def __neg__(self) -> FloatExprB:
-        return FloatExprB(*self.codes, minus=not self.minus).op(self.itof)
+        return FloatExprB(*self.codes, minus=not self.minus)
 
     def __pos__(self) -> FloatExprB:
-        return AccF[self ^ 0x80000000].op(self.itof) if self.minus else self
+        return AccF[self ^ 0x80000000] if self.minus else self
 
-    def fadd(lhs: FloatExprB, rhs: float | BinaryOp, sub: bool = False) -> FloatExprB:
-        itof = Acc.opb(lhs.itof)
+    def fadd(
+        lhs: FloatExprB, rhs: float | BinaryOp | list, sub: bool = False
+    ) -> FloatExprB:
+        itof = Acc.opb("ITOF")
         match rhs:
             case float():
                 r = ctypes.c_uint.from_buffer(
@@ -70,7 +109,11 @@ class FloatExprB(ExprB):
                     return AccF[r := Float(rhs), lhs, "FADD" : r.put(), itof]
                 else:
                     return AccF[l := Float(lhs), rhs, "FADD" : l.put(), itof]
+            case list():
+                return lhs.fadd(rhs[-1], sub)
             case FloatRegBType():
+                if rhs.regD:
+                    lhs.itofg()
                 op = lhs.add[lhs.minus][rhs.minus ^ sub]
                 return AccF[lhs, "OPB":op, itof]
             case _:
@@ -89,7 +132,7 @@ class FloatExprB(ExprB):
         return (-rhs).fadd(lhs)
 
     def fmul(lhs: FloatExprB, rhs: float | BinaryOp) -> FloatExprB:
-        itof = Acc.opb(lhs.itof)
+        itof = Acc.opb("ITOF")
         match rhs:
             case float():
                 r = ctypes.c_uint.from_buffer(
@@ -100,7 +143,11 @@ class FloatExprB(ExprB):
                 return AccF[lhs, "FMUL" : rhs.put(lhs.minus), itof]
             case FloatExprB():
                 return AccF[l := Float(lhs), rhs, "FMUL" : l.put(rhs.minus), itof]
+            case list():
+                return lhs.fmul(rhs[-1])
             case FloatRegBType():
+                if rhs.regD:
+                    lhs.itofg()
                 op = lhs.mul[lhs.minus ^ rhs.minus]
                 return AccF[lhs, "OPB":op, itof]
             case _:
@@ -114,20 +161,31 @@ class FloatExprB(ExprB):
 
     @staticmethod
     def fdiv(minus: bool = False) -> FloatExprB:
+        D = RegDF
         return AccF[
-            D3 := Float(AccF - 3.0),
+            y := Float(AccFM if minus else AccF),
             (
                 (
-                    (((AccF + 1.5) ** 2 + 2.0) * D3).op("ITOFB")
-                    * (-128.0 / 577.0)
-                    * RegBF
-                    - 1.5
+                    1.0
+                    - RegBF(
+                        (
+                            1.0
+                            - RegBF(
+                                ((AccF(-2.25) + RegBF) ** 2 + 1.5) * (32.0 / 99.0),
+                                x1 := [],
+                            )
+                            * D
+                        )
+                        * x1
+                        + x1,
+                        x2 := [],
+                    )
+                    * D
                 )
-                ** 2
-                + 0.75
-            ).op("ITOFG")
-            * RegBF
-            * (RegBFM if minus else RegBF),
+                * x2
+                + x2
+            )
+            * y,
         ]
 
     def __truediv__(lhs: FloatExprB, rhs: float | BinaryOp) -> FloatExprB:
@@ -174,7 +232,7 @@ class FloatExprB(ExprB):
             (
                 Acc.opb(op).opb("ITOF").opb("TRUNC")
                 if offset == 0.5
-                else Acc.opb("TRUNC").opb(op).opb(self.itof)
+                else Acc.opb("TRUNC").opb(op).opb("ITOF")
             ),
         ]
 
@@ -195,7 +253,7 @@ class FloatExprB(ExprB):
                 elif rhs == 1:
                     return lhs
                 elif rhs == 2:
-                    return AccF[lhs.opb("FSQU").opb(lhs.itof)]
+                    return AccF[lhs.opb("FSQU").opb("ITOF")]
                 elif rhs < 0:
                     return 1.0 / (lhs**-rhs)
                 elif rhs & 1:
@@ -248,9 +306,10 @@ class FloatExprB(ExprB):
 
 
 class FloatRegBType(BinaryOp):
-    def __init__(self, minus: bool = False):
+    def __init__(self, minus: bool = False, regD: bool = False):
         super().__init__()
         self.minus = minus
+        self.regD = regD
 
     def __pos__(self) -> FloatExprB:
         acc = AccFM if self.minus else AccF
@@ -260,17 +319,22 @@ class FloatRegBType(BinaryOp):
         acc = AccF if self.minus else AccFM
         return acc["OPB":"LOAD"]
 
+    def __call__(
+        self, value: FloatExprB, reg: list[FloatRegBType] | None = None
+    ) -> FloatExprB:
+        if reg is not None:
+            reg.append(FloatRegBType(value.minus, self.regD))
+        return value.itofs() if self.regD else value.itofb()
+
 
 RegBF = FloatRegBType()
 RegBFM = FloatRegBType(True)
+RegDF = FloatRegBType(regD=True)
 
 
 class AccFloatExprB(FloatExprB):
     def __init__(self, minus: bool = False):
         super().__init__(minus=minus)
-
-    def op(self, itof: str) -> FloatExprB:
-        return FloatExprB(minus=self.minus).op(itof)
 
     def __call__(self, value: float | BinaryOp) -> FloatExprB:
         match value:
@@ -308,9 +372,6 @@ class Float(Int):
                 raise TypeError(f"{type(value)} is not supported")
         self.AccF = AccFM if self.minus else AccF
         self.RegBF = RegBFM if self.minus else RegBF
-
-    def op(self, itof: str) -> FloatExprB:
-        return self.load().op(itof)
 
     def put(self, minus: bool = False) -> tuple[Code]:
         c = Code("PUT", debug="->      ")
