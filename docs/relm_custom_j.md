@@ -270,7 +270,7 @@ $y$ は $x$ の逆数の計算結果、 $xy$ は逆数の検算で理想的に�
 
 ![relm_test_fp_div_err.jpg](relm_test_fp_div_err.jpg)
 
-浮動小数点除算で実際に仮数部の逆数計算を実行するコードは [relm_floay.py](../relm_float.py) の以下の部分になります。（インデントは[Black Formatter](https://black.readthedocs.io/en/stable/)による整形結果）
+浮動小数点除算で実際に仮数部の逆数計算を実行するコードは [relm_float.py](../relm_float.py) の以下の部分になります。（インデントは[Black Formatter](https://black.readthedocs.io/en/stable/)による整形結果）
 
 ~~~py
     @staticmethod
