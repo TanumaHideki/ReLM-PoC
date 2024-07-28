@@ -89,8 +89,8 @@ module relm_custom(clk, op_in, a_in, cb_in, x_in, xb_in, opb_in, mul_ax_in, mul_
 			6'b111101: begin // OPB DIVMOD
 				mul_a_out <= {WD{1'bx}};
 				mul_x_out <= {WD{1'bx}};
-				d_out <= d_in; // Dq
-				c_out <= c_in; // N
+				d_out <= {WD{1'bx}};
+				c_out <= {WD{1'bx}};
 				b_out <= b_in; // Q
 				a_out <= c_in; // N
 			end

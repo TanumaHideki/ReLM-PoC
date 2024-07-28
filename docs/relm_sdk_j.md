@@ -461,6 +461,8 @@ recvPS2関数は本体の末尾で結果を返していますので、
 
 relm_test_vga.pyはVGAで画面に文字を出力する比較的複雑なサンプルです。
 
+![relm_test_vga.jpg](relm_test_vga.jpg)
+
 最初のスレッドはVRAMの実装です。
 ~~~ py
     Thread[

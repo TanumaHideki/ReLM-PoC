@@ -330,3 +330,90 @@ Popメソッドの戻り値は、式の中で利用できるようにExpr型で�
 式として利用できる型としてはExprBとExprがありますが、ExprはExprBのサブクラスで、レジスタ（B）を変更しないと判っている計算式のみをExpr型とします。
 
 Pushメソッドは式の中で使われることはなく、あくまでも実行文としての使用に限定されますので、Block型のオブジェクトを返しています。
+
+## スレッド間通信と排他制御
+
+複数のスレッドが協調する処理を構築したい場合、FIFOの利用がまず第一の候補となります。
+
+FIFOは送信側と受信側が別々のスレッドで非同期的に使用しても安全なことが保障されており、書き込みから読み出しへのタイムラグも小さく抑えられることから効率上も有利になります。
+
+ただし、FIFOが安全に使用できるのはあくまでも一対一のスレッド間通信に限定されており、多対一、一対多、あるいは多対多の場合、何らかの排他制御が必要になります。
+
+FIFOに対して複数のスレッドで同時にPushを実行した場合、本来は全てのデータが別々にPushされることが望ましいのですが、実際には全てのデータの論理和が一つだけPushされます。
+
+同様にFIFOに対して複数のスレッドで同時にPopを実行した場合、本来は全てのスレッドが別々にPopした出力を受け取るべきなのですが、実際には一つのデータだけがPopされて、全てのスレッドが同一のデータを受け取ります。
+
+これらは明らかに望ましい動作とは言えないため、複数スレッドによる同時アクセスを防止する[排他制御](https://ja.wikipedia.org/wiki/%E6%8E%92%E4%BB%96%E5%88%B6%E5%BE%A1)が必要となります。
+
+[ミューテックス](https://ja.wikipedia.org/wiki/%E3%83%9F%E3%83%A5%E3%83%BC%E3%83%86%E3%83%83%E3%82%AF%E3%82%B9)や[セマフォ](https://ja.wikipedia.org/wiki/%E3%82%BB%E3%83%9E%E3%83%95%E3%82%A9)といった[排他制御プリミティブ](https://ja.wikipedia.org/wiki/%E6%8E%92%E4%BB%96%E5%88%B6%E5%BE%A1#%E9%AB%98%E5%BA%A6%E3%81%AA%E6%8E%92%E4%BB%96%E5%88%B6%E5%BE%A1)は、SWAP命令による[アトミックスワップ](https://en.wikipedia.org/wiki/Linearizability#Primitive_atomic_instructions)をベースに構築されます。
+
+[relm_test_mutex.py](../de0cv/loader/relm_test_mutex.py) はこれらの排他制御プリミティブのテストコードになります。
+
+![relm_test_mutex.jpg](relm_test_mutex.jpg)
+
+排他制御プリミティブを使用する場合、先にDefineブロック内で定義してワーカースレッドから共有可能にする必要があります。
+
+~~~py
+    Define[
+        sem_start := Semaphore(),
+        sem_work := Semaphore(),
+        mutex := Mutex(),
+        pos := Int(),
+    ]
+~~~
+
+ワーカースレッドではこれらのオブジェクトにアクセスして排他制御を行います。
+
+ミューテックス（mutex）は、文字出力の重複を抑止するための排他制御に使用されます。
+
+~~~py
+    Thread[
+        i := Int(1),
+        sem_start.Release(),
+        sem_work.Acquire(),
+        Do()[
+            mutex[
+                console.Print("", pos=pos, color=0x11),
+                j := Int(i * 5),
+                Do()[console.Print(" ")].While(j(j - 1) != 0),
+                console.Print("Thread1", color=0x10),
+                pos(pos + 640),
+            ],
+        ].While(i(i + 1) < 10),
+        sem_start.Release(),
+    ]
+~~~
+
+セマフォ（sem_start, sem_work）を利用して、[バリア同期](https://ja.wikipedia.org/wiki/%E3%83%90%E3%83%AA%E3%82%A2_(%E8%A8%88%E7%AE%97%E6%A9%9F%E7%A7%91%E5%AD%A6))を構築することが可能です。
+
+以下の制御スレッドでは、セマフォを利用したワーカースレッドの開始制御や終了検知を行っています。
+
+~~~py
+    Thread[
+        sem_start.Acquire(3),
+        console.Print("Start", pos=0, color=0xF0),
+        pos(640),
+        sem_work.Release(3),
+        sem_start.Acquire(),
+        mutex[console.Print("Thread1 End", pos=pos, color=0xF0), pos(pos + 640)],
+        sem_start.Acquire(),
+        mutex[console.Print("Thread2 End", pos=pos, color=0xF0), pos(pos + 640)],
+        sem_start.Acquire(),
+        mutex[
+            console.Print("Thread3 End", pos=pos, color=0xF0),
+            pos(pos + 640),
+        ],
+        LED(
+            hex5=0b1010010,  # T
+            hex4=0b0111110,  # H
+            hex3=0b0001100,  # r
+            hex2=0b1101101,  # e
+            hex1=0b1111110,  # A
+            hex0=0b0011111,  # d
+        ),
+    ],
+~~~
+
+マンデルブロ集合描画プログラム [relm_mandelbrot.py](../de0cv/loader/relm_mandelbrot.py) では、同様の制御でワーカースレッドによる並列計算を行っています。
+
+![relm_mandelbrot_2.jpg](relm_mandelbrot_2.jpg)
