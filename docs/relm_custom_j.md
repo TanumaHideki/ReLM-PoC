@@ -305,10 +305,6 @@ $y$ は $x$ の逆数の計算結果、 $xy$ は逆数の検算で理想的に�
 
 このコンパイル結果のダンプ出力は以下の様になり、FDIV命令も含めると29命令（50MHzクロックで580ns）で浮動小数点除算が完結します。
 
-これは、古典的な[トランスピュータ](https://ja.wikipedia.org/wiki/%E3%83%88%E3%83%A9%E3%83%B3%E3%82%B9%E3%83%94%E3%83%A5%E3%83%BC%E3%82%BF) [IMS T800-30 の単精度除算（567ns）](https://www.transputer.net/tn/06/tn06.html#x1-150005)とほぼ同程度の性能となります。（ただし、ReLM の加減乗算は 40ns なので遥かに高速）
-
-反復計算の精度を犠牲にすると、加算を２回分減らして25命令（50MHzクロックで500ns）とすることも可能です。
-
 ~~~
 9BA3:   FDIV    +1.000000E+00           55:     y := Float(1.0 / x),
 9BA4:   PUT     9BBE:                   55:     ->      y := Float(1.0 / x),
@@ -341,13 +337,31 @@ $y$ は $x$ の逆数の計算結果、 $xy$ は逆数の検算で理想的に�
 9BBF:   OPB     ITOF                    55:     y := Float(1.0 / x),
 ~~~
 
+これは、古典的な[トランスピュータ](https://ja.wikipedia.org/wiki/%E3%83%88%E3%83%A9%E3%83%B3%E3%82%B9%E3%83%94%E3%83%A5%E3%83%BC%E3%82%BF) [IMS T800-30 の単精度除算（567ns）](https://www.transputer.net/tn/06/tn06.html#x1-150005)とほぼ同程度の性能となります。（ただし、ReLM の単精度加減乗算は 40ns なので IMS T800-30 の 233ns, 367ns と比較すると遥かに高速）
+
+反復計算の精度を犠牲にすると、加算を２回分減らして25命令（50MHzクロックで500ns）とすることも可能です。
+
 ## マンデルブロ集合デモ
 
-浮動小数点演算のテストコードを兼ねたデモとして、マンデルブロ集合の描画を行うプログラム [relm_mandelbrot.py](../de0cv/loader/relm_mandelbrot.py) の画面出力例です。
+浮動小数点演算のテストコードを兼ねて、[マンデルブロ集合](https://ja.wikipedia.org/wiki/%E3%83%9E%E3%83%B3%E3%83%87%E3%83%AB%E3%83%96%E3%83%AD%E9%9B%86%E5%90%88)の描画を行うデモプログラム [relm_mandelbrot.py](../de0cv/loader/relm_mandelbrot.py) の画面出力です。
 
 ![relm_mandelbrot_1.jpg](relm_mandelbrot_1.jpg)
 
+このプログラムでは７スレッドで並列計算を行い、スケールを変化させながら描画を繰り返し、疑似的な拡大アニメーションを表示します。
+
+反復計算で座標が閾値半径の外に発散するまでの回数で彩色が決定されますが、集合内部の点では最大の反復回数まで計算を繰り返すため描画に時間が掛かってしまいます。
+
+集合内部の点の大部分では反復計算時に座標が周期的な軌道に入りますので、60以下の周期についてはこれを検出して反復計算を打ち切るようにしています。
+
+[周期１および２の点（メインカージオイド）](https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set#Cardioid_/_bulb_checking)
+については簡単に判定できますので、反復計算の前に検出します。
+
+集合内部の点で最大回数まで反復を行った点は緑色となり、周期が検出された点は黄色、周期１および２の点は暗めの黄色となります。
+
 ![relm_mandelbrot_2.jpg](relm_mandelbrot_2.jpg)
 
-![relm_mandelbrot_3.jpg](relm_mandelbrot_3.jpg)
+集合外部の点は発散までの反復回数を一旦[グレイコード](https://ja.wikipedia.org/wiki/%E3%82%B0%E3%83%AC%E3%82%A4%E3%82%B3%E3%83%BC%E3%83%89)に変換し、[ビットカウント](https://en.wikipedia.org/wiki/Hamming_weight)に応じて彩色を行います。
 
+反復回数が１変化するとそのグレイコードはいずれかの１ビットのみが変化するので、ビットカウント数に圧縮した場合でも１だけずつ変化することになります。
+
+![relm_mandelbrot_3.jpg](relm_mandelbrot_3.jpg)
