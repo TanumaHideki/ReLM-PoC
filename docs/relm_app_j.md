@@ -414,6 +414,6 @@ FIFOに対して複数のスレッドで同時にPushを実行した場合、本
     ],
 ~~~
 
-マンデルブロ集合描画プログラム [relm_mandelbrot.py](../de0cv/loader/relm_mandelbrot.py) では、同様の制御でワーカースレッドによる並列計算を行っています。
+[マンデルブロ集合](https://ja.wikipedia.org/wiki/%E3%83%9E%E3%83%B3%E3%83%87%E3%83%AB%E3%83%96%E3%83%AD%E9%9B%86%E5%90%88)描画プログラム [relm_mandelbrot.py](../de0cv/loader/relm_mandelbrot.py) では、同様の制御でワーカースレッドによる並列計算を行っています。
 
 ![relm_mandelbrot_2.jpg](relm_mandelbrot_2.jpg)
