@@ -169,15 +169,14 @@ class FloatExprB(ExprB):
                     1.0
                     - RegBF(
                         (
-                            1.0
+                            2.0
                             - RegBF(
                                 ((AccF(-2.25) + RegBF) ** 2 + 1.5) * (32.0 / 99.0),
                                 x1 := [],
                             )
                             * D
                         )
-                        * x1
-                        + x1,
+                        * x1,
                         x2 := [],
                     )
                     * D

@@ -251,7 +251,7 @@ FDIV命令は、オペランド（XB）の被除数をアキュムレータ（Ac
 $$
 \begin{align*}
 x_1 & =\frac{32}{99}\left(\left(D-\frac{9}{4}\right)^2+\frac{3}{2}\right) \\
-x_2 & =(1-x_1D)x_1+x_1 \\
+x_2 & =(2-x_1D)x_1 \\
 D^{-1} & \approx(1-x_2D)x_2+x_2 \\
 \end{align*}
 $$
@@ -266,7 +266,7 @@ $y$ は $x$ の逆数の計算結果、 $xy$ は逆数の検算で理想的に�
 
 誤差を評価するため $xy-1$ を $ulp=2^{-23}=0.000000119209$ 単位で表示したものが右端になりますが、一部の点で $-0.5ulp\sim +1.0ulp$ の誤差がある以外はほぼ $0$ となっています。（負方向の誤差は指数が変わるので $0.5ulp$ 単位）
 
-反復計算の式を $x_2=(2-x_1D)x_1, D^{-1}\approx(2-x_2D)x_2$ としても数学的には等価で計算量が減らせますが、以下の様に数値計算誤差は明らかに増加します。
+２回目の反復計算の式を $D^{-1}\approx(2-x_2D)x_2$ としても数学的には等価で計算量が減らせますが、以下の様に数値計算誤差は明らかに増加します。（１回目はあまり影響しない）
 
 ![relm_test_fp_div_err.jpg](relm_test_fp_div_err.jpg)
 
@@ -283,15 +283,14 @@ $y$ は $x$ の逆数の計算結果、 $xy$ は逆数の検算で理想的に�
                     1.0
                     - RegBF(
                         (
-                            1.0
+                            2.0
                             - RegBF(
                                 ((AccF(-2.25) + RegBF) ** 2 + 1.5) * (32.0 / 99.0),
                                 x1 := [],
                             )
                             * D
                         )
-                        * x1
-                        + x1,
+                        * x1,
                         x2 := [],
                     )
                     * D
@@ -303,11 +302,15 @@ $y$ は $x$ の逆数の計算結果、 $xy$ は逆数の検算で理想的に�
         ]
 ~~~
 
-このコンパイル結果のダンプ出力は以下の様になり、FDIV命令も含めると29命令（50MHzクロックで580ns）で浮動小数点除算が完結します。
+このコンパイル結果のダンプ出力は以下の様になり、FDIV命令も含めると27命令（50MHzクロックで540ns）で浮動小数点除算が完結します。
+
+これはちょうど、古典的な[トランスピュータ](https://ja.wikipedia.org/wiki/%E3%83%88%E3%83%A9%E3%83%B3%E3%82%B9%E3%83%94%E3%83%A5%E3%83%BC%E3%82%BF) [IMS T800-30 の単精度除算（567ns）](https://www.transputer.net/tn/06/tn06.html#x1-150005)とほぼ同程度の性能となります。
+
+ただし、単精度の加減乗算に関してはReLMが２命令分で 40ns に対し、IMS T800-30 は 233ns, 367ns とかなり大きな差があります。
 
 ~~~
 9BA3:   FDIV    +1.000000E+00           55:     y := Float(1.0 / x),
-9BA4:   PUT     9BBE:                   55:     ->      y := Float(1.0 / x),
+9BA4:   PUT     9BBC:                   55:     ->      y := Float(1.0 / x),
 9BA5:   LOAD    C0100000                55:     y := Float(1.0 / x),
 9BA6:   OPB     FADD                    55:     y := Float(1.0 / x),
 9BA7:   OPB     ITOF                    55:     y := Float(1.0 / x),
@@ -319,27 +322,21 @@ $y$ は $x$ の逆数の計算結果、 $xy$ は逆数の検算で理想的に�
 9BAD:   OPB     ITOFGB                  55:     y := Float(1.0 / x),
 9BAE:   OPB     FMUL                    55:     y := Float(1.0 / x),
 9BAF:   OPB     ITOF                    55:     y := Float(1.0 / x),
-9BB0:   FADD    -1.000000E+00           55:     y := Float(1.0 / x),
+9BB0:   FADD    -2.000000E+00           55:     y := Float(1.0 / x),
 9BB1:   OPB     ITOF                    55:     y := Float(1.0 / x),
 9BB2:   OPB     FMULM                   55:     y := Float(1.0 / x),
-9BB3:   OPB     ITOF                    55:     y := Float(1.0 / x),
-9BB4:   OPB     FADD                    55:     y := Float(1.0 / x),
-9BB5:   OPB     ITOFGB                  55:     y := Float(1.0 / x),
-9BB6:   OPB     FMUL                    55:     y := Float(1.0 / x),
+9BB3:   OPB     ITOFGB                  55:     y := Float(1.0 / x),
+9BB4:   OPB     FMUL                    55:     y := Float(1.0 / x),
+9BB5:   OPB     ITOF                    55:     y := Float(1.0 / x),
+9BB6:   FADD    -1.000000E+00           55:     y := Float(1.0 / x),
 9BB7:   OPB     ITOF                    55:     y := Float(1.0 / x),
-9BB8:   FADD    -1.000000E+00           55:     y := Float(1.0 / x),
+9BB8:   OPB     FMULM                   55:     y := Float(1.0 / x),
 9BB9:   OPB     ITOF                    55:     y := Float(1.0 / x),
-9BBA:   OPB     FMULM                   55:     y := Float(1.0 / x),
+9BBA:   OPB     FADD                    55:     y := Float(1.0 / x),
 9BBB:   OPB     ITOF                    55:     y := Float(1.0 / x),
-9BBC:   OPB     FADD                    55:     y := Float(1.0 / x),
+9BBC:   FMUL    +0.000000E+00           55:     y := Float(1.0 / x),
 9BBD:   OPB     ITOF                    55:     y := Float(1.0 / x),
-9BBE:   FMUL    +0.000000E+00           55:     y := Float(1.0 / x),
-9BBF:   OPB     ITOF                    55:     y := Float(1.0 / x),
 ~~~
-
-これは、古典的な[トランスピュータ](https://ja.wikipedia.org/wiki/%E3%83%88%E3%83%A9%E3%83%B3%E3%82%B9%E3%83%94%E3%83%A5%E3%83%BC%E3%82%BF) [IMS T800-30 の単精度除算（567ns）](https://www.transputer.net/tn/06/tn06.html#x1-150005)とほぼ同程度の性能となります。（ただし、ReLM の単精度加減乗算は 40ns なので IMS T800-30 の 233ns, 367ns と比較すると遥かに高速）
-
-反復計算の精度を犠牲にすると、加算を２回分減らして25命令（50MHzクロックで500ns）とすることも可能です。
 
 ## マンデルブロ集合デモ
 
