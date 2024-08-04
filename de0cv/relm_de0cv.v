@@ -26,7 +26,7 @@ endmodule
 module relm_de0cv(clk, sw_in, key_in, ps2_inout, vga_r_out, vga_g_out, vga_b_out, vga_s_out,
 		hex5_out, hex4_out, hex3_out, hex2_out, hex1_out, hex0_out, led_out);
 	parameter WD = 32;
-	parameter WC = 64;
+	parameter WC = 32;
 
 	(* chip_pin = "M9" *)
 	input clk;
