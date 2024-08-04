@@ -10,8 +10,6 @@ BinaryOp.useB |= {
     "FADDM",
     "FMUL",
     "FMULM",
-    "FSQU",
-    "FSQUM",
     "ROUND",
     "FTOI",
     "ISIGN",
@@ -20,13 +18,14 @@ BinaryOp.useB |= {
     "ITOFG",
     "ITOFGB",
     "FDIV",
+    "FDIVINIT",
+    "FDIVLOOP",
 }
 
 
 class FloatExprB(ExprB):
     add = (("FADD", "FSUB"), ("FRSUB", "FADDM"))
     mul = ("FMUL", "FMULM")
-    squ = ("FSQU", "FSQUM")
 
     def __init__(self, *codes: Code | list[Code], minus: bool = False):
         super().__init__(*codes)
@@ -94,9 +93,7 @@ class FloatExprB(ExprB):
         itof = Acc.opb("ITOF")
         match rhs:
             case float():
-                r = ctypes.c_uint.from_buffer(
-                    ctypes.c_float(-rhs if lhs.minus ^ sub else rhs)
-                ).value
+                r = -rhs if lhs.minus ^ sub else rhs
                 return lhs[lhs, "FADD":r, itof]
             case Float():
                 return lhs[lhs, "FADD" : rhs.put(lhs.minus ^ sub), itof]
@@ -135,9 +132,7 @@ class FloatExprB(ExprB):
         itof = Acc.opb("ITOF")
         match rhs:
             case float():
-                r = ctypes.c_uint.from_buffer(
-                    ctypes.c_float(-rhs if lhs.minus else rhs)
-                ).value
+                r = -rhs if lhs.minus else rhs
                 return AccF[lhs, "FMUL":r, itof]
             case Float():
                 return AccF[lhs, "FMUL" : rhs.put(lhs.minus), itof]
@@ -161,28 +156,29 @@ class FloatExprB(ExprB):
 
     @staticmethod
     def fdiv(minus: bool = False) -> FloatExprB:
-        D = RegDF
         return AccF[
             y := Float(AccFM if minus else AccF),
+            Acc.opb("FDIVINIT"),
+            D := Float(AccF),
+            Acc << 8,
             (
                 (
-                    1.0
+                    2.0
                     - RegBF(
-                        (
-                            2.0
-                            - RegBF(
-                                ((AccF(-2.25) + RegBF) ** 2 + 1.5) * (32.0 / 99.0),
-                                x1 := [],
-                            )
-                            * D
-                        )
-                        * x1,
-                        x2 := [],
+                        AccF[
+                            Acc.opb("DIVLOOP")
+                            .opb("DIVLOOP")
+                            .opb("DIVLOOP")
+                            .opb("DIVLOOP")
+                            .opb("DIVLOOP")
+                            .opb("FDIVLOOP")
+                            .opb("ITOF")
+                        ],
+                        x := [],
                     )
                     * D
                 )
-                * x2
-                + x2
+                * x
             )
             * y,
         ]
@@ -203,9 +199,7 @@ class FloatExprB(ExprB):
     def __rtruediv__(rhs: FloatExprB, lhs: float | BinaryOp) -> FloatExprB:
         match lhs:
             case float():
-                l = ctypes.c_uint.from_buffer(
-                    ctypes.c_float(-lhs if rhs.minus else lhs)
-                ).value
+                l = -lhs if rhs.minus else lhs
                 return AccF[rhs, "FDIV":l, rhs.fdiv()]
             case Float():
                 return AccF[rhs, "FDIV" : lhs.put(rhs.minus), rhs.fdiv()]
@@ -223,11 +217,10 @@ class FloatExprB(ExprB):
         return self[self.opb("TRUNC")]
 
     def round(self, offset: float) -> FloatExprB:
-        o = ctypes.c_uint.from_buffer(ctypes.c_float(offset)).value
         op = self.add[self.minus][self.minus]
         return AccF[
             self,
-            "ROUND":o,
+            "ROUND":offset,
             (
                 Acc.opb(op).opb("ITOF").opb("TRUNC")
                 if offset == 0.5
@@ -252,7 +245,7 @@ class FloatExprB(ExprB):
                 elif rhs == 1:
                     return lhs
                 elif rhs == 2:
-                    return AccF[lhs.opb("FSQU").opb("ITOF")]
+                    return AccF[lhs.opb("BLOADX").opb("FMUL").opb("ITOF")]
                 elif rhs < 0:
                     return 1.0 / (lhs**-rhs)
                 elif rhs & 1:
@@ -266,9 +259,7 @@ class FloatExprB(ExprB):
     def fcomp(lhs: FloatExprB, rhs: float | BinaryOp, cond: int, eq: bool) -> Bool:
         match rhs:
             case float():
-                r = ctypes.c_uint.from_buffer(
-                    ctypes.c_float(-rhs if lhs.minus else rhs)
-                ).value
+                r = -rhs if lhs.minus else rhs
                 sign = Acc[lhs, "FCOMP":r]
             case Float():
                 sign = Acc[lhs, "FCOMP" : rhs.put(lhs.minus)]
@@ -338,8 +329,7 @@ class AccFloatExprB(FloatExprB):
     def __call__(self, value: float | BinaryOp) -> FloatExprB:
         match value:
             case float():
-                v = ctypes.c_uint.from_buffer(ctypes.c_float(value)).value
-                return self["LOAD":v]
+                return self["LOAD":value]
             case Float():
                 return +self
             case FloatExprB():
@@ -409,9 +399,7 @@ class Float(Int):
         itof = Acc.opb("ITOF")
         match rhs:
             case float():
-                r = ctypes.c_uint.from_buffer(
-                    ctypes.c_float(-rhs if sub else rhs)
-                ).value
+                r = -rhs if sub else rhs
                 return AccF[lhs.load(rsub), "FADD":r, itof]
             case Float():
                 return AccF[lhs.load(rsub), "FADD" : rhs.put(sub), itof]
@@ -441,8 +429,7 @@ class Float(Int):
         itof = Acc.opb("ITOF")
         match rhs:
             case float():
-                r = ctypes.c_uint.from_buffer(ctypes.c_float(rhs)).value
-                return AccF[+lhs, "FMUL":r, itof]
+                return AccF[+lhs, "FMUL":rhs, itof]
             case Float():
                 return AccF[+lhs, "FMUL" : rhs.put(), itof]
             case FloatExprB():
@@ -475,8 +462,7 @@ class Float(Int):
     def __rtruediv__(rhs: Float, lhs: float | BinaryOp) -> FloatExprB:
         match lhs:
             case float():
-                l = ctypes.c_uint.from_buffer(ctypes.c_float(lhs)).value
-                return AccF[+rhs, "FDIV":l, AccF.fdiv()]
+                return AccF[+rhs, "FDIV":lhs, AccF.fdiv()]
             case Float():
                 return AccF[+rhs, "FDIV" : lhs.put(), AccF.fdiv()]
             case FloatExprB():
@@ -509,8 +495,7 @@ class Float(Int):
     def fcomp(lhs: Float, rhs: float | BinaryOp, cond: int, eq: bool) -> Bool:
         match rhs:
             case float():
-                r = ctypes.c_uint.from_buffer(ctypes.c_float(rhs)).value
-                sign = Acc[+lhs, "FCOMP":r]
+                sign = Acc[+lhs, "FCOMP":rhs]
             case Float():
                 sign = Acc[+lhs, "FCOMP" : rhs.put()]
             case FloatExprB():
@@ -569,7 +554,6 @@ class FunctionF(Function):
             case float():
                 self.minus = bool(self.minus)
                 v = -expr if self.minus else expr
-                v = ctypes.c_uint.from_buffer(ctypes.c_float(v)).value
                 return Block[Code("LOAD", v)]
             case Float():
                 self.minus = bool(self.minus)
@@ -598,10 +582,6 @@ class FloatFunction(IntFunction):
 
 
 class ArrayF(Array):
-    def __init__(self, *fdata: float, op: str = "PUSH"):
-        idata = [ctypes.c_uint.from_buffer(ctypes.c_float(f)).value for f in fdata]
-        super().__init__(*idata, op=op)
-
     def OffsetExpr(self, offset: int) -> ArrayOffsetF:
         return ArrayOffsetF(self, offset)
 
@@ -624,8 +604,7 @@ class ArrayOffsetF(FloatExprB):
         offset = self.array.offset(self.offset)
         match value:
             case float():
-                v = ctypes.c_uint.from_buffer(ctypes.c_float(value)).value
-                return AccF[offset << "LOAD", "BLOAD":v, "OPB":"PUT"]
+                return AccF[offset << "LOAD", "BLOAD":value, "OPB":"PUT"]
             case Float():
                 return AccF[offset << "LOAD", "BLOAD" : value.put(), "OPB":"PUT"]
             case FloatExprB():
@@ -657,8 +636,7 @@ class ArrayElementF(FloatExprB):
         offset = self.array.offset(self.offset) << "ADD"
         match value:
             case float():
-                v = ctypes.c_uint.from_buffer(ctypes.c_float(value)).value
-                return AccF[self.index, offset, "BLOAD":v, "OPB":"PUT"]
+                return AccF[self.index, offset, "BLOAD":value, "OPB":"PUT"]
             case Float():
                 return AccF[self.index, offset, "BLOAD" : value.put(), "OPB":"PUT"]
             case FloatExprB():

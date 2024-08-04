@@ -14,49 +14,32 @@ with ReLMLoader(loader="loader/output_files/relm_de0cv.svf"):
     console = Console(vram, 80, FIFO.Alloc(), FIFO.Alloc())
     Thread[console.Service()]
     Define[
-        digit := console.Decimal(),
-        digits := Function(value := Int(), fill := Int())[
-            digit(
-                digit(
-                    digit(
-                        digit(
-                            digit(
-                                digit(
-                                    digit(
-                                        digit(digit(value, 100000000, fill), 10000000),
-                                        1000000,
-                                    ),
-                                    100000,
-                                ),
-                                10000,
-                            ),
-                            1000,
-                        ),
-                        100,
-                    ),
-                    10,
-                ),
-                1,
-                ord("0"),
-            )
+        digits := Function(value := UInt(), digit := UInt())[
+            fill := Int(ord(" ")),
+            Do()[
+                q := Int(value // digit),
+                value(value - digit * q),
+                If((q != 0) | (digit == 1))[p := Int(q + fill(ord("0")))].Else[p(fill)],
+                console.fifo_print.Push(p),
+            ].While(digit(digit // 10) != 0)
         ],
     ]
     Thread[
         Out("VGAPAL", *[i * 0x1111 for i in range(16)]),
         i := Int(0),
-        x := Int(10),
+        x := UInt(1),
         While(i < 48)[
-            console.Print("        ", pos=i * 800, color=0xF0),
-            digits(x, ord(" ")),
+            console.Print("    ", pos=i * 800, color=0xF0),
+            digits(x, 1000000000),
             console.Print(" // 35121409 = "),
-            q := Int(x // 35121409),
-            digits(q, 0),
+            q := UInt(x // 35121409),
+            digits(q, 10),
             console.Print("        "),
-            digits(x, ord(" ")),
+            digits(x, 1000000000),
             console.Print(" % 35121409 = "),
-            m := Int(x % 35121409),
-            digits(m, ord(" ")),
-            x(m * 10),
+            m := UInt(x % 35121409),
+            digits(m, 10000000),
+            x(m * 100),
             i(i + 1),
         ],
         LED(

@@ -28,12 +28,21 @@ ReLM[:] = (
     "SRAM",
 )[::-1]
 ReLM[0x18::0x20] = "FADD", "FRSUB", "FSUB", "FADDM"
-ReLM[0x19::0x20] = "FMUL", "FMULM", "FSQU", "FSQUM"
+ReLM[0x19::0x20] = "FMUL", "FMULM"
 ReLM[0x1A::0x20] = ("ROUND", "TRUNC"), "FTOI"
 ReLM[0x1B::0x20] = "FCOMP", "ISIGN"
-ReLM[0x1C::0x20] = "ITOF", "ITOFB", "ITOFG", "ITOFGB", "ITOFS", "ITOFSB", "ITOFSG", "ITOFSGB"
-ReLM[0x1D::0x20] = "DIV", "DIVLOOP", "DIVINIT", "DIVMOD"
-ReLM[0x1E] = "FDIV"
+ReLM[0x1C::0x20] = (
+    "ITOF",
+    "ITOFB",
+    "ITOFG",
+    "ITOFGB",
+    "ITOFS",
+    "ITOFSB",
+    "ITOFSG",
+    "ITOFSGB",
+)
+ReLM[0x1D::0x20] = "DIV", "DIVINIT", "DIVLOOP"
+ReLM[0x1E::0x20] = "FDIV", "FDIVINIT", "FDIVLOOP"
 
 
 def LED(hex5=None, hex4=None, hex3=None, hex2=None, hex1=None, hex0=None, led=None):
@@ -155,10 +164,10 @@ class ReLMLoader(ReLM):
 
     def send(self, jtag, start, stop=None) -> None:
         for i, c in enumerate(self.memory[start:stop], start):
-            operand = self.mnemonic.get(c.operand, c.operand)
+            operand = self.mnemonic[c.operand]
             jtag.write_int((operand >> 16) & 0xFFFF)
             jtag.write_int(operand & 0xFFFF)
-            op = self.mnemonic.get(c.op, c.op) | 0b100000
+            op = self.mnemonic[c.op] | 0b100000
             jtag.write_int((op << 18) | i)
 
     def run(self):

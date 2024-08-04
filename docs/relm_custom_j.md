@@ -100,8 +100,6 @@ endmodule
 
 このモジュールではcustom5の系列に(OPB) DIVおよび、OPB専用の拡張命令としてDIVINIT, DIVLOOP, DIVMODを付加しています。
 
-custom5は通常の乗算命令MULと命令コードの下位ビットが一致するため、乗算器を共用する際の命令デコードが効率的になるという理由で選択されています。
-
 | OpCode | +0 | +1 | +2 | +3 | +4 | +5 | +6 | +7 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 0x00 | LOAD | SWAP/SHIFT | BLOAD | BSLOAD | ADD | AND | XOR | OR |
@@ -109,34 +107,40 @@ custom5は通常の乗算命令MULと命令コードの下位ビットが一致�
 | 0x10 | UGT | ULT | IGT | ILT | SUB | MUL | SHR | SAR |
 | 0x18 | custom0 | custom1 | custom2 | custom3 | custom4 | **DIV** | custom6 | OPB/HALT |
 | 0x20 | | | BLOADX | BSLOADX | | | | |
-| 0x38 | | | | | | **DIVLOOP** | | |
-| 0x58 | | | | | | **DIVINIT** | | |
-| 0x78 | | | | | | **DIVMOD** | | |
+| 0x38 | | | | | | **DIVINIT** | | |
+| 0x58 | | | | | | **DIVLOOP** | | |
 
 整数除算アルゴリズムは内部的に２ワード分のカスタムレジスタを使用しますので、これらをC, Dレジスタとして除算アルゴリズム実行時のデータの流れを以下に示します。
 
-| OpCode | D | C | B | A | X (operand) or Remarks |
+| OpCode | D | C | B | A | X (operand) or #Remarks |
 | --- | --- | --- | --- | --- | --- |
 | DIV | | | | **N (numerator)** | **D (denominator)** |
 | OPB SHR | D | N | d (MSB of D) | n (MSB of N) | SHR (opcode) |
 | OPB DIVINIT | D | N | d | q := n / d | DIVINIT (opcode) |
-| OPB DIVLOOP | Dq := D * q | R' := N | Q' := 0 | q | DIVLOOP (opcode) |
-| OPB DIVLOOP | Dq >>= 2 | R'' | Q'' | q >>= 2 | DIVLOOP (opcode) |
-| OPB DIVLOOP | Dq >>= 2 | R''' | Q''' | q >>= 2 | DIVLOOP (opcode) |
+| OPB MUL | q | N | q | D | MUL (opcode) |
+| BLOAD | q | N | q | Dq := D * q | 0 |
+| OPB BLOAD | q | N | Dq | 0 | BLOAD (opcode) |
+| OPB DIVLOOP | q | N' | Q' := 0 | Dq | DIVLOOP (opcode) |
+| OPB DIVLOOP | q >>= 3 | N'' | Q'' | Dq >>= 3 | DIVLOOP (opcode) |
+| OPB DIVLOOP | q >>= 3 | N''' | Q''' | Dq >>= 3 | DIVLOOP (opcode) |
 | OPB DIVLOOP | | | . . . | | DIVLOOP (opcode) |
-| JNE | | R (remainder) | Q (quotient) | finished when q == 0 | # repeat DIVLOOP |
-| OPB LOAD | | R (remainder) | Q (quotient) | | LOAD (opcode) |
-| | | | | **Q (quotient)** | # to get the result for Q |
-| OPB DIVMOD | | R (remainder) | Q (quotient) | | DIVMOD (opcode) |
-| | | | | **R (remainder)** | # to get the result for R |
+| JNE | | | Q (quotient) | finished when Acc == 0 | # Repeat DIVLOOP |
+| | | | | | # Get the quotient result |
+| OPB LOAD | | | Q (quotient) | | LOAD (opcode) |
+| | | | | **Q (quotient)** | |
+| | | | | | # Get the remainder result |
+| LOAD | | | Q (quotient) | | D (denominator) |
+| OPB MUL | | | Q | D | MUL (opcode) |
+| RSUB | | | | Q * D | N (numerator) |
+| | | | | **R := N - Q * D (remainder)** | |
 
-最初のDIV命令からDIVINIT命令までの処理は除数と被除数をパラメータとして受け取った後、後段のDIVLOOPによる処理のために内部状態の初期化を行います。
+最初のDIV命令からDIVLOOP命令までの処理は除数と被除数をパラメータとして受け取った後、後段のDIVLOOPによる処理のために内部状態の初期化を行います。
 
-DIVLOOPでは古典的な除算アルゴリズムと同様に上位ビットから商を決定していきますが、relm_compareモジュールで引き算よりも先に大小比較結果を先読みする方法で２ビット分を一度に処理する構成になっています。
+DIVLOOPでは古典的な除算アルゴリズムと同様に上位ビットから商を決定していきますが、relm_compareモジュールで引き算よりも先に大小比較結果を先読みする方法で商の３ビット分を一度に処理する構成になっています。
 
-DIVLOOPをアキュムレータ（Acc）が０になるまで繰り返し実行すると、レジスタ（B）に商、カスタムレジスタ（C）に剰余が格納されます。
+DIVLOOPを11回またはアキュムレータ（Acc）が０になるまで繰り返し実行すると、レジスタ（B）に商が格納されます。
 
-カスタムレジスタ（C）の剰余を取り出す場合、DIVMODを使用します。
+一度に３ビットずつ計算する構成上、中間結果から剰余を求めようとすると回路が複雑化してしまいますので、まず商だけを求めて剰余は改めて計算する構成になっています。
 
 ## 整数除算命令拡張の利用
 
@@ -152,7 +156,7 @@ Playable PoCのバブルエステートは資産状況を表す棒グラフ表�
 
 この他に、[relm_test_int_div.py](../de0cv/loader/relm_test_int_div.py) も除算および剰余のテストコードになっています。
 
-$10^{47}-1$ が素因数 $35121409$ を持つことから、 $10^{47}\equiv 1\mod 35121409$ であることを剰余演算で確かめています。
+$10^{47}-1$ が素因数 $35121409$ を持つことから、 $100^{47}\equiv 1\mod 35121409$ であることを剰余演算で確かめています。
 
 ![relm_test_int_div.jpg](relm_test_int_div.jpg)
 
@@ -171,9 +175,9 @@ $10^{47}-1$ が素因数 $35121409$ を持つことから、 $10^{47}\equiv 1\mo
 | 0x10 | UGT | ULT | IGT | ILT | SUB | MUL | SHR | SAR |
 | 0x18 | **FADD** | **FMUL** | **ROUND/TRUNC** | **FCOMP** | **ITOF** | DIV | **FDIV** | OPB/HALT |
 | 0x20 | | | BLOADX | BSLOADX | | | | |
-| 0x38 | **FRSUB** | **FMULM** | **FTOI** | **ISIGN** | **ITOFB** | DIVLOOP | | |
-| 0x58 | **FSUB** | **FSQU** | | | **ITOFG** | DIVINIT | | |
-| 0x78 | **FADDM** | **FSQUM** | | | **ITOFGB** | DIVMOD | | |
+| 0x38 | **FRSUB** | **FMULM** | **FTOI** | **ISIGN** | **ITOFB** | DIVINIT | **FDIVINIT** | |
+| 0x58 | **FSUB** | | | | **ITOFG** | DIVLOOP | **FDIVLOOP** | |
+| 0x78 | **FADDM** | | | | **ITOFGB** | | | |
 | 0x98 | | | | | **ITOFS** | | | |
 | 0xA8 | | | | | **ITOFSB** | | | |
 | 0xC8 | | | | | **ITOFSG** | | | |
@@ -189,8 +193,7 @@ $10^{47}-1$ が素因数 $35121409$ を持つことから、 $10^{47}\equiv 1\mo
   非OPB形式の加算命令はFADDしか使えないため、引き算の場合は右辺か左辺のどちらかを符号反転した上で加算を実行することになります。  
   浮動小数点の符号反転は **XOR 0x80000000** の１命令で可能ですが、なるべく命令数を減らすため、PUTと同時に符号反転を実施する命令 **PUTM** が用意されています。  
   回路規模への影響が小さいため、基本命令セットの回路には既にPUTMの機能が組み込まれています。
-* FMUL, FSQU, FMULM, FSQUM  
-  FMULは乗算、FSQUは平方を計算します。  
+* FMUL, FMULM  
   FADDと同様にITOFを後処理として利用して、**FMUL, ITOF** の２命令で浮動小数点の乗算を実行します。  
   後処理のITOF命令へのデータ受け渡しにレジスタ（B）を使用します。  
   FMULMは乗算結果の符号を反転させるもので、OPB形式でのみ使用可能です。
@@ -224,13 +227,14 @@ $10^{47}-1$ が素因数 $35121409$ を持つことから、 $10^{47}\equiv 1\mo
   後処理で仮数部の右シフトが必要になりますので、**OPB FTOI, OPB SAR** の２命令を組み合わせます。  
   入力範囲は $(1-2^{24})\sim (2^{24}-1)$ にのみ対応しています。  
   浮動小数点のテストコードで十進表示の際にもFTOI命令が使用されます。
-* FDIV  
-  浮動小数点除算の前処理として除数の指数部と仮数部を分離します。  
+* FDIV, FDIVINIT, FDIVLOOP  
+  浮動小数点除算は整数除算と同様、複雑な処理の組合せとなります。  
+  浮動小数点除算では前処理として、除数の指数部と仮数部を分離します。  
   被除数を除数の指数部のみで除算した結果と除数の仮数部をレジスタに置いて、後段の逆数計算に引き渡します。  
   後段では仮数部の逆数を計算して、指数部のみによる除算結果と掛け合わせて全体の除算結果とします。  
-  被除数の指数部による除算では被除数の仮数部がそのまま使えますので、乗算回数を節約することが可能です。
+  仮数部の逆数計算では、整数除算用の **DIVLOOP** 命令を利用しています。
 
-演算回路の実装コードは以下になりますが、桁合わせが必要なFADD命令や、正規化やオーバーフロー等の判定を行うITOF命令を除いては、比較的単純な構造になります。
+演算回路の実装コードは以下になりますが、除算関連、桁合わせが必要なFADD命令、正規化やオーバーフロー等の判定を行うITOF命令以外に関しては、比較的単純な構造になります。
 
 [relm_custom_div_fp.v](../relm_custom_div_fp.v)
 
@@ -238,11 +242,11 @@ $10^{47}-1$ が素因数 $35121409$ を持つことから、 $10^{47}\equiv 1\mo
 
 FDIV命令は、オペランド（XB）の被除数をアキュムレータ（Acc）の除数で除算を実行するための前処理を行います。
 
-除数を指数部と仮数部に分解して、仮数部をレジスタ（B）およびカスタムレジスタ（D）に置き、指数部のみによる除算結果はアキュムレータ（Acc）に一旦置かれて次のPUT命令で最後の乗算命令のオペランドに転送されます。
+除数を指数部と仮数部に分解して、仮数部をカスタムレジスタ（C）に置き、指数部のみによる除算結果はアキュムレータ（Acc）に一旦置かれて次のPUT命令で最後の乗算命令のオペランドに転送されます。
 
 仮数部は $1.0\sim 2.0$ に正規化され、この逆数を計算して先程の指数部の除算結果と掛けると最終的な除算結果が求められます。
 
-この仮数部の逆数計算は[Newton-Raphson除算](https://en.wikipedia.org/wiki/Division_algorithm#Variant_Newton%E2%80%93Raphson_division)による手法で、３次の[チェビシェフ多項式](https://ja.wikipedia.org/wiki/%E3%83%81%E3%82%A7%E3%83%93%E3%82%B7%E3%82%A7%E3%83%95%E5%A4%9A%E9%A0%85%E5%BC%8F)で近似値を求めてから反復式を使って精度を上げていきます。
+この仮数部の逆数計算は[Newton-Raphson除算](https://ja.wikipedia.org/wiki/%E9%99%A4%E7%AE%97_(%E3%83%87%E3%82%B8%E3%82%BF%E3%83%AB)#%E3%83%8B%E3%83%A5%E3%83%BC%E3%83%88%E3%83%B3-%E3%83%A9%E3%83%97%E3%82%BD%E3%83%B3%E9%99%A4%E7%AE%97)による手法で、３次の[チェビシェフ多項式](https://ja.wikipedia.org/wiki/%E3%83%81%E3%82%A7%E3%83%93%E3%82%B7%E3%82%A7%E3%83%95%E5%A4%9A%E9%A0%85%E5%BC%8F)で近似値を求めてから反復式を使って精度を上げていきます。
 
 [リンク先](https://en.wikipedia.org/wiki/Division_algorithm#Variant_Newton%E2%80%93Raphson_division)と同様に３次収束の反復式を用いた場合、必要な反復回数の見積もりが $\log_3\left(\frac{24+1}{\log_2 99}\right)=1.208222482$ となることから反復回数が２回必要となりますが、２次収束の反復式でも $\log_2\left(\frac{24+1}{\log_2 99}\right)=1.914987326$ で同じく２回で十分なことがわかりますので、ここではより単純な２次収束の式を使うことにします。
 

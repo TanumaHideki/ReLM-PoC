@@ -23,7 +23,7 @@ class Code(Statement):
     def __init__(
         self,
         op: str,
-        operand: Code | tuple[Code] | int | str = 0,
+        operand: Code | tuple[Code] | int | str | float = 0,
         debug: str | bool = True,
         offset: int = 0,
     ):
@@ -241,35 +241,56 @@ class ExprB(BinaryOp):
                 return NotImplemented
 
     @staticmethod
-    def udiv(mod: bool) -> Block:
-        d = Block[AccU.opb("SHR").opb("DIVINIT"), loop := Label()]
+    def udiv(num: Int | int, mod: bool) -> Block:
+        b = Block[
+            D := UInt(AccU.opb("SHR").opb("DIVINIT")),
+            RegBU(AccU * RegBU, 0).swapAB(),
+            loop := Label(),
+        ]
         for _ in range(ReLM.ncpu - 1):
-            d[AccU.opb("DIVLOOP")]
-        return d[loop << "JNE", AccU.opb("DIVMOD") if mod else +RegBU]
+            b[AccU.opb("DIVLOOP")]
+        b[loop << "JNE"]
+        if mod:
+            return b[num - D * RegBU]
+        else:
+            return b[+RegBU]
 
     def div(lhs: ExprB, rhs: int | BinaryOp, mod: bool) -> ExprB:
         match rhs:
             case int():
-                return lhs[lhs, "DIV":rhs, lhs.udiv(mod)]
+                return lhs[N := Int(lhs), "DIV":rhs, lhs.udiv(N, mod)]
             case Int():
-                return lhs[lhs, "DIV" : rhs.put(), lhs.udiv(mod)]
+                return lhs[N := Int(lhs), "DIV" : rhs.put(), lhs.udiv(N, mod)]
             case Expr():
-                return lhs[RegBU(lhs, rhs).swapAB().opb("DIV"), lhs.udiv(mod)]
+                return lhs[
+                    N := Int(RegB(lhs, rhs).swapAB()),
+                    Acc.opb("DIV"),
+                    lhs.udiv(N, mod),
+                ]
             case ExprB() | RegBType():
-                return lhs[r := Int(rhs), lhs, "DIV" : r.put(), lhs.udiv(mod)]
+                return lhs[
+                    r := Int(rhs), N := Int(lhs), "DIV" : r.put(), lhs.udiv(N, mod)
+                ]
             case _:
                 return NotImplemented
 
     def rdiv(rhs: ExprB, lhs: int | BinaryOp, mod: bool) -> ExprB:
         match lhs:
             case int():
-                return rhs[RegB(rhs, lhs).opb("DIV"), rhs.udiv(mod)]
+                return rhs[RegB(rhs, lhs).opb("DIV"), rhs.udiv(lhs, mod)]
             case Int() | Expr():
-                return lhs[RegB(rhs, lhs).opb("DIV"), rhs.udiv(mod)]
+                return lhs[N := Int(RegB(rhs, lhs)), Acc.opb("DIV"), rhs.udiv(N, mod)]
             case ExprB():
-                return lhs[r := Int(rhs), lhs, "DIV" : r.put(), rhs.udiv(mod)]
+                return lhs[
+                    r := Int(rhs), N := Int(lhs), "DIV" : r.put(), rhs.udiv(N, mod)
+                ]
             case RegBType():
-                return lhs[l := Int(lhs), RegB(rhs, l).opb("DIV"), rhs.udiv(mod)]
+                return lhs[
+                    l := Int(lhs),
+                    N := Int(RegB(rhs, l)),
+                    Acc.opb("DIV"),
+                    rhs.udiv(N, mod),
+                ]
             case _:
                 return NotImplemented
 
@@ -375,9 +396,9 @@ class Expr(ExprB):
     def div(lhs: Expr, rhs: int | BinaryOp, mod: bool) -> ExprB:
         match rhs:
             case ExprB():
-                return lhs[RegBU(rhs, lhs).opb("DIV"), lhs.udiv(mod)]
+                return lhs[N := Int(RegBU(rhs, lhs)), Acc.opb("DIV"), lhs.udiv(N, mod)]
             case RegBType():
-                return lhs[lhs.opb("DIV"), lhs.udiv(mod)]
+                return lhs[N := Int(lhs), Acc.opb("DIV"), lhs.udiv(N, mod)]
             case _:
                 return super().div(rhs, mod)
 
@@ -386,7 +407,7 @@ class Expr(ExprB):
             case ExprB():
                 return lhs.div(rhs, mod)
             case RegBType():
-                return lhs[rhs.swapAB().opb("DIV"), rhs.udiv(mod)]
+                return lhs[N := Int(rhs.swapAB()), Acc.opb("DIV"), rhs.udiv(N, mod)]
             case _:
                 return super().rdiv(lhs, mod)
 
@@ -492,18 +513,18 @@ class Int(BinaryOp):
             case int() | Int() | RegBType():
                 return (+lhs).div(rhs, mod)
             case ExprB():
-                return lhs[RegBU(rhs, lhs).opb("DIV"), Acc.udiv(mod)]
+                return lhs[N := Int(RegBU(rhs, lhs)), Acc.opb("DIV"), Acc.udiv(N, mod)]
             case _:
                 return NotImplemented
 
     def rdiv(rhs: Int, lhs: int | BinaryOp, mod: bool) -> ExprB:
         match lhs:
             case int():
-                return rhs["LOAD":lhs, "DIV" : rhs.put(), Acc.udiv(mod)]
+                return rhs["LOAD":lhs, "DIV" : rhs.put(), Acc.udiv(lhs, mod)]
             case Int() | ExprB():
-                return lhs[+lhs, "DIV" : rhs.put(), Acc.udiv(mod)]
+                return lhs[N := Int(lhs), "DIV" : rhs.put(), Acc.udiv(N, mod)]
             case RegBType():
-                return lhs[(+rhs).swapAB().opb("DIV"), Acc.udiv(mod)]
+                return lhs[N := Int((+rhs).swapAB()), Acc.opb("DIV"), Acc.udiv(N, mod)]
             case _:
                 return NotImplemented
 
@@ -593,14 +614,14 @@ class RegBType(BinaryOp):
     def div(lhs: RegBType, rhs: int | BinaryOp, mod: bool) -> ExprB:
         match rhs:
             case int():
-                return lhs[+lhs, "DIV":rhs, Acc.udiv(mod)]
+                return lhs[N := Int(lhs), "DIV":rhs, Acc.udiv(N, mod)]
             case _:
                 return rhs.rdiv(lhs, mod)
 
     def rdiv(rhs: RegBType, lhs: int | BinaryOp, mod: bool) -> ExprB:
         match lhs:
             case int():
-                return rhs["LOAD":lhs, "OPB":"DIV", Acc.udiv(mod)]
+                return rhs["LOAD":lhs, "OPB":"DIV", Acc.udiv(lhs, mod)]
             case _:
                 return lhs.div(rhs, mod)
 
@@ -1270,7 +1291,9 @@ class Table(Statement):
 
 
 class Array(Statement):
-    def __init__(self, *data: int | str, op: str = "PUSH", unsigned: bool = False):
+    def __init__(
+        self, *data: int | str | float, op: str = "PUSH", unsigned: bool = False
+    ):
         self.data = data
         self.op = op
         self.unsigned = unsigned
@@ -1518,7 +1541,15 @@ class Semaphore(Mutex):
 
 
 class Mnemonic(type):
-    mnemonic = {}
+    class OpDict(dict):
+        def __getitem__(self, key: Any) -> Any:
+            if isinstance(key, float):
+                return ctypes.c_uint.from_buffer(ctypes.c_float(key)).value
+            v = super().get(key, key)
+            assert isinstance(v, int), f"{v} is not supported"
+            return v
+
+    mnemonic = OpDict()
 
     def __setitem__(cls, key, value) -> None:
         match key:
@@ -1617,15 +1648,12 @@ class ReLM(metaclass=Mnemonic):
                     operand = c.operand & 0xFFFFFFFF
                     operand = (
                         f"{operand:04X}:"
-                        if c.op in {"PUT", "PUTS", "PUTM", "JEQ", "JNE", "JUMP", "GET"}
-                        else (
-                            f"{ctypes.c_float.from_buffer(ctypes.c_uint(operand)).value:+E}"
-                            if c.op
-                            in {"FADD", "FMUL", "ROUND", "FCOMP", "ITOF", "FDIV"}
-                            else f"{operand:08X}"
-                        )
+                        if c.op in {"PUT", "PUTS", "PUTM", "JEQ", "JNE", "JUMP"}
+                        else f"{operand:08X}"
                     )
                     operand = tab(operand, 24)
+                elif isinstance(c.operand, float):
+                    operand = tab(f"{c.operand:+E}", 24)
                 else:
                     operand = tab(c.operand, 24)
                 print(tab(f"{i:04X}:") + tab(c.op) + operand + c.debug, file=file)
@@ -1647,11 +1675,9 @@ class ReLM(metaclass=Mnemonic):
                 print(pdata)
                 with open(pdata, "w") as fdata:
                     for c in self.memory[i :: ReLM.ncpu]:
-                        op = self.mnemonic.get(c.op, c.op)
-                        assert isinstance(op, int), f"{op} is not supported"
+                        op = self.mnemonic[c.op]
                         print(f"{op:b}", file=fcode)
-                        operand = self.mnemonic.get(c.operand, c.operand)
-                        assert isinstance(operand, int), f"{operand} is not supported"
+                        operand = self.mnemonic[c.operand]
                         print(f"{operand & 0xFFFFFFFF:X}", file=fdata)
         return self
 

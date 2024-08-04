@@ -36,19 +36,14 @@ with ReLMLoader(loader="loader/output_files/relm_de0cv.svf"):
             digit999999(ToInt((va - vt) * 1000000.0), ord("0")),
         ],
     ]
-    cos = [1.5 - 0.5 * math.cos(i * math.pi / 12.0) for i in range(12)]
-    cos = (
-        [-(c - 1.0) for c in cos[1:]]
-        + cos
-        + [-(c + 1.0) for c in cos]
-        + [c + 2.0 for c in cos]
-        + [-4.0]
-    )
-    Define[denom := ArrayF(*cos)]
+    table = [1.0]
+    table += [((1 << i) + 1) / (1 << i) for i in range(23, 1, -1)]
+    table += [((1 << (i + 1)) - 1) / (1 << i) for i in range(1, 24)]
+    Define[denom := ArrayF(*table)]
     Thread[
         Out("VGAPAL", *[i * 0x1111 for i in range(16)]),
         i := Int(0),
-        While(i < len(cos))[
+        While(i < len(table))[
             x := Float(denom[i]),
             console.Print("x = ", pos=i * 800, color=0xF0),
             digit_fp(x, 0),
