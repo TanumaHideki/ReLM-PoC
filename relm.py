@@ -159,7 +159,7 @@ class BinaryOp(Statement):
         else:
             return Bool(lhs ^ rhs, True)
 
-    useB = {"BLOAD", "BSLOAD", "BLOADX", "BSLOADX", "DIV", "DIVLOOP", "DIVINIT"}
+    useB = {"BLOAD", "BSLOAD", "BLOADX", "BSLOADX", "DIV", "DIVLOOP"}
 
     def getitem(self, items: Any, codes: list[Code | list[Code]]) -> type:
         t = Expr
@@ -241,35 +241,28 @@ class ExprB(BinaryOp):
                 return NotImplemented
 
     @staticmethod
-    def udiv(num: Int | int, mod: bool) -> Block:
-        b = Block[
-            D := UInt(AccU.opb("SHR").opb("DIVINIT")),
-            RegBU(AccU * RegBU, 0).swapAB(),
-            loop := Label(),
-        ]
-        for _ in range(ReLM.ncpu - 1):
+    def udiv(mod: bool) -> Block:
+        b = Block()
+        for _ in range(11):
             b[AccU.opb("DIVLOOP")]
-        b[loop << "JNE"]
         if mod:
-            return b[num - D * RegBU]
-        else:
-            return b[+RegBU]
+            b[+RegBU]
+        return b
 
     def div(lhs: ExprB, rhs: int | BinaryOp, mod: bool) -> ExprB:
         match rhs:
             case int():
-                return lhs[N := Int(lhs), "DIV":rhs, lhs.udiv(N, mod)]
+                return lhs["LOAD":lhs, "DIV":rhs, lhs.udiv(mod)]
             case Int():
-                return lhs[N := Int(lhs), "DIV" : rhs.put(), lhs.udiv(N, mod)]
+                return lhs[+lhs, "DIV" : rhs.put(), lhs.udiv(mod)]
             case Expr():
                 return lhs[
-                    N := Int(RegB(lhs, rhs).swapAB()),
-                    Acc.opb("DIV"),
-                    lhs.udiv(N, mod),
+                    RegB(lhs, rhs).swapAB().opb("DIV"),
+                    lhs.udiv(mod),
                 ]
             case ExprB() | RegBType():
                 return lhs[
-                    r := Int(rhs), N := Int(lhs), "DIV" : r.put(), lhs.udiv(N, mod)
+                    r := Int(rhs), lhs, "DIV" : r.put(), lhs.udiv(mod)
                 ]
             case _:
                 return NotImplemented
@@ -277,19 +270,18 @@ class ExprB(BinaryOp):
     def rdiv(rhs: ExprB, lhs: int | BinaryOp, mod: bool) -> ExprB:
         match lhs:
             case int():
-                return rhs[RegB(rhs, lhs).opb("DIV"), rhs.udiv(lhs, mod)]
+                return rhs[RegB(rhs, lhs).opb("DIV"), rhs.udiv(mod)]
             case Int() | Expr():
-                return lhs[N := Int(RegB(rhs, lhs)), Acc.opb("DIV"), rhs.udiv(N, mod)]
+                return lhs[RegB(rhs, lhs).opb("DIV"), rhs.udiv(mod)]
             case ExprB():
                 return lhs[
-                    r := Int(rhs), N := Int(lhs), "DIV" : r.put(), rhs.udiv(N, mod)
+                    r := Int(rhs), lhs, "DIV" : r.put(), rhs.udiv(mod)
                 ]
             case RegBType():
                 return lhs[
                     l := Int(lhs),
-                    N := Int(RegB(rhs, l)),
-                    Acc.opb("DIV"),
-                    rhs.udiv(N, mod),
+                    RegB(rhs, l).opb("DIV"),
+                    rhs.udiv(mod),
                 ]
             case _:
                 return NotImplemented
@@ -396,9 +388,9 @@ class Expr(ExprB):
     def div(lhs: Expr, rhs: int | BinaryOp, mod: bool) -> ExprB:
         match rhs:
             case ExprB():
-                return lhs[N := Int(RegBU(rhs, lhs)), Acc.opb("DIV"), lhs.udiv(N, mod)]
+                return lhs[RegBU(rhs, lhs).opb("DIV"), lhs.udiv(mod)]
             case RegBType():
-                return lhs[N := Int(lhs), Acc.opb("DIV"), lhs.udiv(N, mod)]
+                return lhs[lhs, Acc.opb("DIV"), lhs.udiv(mod)]
             case _:
                 return super().div(rhs, mod)
 
@@ -407,7 +399,7 @@ class Expr(ExprB):
             case ExprB():
                 return lhs.div(rhs, mod)
             case RegBType():
-                return lhs[N := Int(rhs.swapAB()), Acc.opb("DIV"), rhs.udiv(N, mod)]
+                return lhs[rhs.swapAB().opb("DIV"), rhs.udiv(mod)]
             case _:
                 return super().rdiv(lhs, mod)
 
@@ -511,20 +503,20 @@ class Int(BinaryOp):
     def div(lhs: Int, rhs: int | BinaryOp, mod: bool) -> ExprB:
         match rhs:
             case int() | Int() | RegBType():
-                return (+lhs).div(rhs, mod)
+                return (+lhs).div(mod)
             case ExprB():
-                return lhs[N := Int(RegBU(rhs, lhs)), Acc.opb("DIV"), Acc.udiv(N, mod)]
+                return lhs[RegBU(rhs, lhs).opb("DIV"), Acc.udiv(mod)]
             case _:
                 return NotImplemented
 
     def rdiv(rhs: Int, lhs: int | BinaryOp, mod: bool) -> ExprB:
         match lhs:
             case int():
-                return rhs["LOAD":lhs, "DIV" : rhs.put(), Acc.udiv(lhs, mod)]
+                return rhs["LOAD":lhs, "DIV" : rhs.put(), Acc.udiv(mod)]
             case Int() | ExprB():
-                return lhs[N := Int(lhs), "DIV" : rhs.put(), Acc.udiv(N, mod)]
+                return lhs[+lhs, "DIV" : rhs.put(), Acc.udiv(mod)]
             case RegBType():
-                return lhs[N := Int((+rhs).swapAB()), Acc.opb("DIV"), Acc.udiv(N, mod)]
+                return lhs[(+rhs).swapAB().opb("DIV"), Acc.udiv(mod)]
             case _:
                 return NotImplemented
 
@@ -614,14 +606,14 @@ class RegBType(BinaryOp):
     def div(lhs: RegBType, rhs: int | BinaryOp, mod: bool) -> ExprB:
         match rhs:
             case int():
-                return lhs[N := Int(lhs), "DIV":rhs, Acc.udiv(N, mod)]
+                return lhs[+lhs, "DIV":rhs, Acc.udiv(mod)]
             case _:
                 return rhs.rdiv(lhs, mod)
 
     def rdiv(rhs: RegBType, lhs: int | BinaryOp, mod: bool) -> ExprB:
         match lhs:
             case int():
-                return rhs["LOAD":lhs, "OPB":"DIV", Acc.udiv(lhs, mod)]
+                return rhs["LOAD":lhs, "OPB":"DIV", Acc.udiv(mod)]
             case _:
                 return lhs.div(rhs, mod)
 
