@@ -17,11 +17,12 @@ with ReLMLoader(loader="loader/output_files/relm_de0cv.svf"):
         digits := Function(value := UInt(), digit := UInt())[
             fill := Int(ord(" ")),
             Do()[
-                q := Int(value // digit),
+                q := UInt(value // digit),
                 value(value - digit * q),
+                If(q > 9)[q(9)],
                 If((q != 0) | (digit == 1))[p := Int(q + fill(ord("0")))].Else[p(fill)],
                 console.fifo_print.Push(p),
-            ].While(digit(digit // 10) != 0)
+            ].While(digit(digit // 10) != 0),
         ],
     ]
     Thread[
@@ -30,6 +31,7 @@ with ReLMLoader(loader="loader/output_files/relm_de0cv.svf"):
         x := UInt(1),
         While(i < 48)[
             console.Print("    ", pos=i * 800, color=0xF0),
+            Break(),
             digits(x, 1000000000),
             console.Print(" // 35121409 = "),
             q := UInt(x // 35121409),

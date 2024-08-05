@@ -47,17 +47,17 @@ module relm_custom(clk, op_in, a_in, cb_in, x_in, xb_in, opb_in, mul_ax_in, mul_
 
 	wire [WD+1:0] div_n00 = {c_in, a_in[WD-1:WD-2]};
 	wire div_gt01;
-	relm_compare #(WD+2) compare_gt01({2'd0, c_in}, div_n00, div_gt01);
+	relm_compare #(WD+2) compare_gt01({2'd0, d_in}, div_n00, div_gt01);
 	wire div_gt1;
-	relm_compare #(WD+1) compare_gt1({1'd0, c_in}, div_n00[WD+1:1], div_gt1);
-	wire [WD+1:0] div_d11 = {d_in, ^c_in[1:0], c_in[0]};
+	relm_compare #(WD+1) compare_gt1({1'd0, d_in}, div_n00[WD+1:1], div_gt1);
+	wire [WD+1:0] div_d11 = {b_in, ^d_in[1:0], d_in[0]};
 	wire div_gt11;
 	relm_compare #(WD+2) compare_gt11(div_d11, div_n00, div_gt11);
 	wire div_gtx1 = div_gt1 ? div_gt01 : div_gt11;
-	wire [WD:0] div_nxx0 = {div_gt1 ? (div_gt01 ? div_n00[WD-1:0] : div_n00[WD-1:0] - c_in) : div_gt11 ? div_n00[WD-1:0] - (c_in << 1) : div_n00[WD-1:0] - div_d11[WD-1:0], a_in[WD-3]};
-	wire div_gtxx1;
-	relm_compare #(WD+1) compare_gtxx1({1'd0, c_in}, div_nxx0, div_gtxx1);
-	wire [WD-1:0] div_nxxx = div_gtxx1 ? div_nxx0[WD-1:0] : div_nxx0[WD-1:0] - c_in;
+	wire [WD:0] div_nxx0 = {div_gt1 ? (div_gt01 ? div_n00[WD-1:0] : div_n00[WD-1:0] - d_in) : div_gt11 ? div_n00[WD-1:0] - (d_in << 1) : div_n00[WD-1:0] - div_d11[WD-1:0], a_in[WD-3]};
+	wire [WD:0] div_nxx1 = div_nxx0 - {1'b0, d_in};
+	wire div_gtxx1 = div_nxx1[WD] & !div_nxx0[WD];
+	wire [WD-1:0] div_nxxx = div_gtxx1 ? div_nxx0[WD-1:0] : div_nxx1[WD-1:0];
 	wire [WD+1:0] div_3d = {2'd0, xb_in} + {1'b0, xb_in, 1'b0}; // 3D
 
 	wire [7:0] a_exp = a_in[WD-2:WD-9];
@@ -142,7 +142,7 @@ module relm_custom(clk, op_in, a_in, cb_in, x_in, xb_in, opb_in, mul_ax_in, mul_
 	wire fdiv_zero = fdiv_e[9] | xb_zero | a_inf;
 	wire fdiv_inf = (fdiv_e[9:8] == 2'b01) | xb_inf | a_zero;
 	wire fdiv_nan = (xb_zero & a_zero) | (xb_inf & a_inf) | xb_nan | a_nan;
-	wire [WD-1:0] fdiv_d = {1'b1, a_in[22:0], 8'd0}; // D
+	wire [WD-1:0] fdiv_d = {1'b1, a_in[22:0], 8'h80}; // D
 	wire [WD-1:0] fdiv_3d = (fdiv_d >> 1) + (fdiv_d >> 2); // 3D >> 2
 
 	wire [31:0] fcomp_a = !a_in[WD-2:WD-9] ? 32'h80000000 : {~a_in[WD-1], a_in[WD-1] ? ~a_in[WD-2:0] : a_in[WD-2:0]};
@@ -172,33 +172,33 @@ module relm_custom(clk, op_in, a_in, cb_in, x_in, xb_in, opb_in, mul_ax_in, mul_
 			6'b???010: begin // (OPB) FDIV
 				mul_a_out <= {WD{1'bx}};
 				mul_x_out <= {WD{1'bx}};
-				d_out <= fdiv_3d; // 3D >> 2
-				c_out <= fdiv_d; // D
-				b_out <= 32'd0; // R
+				d_out <= fdiv_d; // D
+				c_out <= 32'd0; // R
+				b_out <= fdiv_3d; // 3D >> 2
 				a_out <= {a_in[WD-1] ^ xb_in[WD-1], fdiv_inf ? 8'hFF : fdiv_zero ? 8'h00 : fdiv_e[7:0], (fdiv_inf || fdiv_zero) ? {fdiv_nan, 21'd0} : xb_in[22:0]}; // y
 			end
 			6'b0??011, 6'b1?0011: begin // (OPB) DIV
 				mul_a_out <= {WD{1'bx}};
 				mul_x_out <= {WD{1'bx}};
-				d_out <= div_3d[WD+1:2]; // 3D >> 2
-				c_out <= xb_in; // D
-				b_out <= a_in[0] ? xb_in >> 1 : 32'd0; // R
+				d_out <= xb_in; // D
+				c_out <= a_in[0] ? xb_in >> 1 : 32'd0; // R
+				b_out <= div_3d[WD+1:2]; // 3D >> 2
 				a_out <= {a_in[0] & xb_in[0], a_in[WD-1:1]}; // N
 			end
 			6'b1?1011: begin // OPB DIVLOOP
 				mul_a_out <= {WD{1'bx}};
 				mul_x_out <= {WD{1'bx}};
-				d_out <= d_in; // 3D >> 2
-				c_out <= c_in; // D
-				b_out <= div_nxxx; // R
+				d_out <= c_in; // D
+				c_out <= div_nxxx; // R
+				b_out <= b_in; // 3D >> 2
 				a_out <= {a_in[WD-4:0], !div_gt1, !div_gtx1, !div_gtxx1}; // Q
 			end
-			6'b???100: begin // (OPB) ITOF, OPB ITOF(S)(G)(B)
+			6'b???100: begin // (OPB) ITOF, OPB ITOF(B)
 				mul_a_out <= {WD{1'bx}};
 				mul_x_out <= {WD{1'bx}};
-				d_out <= (opb_in & x_in[WOP+2]) ? itof_a : d_in;
+				d_out <= d_in;
 				c_out <= fadd_rsub ? itof_a : c_in;
-				b_out <= fadd_sub ? d_in : c_in;
+				b_out <= c_in;
 				a_out <= itof_a;
 			end
 			6'b0??101: begin // ROUND

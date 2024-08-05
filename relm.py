@@ -252,18 +252,16 @@ class ExprB(BinaryOp):
     def div(lhs: ExprB, rhs: int | BinaryOp, mod: bool) -> ExprB:
         match rhs:
             case int():
-                return lhs["LOAD":lhs, "DIV":rhs, lhs.udiv(mod)]
+                return lhs[lhs, "DIV":rhs, lhs.udiv(mod)]
             case Int():
-                return lhs[+lhs, "DIV" : rhs.put(), lhs.udiv(mod)]
+                return lhs[lhs, "DIV" : rhs.put(), lhs.udiv(mod)]
             case Expr():
                 return lhs[
                     RegB(lhs, rhs).swapAB().opb("DIV"),
                     lhs.udiv(mod),
                 ]
             case ExprB() | RegBType():
-                return lhs[
-                    r := Int(rhs), lhs, "DIV" : r.put(), lhs.udiv(mod)
-                ]
+                return lhs[r := Int(rhs), lhs, "DIV" : r.put(), lhs.udiv(mod)]
             case _:
                 return NotImplemented
 
@@ -274,9 +272,7 @@ class ExprB(BinaryOp):
             case Int() | Expr():
                 return lhs[RegB(rhs, lhs).opb("DIV"), rhs.udiv(mod)]
             case ExprB():
-                return lhs[
-                    r := Int(rhs), lhs, "DIV" : r.put(), rhs.udiv(mod)
-                ]
+                return lhs[r := Int(rhs), lhs, "DIV" : r.put(), rhs.udiv(mod)]
             case RegBType():
                 return lhs[
                     l := Int(lhs),
@@ -503,7 +499,7 @@ class Int(BinaryOp):
     def div(lhs: Int, rhs: int | BinaryOp, mod: bool) -> ExprB:
         match rhs:
             case int() | Int() | RegBType():
-                return (+lhs).div(mod)
+                return (+lhs).div(rhs, mod)
             case ExprB():
                 return lhs[RegBU(rhs, lhs).opb("DIV"), Acc.udiv(mod)]
             case _:

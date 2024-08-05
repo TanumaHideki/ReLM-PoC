@@ -17,9 +17,11 @@ BinaryOp.useB |= {
     "ITOFB",
     "ITOFG",
     "ITOFGB",
+    "ITOFS",
+    "ITOFSB",
+    "ITOFSG",
+    "ITOFSGB",
     "FDIV",
-    "FDIVINIT",
-    "FDIVLOOP",
 }
 
 
