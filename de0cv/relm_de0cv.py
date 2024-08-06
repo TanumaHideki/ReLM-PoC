@@ -31,18 +31,9 @@ ReLM[0x18::0x20] = "FADD", "FRSUB", "FSUB", "FADDM"
 ReLM[0x19::0x20] = "FMUL", "FMULM"
 ReLM[0x1A] = "FDIV"
 ReLM[0x1B::0x20] = "DIV", "DIVLOOP"
-ReLM[0x1C::0x20] = (
-    "ITOF",
-    "ITOFB",
-    "ITOFG",
-    "ITOFGB",
-    "ITOFS",
-    "ITOFSB",
-    "ITOFSG",
-    "ITOFSGB",
-)
+ReLM[0x1C::0x20] = "ITOF", "ISIGN"
 ReLM[0x1D::0x20] = ("ROUND", "TRUNC"), "FTOI"
-ReLM[0x1E::0x20] = "FCOMP", "ISIGN"
+ReLM[0x1E] = "FCOMP"
 
 
 def LED(hex5=None, hex4=None, hex3=None, hex2=None, hex1=None, hex0=None, led=None):
