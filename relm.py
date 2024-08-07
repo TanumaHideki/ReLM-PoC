@@ -243,7 +243,7 @@ class ExprB(BinaryOp):
     @staticmethod
     def udiv(mod: bool) -> Block:
         b = Block()
-        for _ in range(11):
+        for _ in range(10):
             b[AccU.opb("DIVLOOP")]
         if mod:
             b[+RegBU]

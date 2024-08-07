@@ -247,25 +247,17 @@ module relm_pe(clk, pc_in, pc_out, a_in, a_out, cb_in, cb_out,
 	reg [WD-1:0] mul_a;
 	reg [WD-1:0] mul_x;
 	wire [WD*2-1:0] mul_ax = mul_a * mul_x;
-	wire [WD-1:0] mul_a_custom;
-	wire [WD-1:0] mul_x_custom;
 	wire [WD-1:0] a_custom;
 	wire [WC+WD-1:0] cb_custom;
-	wire retry_custom;
 	relm_custom #(WD, WOP, WC) custom(
-		.clk(clk),
 		.op_in(op),
 		.a_in(a),
 		.cb_in(cb),
 		.x_in(x),
 		.xb_in(xb),
 		.opb_in(opb),
-		.mul_ax_in(mul_ax),
-		.mul_a_out(mul_a_custom),
-		.mul_x_out(mul_x_custom),
 		.a_out(a_custom),
 		.cb_out(cb_custom),
-		.retry_out(retry_custom)
 	);
 	wire sar_sign = a[WD-1] & op[0];
 	reg [WD-1:0] sar_a;
@@ -275,18 +267,14 @@ module relm_pe(clk, pc_in, pc_out, a_in, a_out, cb_in, cb_out,
 	begin
 		for (i = 0; i < WD; i = i + 1) sar_a[i] <= a[WD-1-i] ^ sar_sign;
 		for (i = 0; i < WD; i = i + 1) sar_ax[i] <= mul_ax[WD-1-i] ^ sar_sign;
-		casez (op)
-			5'b10101: begin // MUL
+		casez (op[1:0])
+			2'b01: begin // MUL
 				mul_a <= a;
 				mul_x <= xb;
 			end
-			5'b1011?: begin // SAR, SHR
+			2'b1?: begin // SAR, SHR
 				mul_a <= sar_a;
 				mul_x <= xb;
-			end
-			5'b110??, 5'b1110?, 5'b11110: begin // custom
-				mul_a <= mul_a_custom;
-				mul_x <= mul_x_custom;
 			end
 			default: begin // otherwise
 				mul_a <= {WD{1'bx}};
@@ -310,8 +298,6 @@ module relm_pe(clk, pc_in, pc_out, a_in, a_out, cb_in, cb_out,
 				{push, pop, put, pc_out} <= {3'b001, retry_put ? pc : pc_inc};
 			5'b011??: // RSUB, JEQ, JNE, JUMP
 				{push, pop, put, pc_out} <= {3'b000, (!a ? op[0] : op[1]) ? {xb[WD-1], xb[0+:WAD+WID]} : pc_inc};
-			5'b110??, 5'b1110?, 5'b11110: // custom
-				{push, pop, put, pc_out} <= {3'b000, retry_custom ? pc : pc_inc};
 			5'b11111: // HALT, inactive
 				{push, pop, put, pc_out} <= {3'b000, pc};
 			default: // get, otherwise

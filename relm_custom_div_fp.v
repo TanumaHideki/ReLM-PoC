@@ -20,11 +20,12 @@ module relm_compare(a_in, b_in, gt_out);
 	assign gt_out = |(ab & ~ba);
 endmodule
 
-module relm_custom(clk, op_in, a_in, cb_in, x_in, xb_in, opb_in, mul_ax_in, mul_a_out, mul_x_out, a_out, cb_out, retry_out);
+`define WC 65
+
+module relm_custom(op_in, a_in, cb_in, x_in, xb_in, opb_in, a_out, cb_out);
 	parameter WD = 32;
 	parameter WOP = 5;
-	parameter WC = 65;
-	input clk;
+	parameter WC = `WC;
 	input [WOP-1:0] op_in;
 	input [WD-1:0] a_in;
 	input [WC+WD-1:0] cb_in;
@@ -34,16 +35,11 @@ module relm_custom(clk, op_in, a_in, cb_in, x_in, xb_in, opb_in, mul_ax_in, mul_
 	input [WD-1:0] x_in;
 	input [WD-1:0] xb_in;
 	input opb_in;
-	input [WD*2-1:0] mul_ax_in;
-	output reg [WD-1:0] mul_a_out;
-	output reg [WD-1:0] mul_x_out;
 	output reg [WD-1:0] a_out;
 	output [WC+WD-1:0] cb_out;
 	reg [WD:0] d_out;
 	reg [WD-1:0] c_out, b_out;
 	assign cb_out = {d_out, c_out, b_out};
-	output retry_out;
-	assign retry_out = 0;
 
 	wire [7:0] a_exp = a_in[WD-2:WD-9];
 	wire a_zero = !a_exp;
@@ -59,9 +55,7 @@ module relm_custom(clk, op_in, a_in, cb_in, x_in, xb_in, opb_in, mul_ax_in, mul_
 	wire [7:0] fadd_d = fadd_gte ? a_exp - xb_exp : xb_exp - a_exp;
 	wire fadd_gt;
 	relm_compare #(WD-1) compare_fadd(a_in[30:0], xb_in[30:0], fadd_gt);
-	wire fadd_rsub = opb_in & x_in[WOP];
-	wire fadd_sub = opb_in & x_in[WOP+1];
-	wire [31:0] fadd_max = fadd_gt ? {fadd_rsub, 31'd0} ^ a_in : {fadd_sub, 31'd0} ^ xb_in;
+	wire [31:0] fadd_max = fadd_gt ? a_in : xb_in;
 	wire fadd_inf = a_inf | xb_inf;
 	wire fadd_zero = (a_zero & xb_zero) | a_nan | xb_nan;
 	wire [23:0] fadd_xb = {1'b1, xb_in[22:0]};
@@ -77,20 +71,21 @@ module relm_custom(clk, op_in, a_in, cb_in, x_in, xb_in, opb_in, mul_ax_in, mul_
 	wire [30:0] fadd_m4 = fadd_d[4] ? {16'd0, fadd_m3[30:17], |fadd_m3[16:0]} : fadd_m3;
 	wire [31:0] fadd_mr = {1'b0, (a_zero | xb_zero) ? 31'd0 : fadd_d[7:5] ? {31'd1} : fadd_m4};
 	wire [31:0] fadd_ml = {2'b01, fadd_max[22:0], 7'd0};
-	wire [31:0] fadd_mlr = (fadd_rsub ^ a_in[WD-1] ^ fadd_sub ^ xb_in[WD-1]) ? fadd_ml - fadd_mr : fadd_ml + fadd_mr;
+	wire [31:0] fadd_mlr = (a_in[WD-1] ^ xb_in[WD-1]) ? fadd_ml - fadd_mr : fadd_ml + fadd_mr;
 
 	wire [9:0] fmul_e = {2'b00, a_exp} + {2'b00, xb_exp} - 10'h7F;
 	wire fmul_zero = fmul_e[9] | a_zero | xb_zero | a_nan | xb_nan;
 	wire fmul_inf = (fmul_e[9:8] == 2'b01) | a_inf | xb_inf;
 	wire [47:0] fmul_ax = {1'd1, a_in[22:0]} * {1'd1, xb_in[22:0]};
 
+	wire [WD-1:0] fdiv_d = {1'b1, a_in[22:0], 8'd0}; // D
+	wire [WD:0] fdiv_3d = {1'b0, fdiv_d} + {1'b0, fdiv_d >> 1}; // 3D >> 1
 	wire [9:0] fdiv_e = {2'b00, xb_exp} - {2'b00, a_exp} + 10'h7F;
 	wire fdiv_zero = fdiv_e[9] | xb_zero | a_inf;
 	wire fdiv_inf = (fdiv_e[9:8] == 2'b01) | xb_inf | a_zero;
 	wire fdiv_nan = (xb_zero & a_zero) | (xb_inf & a_inf) | xb_nan | a_nan;
-	wire [WD-1:0] fdiv_d = {1'b1, a_in[22:0], 8'h80}; // D
-	wire [WD:0] fdiv_3d = fdiv_d + (fdiv_d >> 1); // 3D >> 1
 
+	wire [WD+1:0] div_3d = {2'd0, xb_in} + {1'b0, xb_in, 1'b0}; // 3D
 	wire [WD+1:0] div_n00 = {b_in, a_in[WD-1:WD-2]};
 	wire div_gt01;
 	relm_compare #(WD+2) compare_gt01({2'd0, c_in}, div_n00, div_gt01);
@@ -102,9 +97,8 @@ module relm_custom(clk, op_in, a_in, cb_in, x_in, xb_in, opb_in, mul_ax_in, mul_
 	wire div_gtx1 = div_gt1 ? div_gt01 : div_gt11;
 	wire [WD:0] div_nxx0 = {div_gt1 ? (div_gt01 ? div_n00[WD-1:0] : div_n00[WD-1:0] - c_in) : div_gt11 ? div_n00[WD-1:0] - (c_in << 1) : div_n00[WD-1:0] - div_d11[WD-1:0], a_in[WD-3]};
 	wire div_gtxx1;
-	relm_compare #(WD+1) compare_gtxx1({1'd0, c_in}, div_n00[WD+1:1], div_gtxx1);
+	relm_compare #(WD+1) compare_gtxx1({1'd0, x_in[0] ? c_in : 32'd0}, div_nxx0, div_gtxx1);
 	wire [WD-1:0] div_nxxx = div_gtxx1 ? div_nxx0[WD-1:0] : div_nxx0[WD-1:0] - c_in;
-	wire [WD+1:0] div_3d = {2'd0, xb_in} + {1'b0, xb_in, 1'b0}; // 3D
 	wire [1:0] div_q = xb_in[WD-1:2] ? 2'b00 : (xb_in[1:0] == 2'b11) ? {1'b0, &a_in[WD-1:WD-2]} : (xb_in[1:0] == 2'b10) ? {1'b0, a_in[WD-1]} : (xb_in[1:0] == 2'b01) ? a_in[WD-1:WD-2] : 2'bxx;
 	wire [1:0] div_r = xb_in[WD-1:2] ? a_in[WD-1:WD-2] : (xb_in[1:0] == 2'b11) ? {a_in[WD-1] & !a_in[WD-2], a_in[WD-2] & !a_in[WD-1]} : (xb_in[1:0] == 2'b10) ? {1'b0, a_in[WD-2]} : (xb_in[1:0] == 2'b01) ? 2'b00 : 2'bxx;
 
@@ -136,7 +130,7 @@ module relm_custom(clk, op_in, a_in, cb_in, x_in, xb_in, opb_in, mul_ax_in, mul_
 	relm_compare #(8) compare_itofx_zero(itof_difc, itof_e, itof_zero_gt);
 	wire itof_zero = itof_zero_gt | xb_in[WD-11] | !a_lower[0];
 	wire [31:0] itof_a;
-	assign itof_a[WD-1] = b_in[WD-1];
+	assign itof_a[WD-1] = xb_in[WD-1];
 	assign itof_a[WD-2:WD-9] = itof_inf ? 8'hFF : itof_zero ? 8'h00 : itof_e - itof_difc + 8'd1;
 	assign itof_a[WD-10:0] = (itof_inf | itof_zero) ? {&xb_in[WD-10:WD-11], 22'd0} : (itof_m[31] ? itof_m[30:8] + {22'd0, itof_u1} : itof_m[29:7] + {22'd0, itof_u0});
 
@@ -157,97 +151,73 @@ module relm_custom(clk, op_in, a_in, cb_in, x_in, xb_in, opb_in, mul_ax_in, mul_
 	always @*
 	begin
 		casez ({opb_in, x_in[WOP+1:WOP], op_in[2:0]})
-			6'b???000: begin // (OPB) FADD, OPB FRSUB, OPB FSUB, OPB FADDM
-				mul_a_out <= {WD{1'bx}};
-				mul_x_out <= {WD{1'bx}};
+			6'b???000: begin // (OPB) FADD
 				d_out <= d_in;
 				c_out <= c_in;
 				b_out <= {fadd_max[31:23], fadd_inf, fadd_zero, {WD-11{1'bx}}};
 				a_out <= fadd_mlr;
 			end
-			6'b???001: begin // (OPB) FMUL, OPB FMUL(M)
-				mul_a_out <= {WD{1'bx}};
-				mul_x_out <= {WD{1'bx}};
+			6'b???001: begin // (OPB) FMUL
 				d_out <= d_in;
 				c_out <= c_in;
-				b_out <= {fadd_rsub ^ a_in[WD-1] ^ xb_in[WD-1], fmul_e[9:8] ? 8'h7F : fmul_e[7:0], fmul_inf, fmul_zero, {WD-11{1'bx}}};
+				b_out <= {a_in[WD-1] ^ xb_in[WD-1], fmul_e[9:8] ? 8'h7F : fmul_e[7:0], fmul_inf, fmul_zero, {WD-11{1'bx}}};
 				a_out <= {fmul_ax[47:17], |fmul_ax[16:0]};
 			end
-			6'b???010: begin // (OPB) FDIV
-				mul_a_out <= {WD{1'bx}};
-				mul_x_out <= {WD{1'bx}};
+			6'b0??010, 6'b1?0010: begin // (OPB) FDIV
 				d_out <= fdiv_3d; // 3D >> 1
 				c_out <= fdiv_d; // D
-				b_out <= 32'd0; // R
-				a_out <= {a_in[WD-1] ^ xb_in[WD-1], fdiv_inf ? 8'hFF : fdiv_zero ? 8'h00 : fdiv_e[7:0], (fdiv_inf || fdiv_zero) ? {fdiv_nan, 21'd0} : xb_in[22:0]}; // y
+				b_out <= {2'd1, xb_in[22:0], 7'd0}; // R
+				a_out <= {a_in[WD-1] ^ xb_in[WD-1], fdiv_inf ? 8'hFF : fdiv_zero ? 8'h00 : fdiv_e[7:0], fdiv_nan, 22'd0};
 			end
 			6'b0??011, 6'b1?0011: begin // (OPB) DIV
-				mul_a_out <= {WD{1'bx}};
-				mul_x_out <= {WD{1'bx}};
 				d_out <= div_3d[WD+1:1]; // 3D >> 1
 				c_out <= xb_in; // D
 				b_out <= {30'd0, div_r}; // R
 				a_out <= {a_in[WD-3:0], div_q}; // N, Q
 			end
-			6'b1?1011: begin // OPB DIVLOOP
-				mul_a_out <= {WD{1'bx}};
-				mul_x_out <= {WD{1'bx}};
+			6'b1?101?: begin // OPB DIVLOOP, OPB FDIVLOOP
 				d_out <= d_in; // 3D >> 1
 				c_out <= c_in; // D
 				b_out <= div_nxxx; // R
 				a_out <= {a_in[WD-4:0], !div_gt1, !div_gtx1, !div_gtxx1}; // N, Q
 			end
 			6'b0??100, 6'b1?0100: begin // (OPB) ITOF
-				mul_a_out <= {WD{1'bx}};
-				mul_x_out <= {WD{1'bx}};
 				d_out <= d_in;
 				c_out <= c_in;
 				b_out <= b_in;
 				a_out <= itof_a;
 			end
 			6'b1?1100: begin // OPB ISIGN
-				mul_a_out <= {WD{1'bx}};
-				mul_x_out <= {WD{1'bx}};
 				d_out <= d_in;
 				c_out <= c_in;
 				b_out <= {a_in[WD-1], 8'd157, 2'd0, {WD-11{1'bx}}};
 				a_out <= a_in[WD-1] ? -a_in : a_in;
 			end
 			6'b0??101: begin // ROUND
-				mul_a_out <= {WD{1'bx}};
-				mul_x_out <= {WD{1'bx}};
 				d_out <= d_in;
 				c_out <= c_in;
 				b_out <= {a_in[WD-1], (!x_in[WD-9] || (a_in[WD-1] == x_in[WD-1] && trunc_fract)) ? x_in[WD-2:WD-9] : 8'h00, x_in[WD-10:0]};
 				a_out <= a_in;
 			end
 			6'b1?0101: begin // OPB TRUNC
-				mul_a_out <= {WD{1'bx}};
-				mul_x_out <= {WD{1'bx}};
 				d_out <= d_in;
 				c_out <= c_in;
 				b_out <= b_in;
 				a_out <= {a_in[WD-1], a_in[30:0] & ~trunc_fmask};
 			end
 			6'b1?1101: begin // OPB FTOI
-				mul_a_out <= {WD{1'bx}};
-				mul_x_out <= {WD{1'bx}};
 				d_out <= d_in;
 				c_out <= c_in;
 				b_out <= ftoi_s;
 				a_out <= a_in[WD-1] ? -ftoi_m : ftoi_m;
 			end
 			6'b???110: begin // (OPB) FCOMP
-				mul_a_out <= {WD{1'bx}};
-				mul_x_out <= {WD{1'bx}};
 				d_out <= d_in;
 				c_out <= c_in;
 				b_out <= b_in;
 				a_out <= fcomp_gt ? 32'd1 : (fcomp_a == fcomp_xb) ? 32'd0 : 32'hFFFFFFFF;
 			end
 			default: begin
-				mul_a_out <= {WD{1'bx}};
-				mul_x_out <= {WD{1'bx}};
 				d_out <= {WD{1'bx}};
 				c_out <= {WD{1'bx}};
 				b_out <= {WD{1'bx}};
