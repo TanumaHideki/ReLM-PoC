@@ -11,11 +11,13 @@ ReLM[:] = (
     "PUTOP",
     "HEX",
     "LED",
+    "FIFO1",
 )[::-1]
 ReLM[:] = (
     "JTAG",
     "KEY",
     "UART",
+    "FIFO1",
 )[::-1]
 ReLM[0x1D::0x20] = "DIV", "DIVX"
 BinaryOp.useB.add("DIV")
