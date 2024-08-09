@@ -97,7 +97,7 @@ module relm_custom(op_in, a_in, cb_in, x_in, xb_in, opb_in, a_out, cb_out);
 	wire div_gtx1 = div_gt1 ? div_gt01 : div_gt11;
 	wire [WD:0] div_nxx0 = {div_gt1 ? (div_gt01 ? div_n00[WD-1:0] : div_n00[WD-1:0] - c_in) : div_gt11 ? div_n00[WD-1:0] - (c_in << 1) : div_n00[WD-1:0] - div_d11[WD-1:0], a_in[WD-3]};
 	wire div_gtxx1;
-	relm_compare #(WD+1) compare_gtxx1({1'd0, x_in[0] ? c_in : 32'd0}, div_nxx0, div_gtxx1);
+	relm_compare #(WD+1) compare_gtxx1({1'd0, x_in[0] ? c_in : 32'd1}, div_nxx0, div_gtxx1);
 	wire [WD-1:0] div_nxxx = div_gtxx1 ? div_nxx0[WD-1:0] : div_nxx0[WD-1:0] - c_in;
 	wire [1:0] div_q = xb_in[WD-1:2] ? 2'b00 : (xb_in[1:0] == 2'b11) ? {1'b0, &a_in[WD-1:WD-2]} : (xb_in[1:0] == 2'b10) ? {1'b0, a_in[WD-1]} : (xb_in[1:0] == 2'b01) ? a_in[WD-1:WD-2] : 2'bxx;
 	wire [1:0] div_r = xb_in[WD-1:2] ? a_in[WD-1:WD-2] : (xb_in[1:0] == 2'b11) ? {a_in[WD-1] & !a_in[WD-2], a_in[WD-2] & !a_in[WD-1]} : (xb_in[1:0] == 2'b10) ? {1'b0, a_in[WD-2]} : (xb_in[1:0] == 2'b01) ? 2'b00 : 2'bxx;
