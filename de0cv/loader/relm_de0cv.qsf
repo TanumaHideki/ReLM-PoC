@@ -74,7 +74,7 @@ set_global_assignment -name TIMING_ANALYZER_MULTICORNER_ANALYSIS ON
 set_global_assignment -name SMART_RECOMPILE ON
 set_global_assignment -name VERILOG_SHOW_LMF_MAPPING_MESSAGES OFF
 set_global_assignment -name GENERATE_SVF_FILE ON
-set_global_assignment -name OPTIMIZATION_MODE "HIGH PERFORMANCE EFFORT"
+set_global_assignment -name OPTIMIZATION_MODE BALANCED
 set_global_assignment -name TIMING_ANALYZER_DO_REPORT_TIMING ON
 set_global_assignment -name VERILOG_FILE ../../relm_custom_div_fp.v
 set_global_assignment -name SDC_FILE ../relm_de0cv.sdc

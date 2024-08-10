@@ -336,7 +336,7 @@ Just linking a Verilog HDL module helps add instructions so easily and enables c
 
 Additionally, since Custom register (C) dedicated to the custom instructions is available as a payload, it is also possible to implement pipeline processing that spans multiple stages while retaining the internal state.
 
-In the extensions below, two-words-length Custom register (C, D) is allocated.
+In the extensions below, one-word-length Custom register (C) is allocated.
 
 * Integer division extension: [relm_custom_div.v](../relm_custom_div.v)
 * Floating point arithmetic and integer division extension: [relm_custom_div_fp.v](../relm_custom_div_fp.v)
