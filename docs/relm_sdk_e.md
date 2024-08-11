@@ -298,7 +298,7 @@ Code sent to the FPGA is written in __Thread[ ]__ or __Define[ ]__ blocks, and t
 
 Definitions of array data and function objects referred after are written in the __Define[ ]__ block.
 
-To develop a [domain-specific language](https://en.wikipedia.org/wiki/Domain-specific_language) within the regular Python syntax, code blocks are written as sequences of comma-separated expressions, like the elements of an array.
+To develop a [domain-specific language](https://en.wikipedia.org/wiki/Domain-specific_language) within the regular Python syntax, code blocks are written as sequences of comma-separated expressions like the elements of an array.
 
 To handle such unfamiliar notation, it is encouraged to use a code formatting tool. (Here, [Black Formatter](https://black.readthedocs.io/en/stable/) in Visual Studio Code environment is used.)
 
