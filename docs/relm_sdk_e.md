@@ -28,7 +28,7 @@
 * [Terasic DE0-CV Board](https://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&CategoryNo=183&No=921)
   * FPGA: Cyclone V 5CEBA4F23C7N
   * 8 core composition is available.
-    * 16 core composition is possible, but little LE room.
+    * 16 core composition is possible, but little room for LE.
   * PS/2 port
   * VGA output
   * ___Out of production, unfortunately.___ On the way to switching to the next target.
