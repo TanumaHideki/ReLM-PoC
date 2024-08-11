@@ -139,7 +139,7 @@ Since the DE0-CV target has an 8-core configuration, the first 8 words are the e
 
 The first 7 threads with the entry point addressed from 0 to 6 are to jump to their own entry points again, and so will be in a dormant state.
 
-The last thread with the entry point addressed 7 is to jump to address 8, and the rows addressed 8 and after deployed program loader code, turning out the program loader being executed in the thread.
+The last thread with the entry point addressed 7 is to jump to address 8, and the rows addressed 8 and after deploy program loader code, turning out the program loader being executed in the thread.
 
 ~~~
 0008:   IN      JTAG                    128:    Out("PUTOP", In("JTAG")),
