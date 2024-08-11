@@ -91,7 +91,7 @@ _DE0-CV target-related_
     * relm_de0cv.qsf  
     _Quartus Prime project settings_
 
-## Building loader component
+## Building loader environment
 
 Here it goes as follows to explain development work procedure using the DE0-CV target as an example.
 
