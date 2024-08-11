@@ -320,7 +320,7 @@ This assembly code output is extended into the following three rows: acquisition
 001F:   PUT     0022:                   20:     ->      Out("LED0", ((key & 0b11111) ^ (key >> 5)) * 2 + 1),
 ~~~
 
-The reason of two PUT instructions here is because the "key" is referenced in two places, and the entity of the Int type variable is actually the operands in all the reference places.
+The reason of two PUT instructions here is because the "key" is referenced in two places, and the entity of the Int type variable is actually the operand in all the reference places.
 ~~~ py
             Out("LED0", ((key & 0b11111) ^ (key >> 5)) * 2 + 1),
 ~~~
