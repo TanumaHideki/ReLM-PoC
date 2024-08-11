@@ -52,6 +52,8 @@ _ReLMアーキテクチャ基本回路実装_
 _カスタム命令無し_
 * relm_custom_div.v  
 _カスタム命令（整数除算）_
+* relm_custom_div_fp.v  
+_カスタム命令（整数除算および浮動小数点演算）_
 * relm.py  
 _Python DSL基本ライブラリ_
 * relm_jtag.py  
@@ -97,7 +99,7 @@ de0cvフォルダ内の __relm_de0cv.py__ を実行すると、de0cv/loaderフ�
 
 コードデータ出力と同じフォルダにあるQuartus Primeのプロジェクトファイル __relm_de0cv.qpf__ を開いて論理合成すると、プログラムローダーを実装したReLM環境が生成されます。（必要な設定は既にrelm_de0cv.qsf内に保存）
 
-生成されたReLM環境はloader/output_files環境に以下のFPGAコンフィグレーション用ファイルとして保存されます。
+生成されたReLM環境はloader/output_filesフォルダに以下のFPGAコンフィグレーション用ファイルとして保存されます。
 * __relm_de0cv.sof__  
 _Quartus PrimeでFPGAをコンフィグレーションするためのSOFファイル_
 * __relm_de0cv.pof__  
@@ -122,14 +124,14 @@ POFファイルはローダー環境以外にも、ReLM環境で開発したア�
 DE0-CVターゲットは８コア構成なので、最初の８ワードは全８スレッドのエントリーポイントになります。
 
 ~~~
-0000:   JUMP    0000:           218:        with ReLMLoader(__file__, "..", "loader", release_loader=True):
-0001:   JUMP    0001:           218:        with ReLMLoader(__file__, "..", "loader", release_loader=True):
-0002:   JUMP    0002:           218:        with ReLMLoader(__file__, "..", "loader", release_loader=True):
-0003:   JUMP    0003:           218:        with ReLMLoader(__file__, "..", "loader", release_loader=True):
-0004:   JUMP    0004:           218:        with ReLMLoader(__file__, "..", "loader", release_loader=True):
-0005:   JUMP    0005:           218:        with ReLMLoader(__file__, "..", "loader", release_loader=True):
-0006:   JUMP    0006:           218:        with ReLMLoader(__file__, "..", "loader", release_loader=True):
-0007:   JUMP    0008:           142:    Loader[
+0000:   JUMP    0000:                   202:    with ReLMLoader(__file__, "..", "loader", release_loader=True):
+0001:   JUMP    0001:                   202:    with ReLMLoader(__file__, "..", "loader", release_loader=True):
+0002:   JUMP    0002:                   202:    with ReLMLoader(__file__, "..", "loader", release_loader=True):
+0003:   JUMP    0003:                   202:    with ReLMLoader(__file__, "..", "loader", release_loader=True):
+0004:   JUMP    0004:                   202:    with ReLMLoader(__file__, "..", "loader", release_loader=True):
+0005:   JUMP    0005:                   202:    with ReLMLoader(__file__, "..", "loader", release_loader=True):
+0006:   JUMP    0006:                   202:    with ReLMLoader(__file__, "..", "loader", release_loader=True):
+0007:   JUMP    0008:                   126:    Loader[
 ~~~
 
 ０番地から６番地までは同じ番地へのジャンプ命令となりますので、最初の７スレッドは休止状態となります。
@@ -137,23 +139,23 @@ DE0-CVターゲットは８コア構成なので、最初の８ワードは全�
 ７番地は８番地へのジャンプとなり、８番地からはプログラムローダーのコードが続きますので、スレッドの１つを使用してプログラムローダーを実行していることがわかります。
 
 ~~~
-0008:   IN      JTAG            144:            Out("PUTOP", In("JTAG")),
-0009:   BLOAD   PUTOP           144:            Out("PUTOP", In("JTAG")),
-000A:   OPB     OUT             144:            Out("PUTOP", In("JTAG")),
-000B:   OPB     LOAD            145:            If(RegB & 0xC00000 != 0)[
-000C:   AND     00C00000        145:            If(RegB & 0xC00000 != 0)[
-000D:   JEQ     0013:           145:            If(RegB & 0xC00000 != 0)[
-000E:   AND     00800000        146:                (Acc & 0x800000).opb("JEQ"),
-000F:   OPB     JEQ             146:                (Acc & 0x800000).opb("JEQ"),
-0010:   LOAD    00000000        147:                (+operand).opb("PUT"),
-0011:   OPB     PUT             147:                (+operand).opb("PUT"),
-0012:   JUMP    0008:           148:                Continue(),
-0013:   LOAD    00000000        150:            operand(operand << 16 | RegB),
-0014:   MUL     00010000        150:            operand(operand << 16 | RegB),
-0015:   OPB     OR              150:            operand(operand << 16 | RegB),
-0016:   PUT     0010:           141:    operand = Int()
-0017:   PUT     0013:           141:    operand = Int()
-0018:   JUMP    0008:
+0008:   IN      JTAG                    128:    Out("PUTOP", In("JTAG")),
+0009:   BLOAD   PUTOP                   128:    Out("PUTOP", In("JTAG")),
+000A:   OPB     OUT                     128:    Out("PUTOP", In("JTAG")),
+000B:   OPB     LOAD                    129:    If(RegB & 0xC00000 != 0)[
+000C:   AND     00C00000                129:    If(RegB & 0xC00000 != 0)[
+000D:   JEQ     0013:                   129:    If(RegB & 0xC00000 != 0)[
+000E:   AND     00800000                130:    (Acc & 0x800000).opb("JEQ"),
+000F:   OPB     JEQ                     130:    (Acc & 0x800000).opb("JEQ"),
+0010:   LOAD    00000000                131:    (+operand).opb("PUT"),
+0011:   OPB     PUT                     131:    (+operand).opb("PUT"),
+0012:   JUMP    0008:                   132:    Continue(),
+0013:   LOAD    00000000                134:    operand(operand << 16 | RegB),
+0014:   MUL     00010000                134:    operand(operand << 16 | RegB),
+0015:   OPB     OR                      134:    operand(operand << 16 | RegB),
+0016:   PUT     0010:                   131:    ->      (+operand).opb("PUT"),
+0017:   PUT     0013:                   134:    ->      operand(operand << 16 | RegB),
+0018:   JUMP    0008:                       DoLoop
 ~~~
 
 左側のアセンブリコードに対し、右側はソースコードのどの行に対応するかを示しています。
@@ -194,51 +196,51 @@ loaderフォルダ内に動作確認用のサンプルコードがあります�
 
 FPGAボードを接続した状態で、まずrelm_test_led.pyを実行してみてください。
 
-<details><summary>出力を表示</summary>
+<details><summary>コンソール出力を表示</summary>
 
 ~~~
-0000:   JUMP    0019:           9:          Thread[
-0001:   JUMP    0001:           8:      with ReLMLoader(loader="loader/output_files/relm_de0cv.svf"):
-0002:   JUMP    0002:           8:      with ReLMLoader(loader="loader/output_files/relm_de0cv.svf"):
-0003:   JUMP    0003:           8:      with ReLMLoader(loader="loader/output_files/relm_de0cv.svf"):
-0004:   JUMP    0004:           8:      with ReLMLoader(loader="loader/output_files/relm_de0cv.svf"):
-0005:   JUMP    0005:           8:      with ReLMLoader(loader="loader/output_files/relm_de0cv.svf"):
-0006:   JUMP    0006:           8:      with ReLMLoader(loader="loader/output_files/relm_de0cv.svf"):
-0007:   JUMP    0008:           6:      from relm_de0cv import *
-0008:   IN      JTAG            6:      from relm_de0cv import *
-0009:   BLOAD   PUTOP           6:      from relm_de0cv import *
-000A:   OPB     OUT             6:      from relm_de0cv import *
-000B:   OPB     LOAD            6:      from relm_de0cv import *
-000C:   AND     00C00000        6:      from relm_de0cv import *
-000D:   JEQ     0013:           6:      from relm_de0cv import *
-000E:   AND     00800000        6:      from relm_de0cv import *
-000F:   OPB     JEQ             6:      from relm_de0cv import *
-0010:   LOAD    00000000        6:      from relm_de0cv import *
-0011:   OPB     PUT             6:      from relm_de0cv import *
-0012:   JUMP    0008:           6:      from relm_de0cv import *
-0013:   LOAD    00000000        6:      from relm_de0cv import *
-0014:   MUL     00010000        6:      from relm_de0cv import *
-0015:   OPB     OR              6:      from relm_de0cv import *
-0016:   PUT     0010:           6:      from relm_de0cv import *
-0017:   PUT     0013:           6:      from relm_de0cv import *
-0018:   JUMP    0008:
-0019:   LOAD    LED1            10:             LED(
-001A:   OUT     7DDB4B4B        10:             LED(
-001B:   LOAD    LED0            10:             LED(
-001C:   OUT     EF030000        10:             LED(
-001D:   IN      KEY             19:                 key := Int(In("KEY")),
-001E:   PUT     0020:           19:                 key := Int(In("KEY")),
-001F:   PUT     0022:           19:                 key := Int(In("KEY")),
-0020:   LOAD    00000000        20:                 Out("LED0", ((key & 0b11111) ^ (key >> 5)) * 2 + 1),
-0021:   AND     0000001F        20:                 Out("LED0", ((key & 0b11111) ^ (key >> 5)) * 2 + 1),
-0022:   BLOAD   00000000        20:                 Out("LED0", ((key & 0b11111) ^ (key >> 5)) * 2 + 1),
-0023:   SAR     00000020        20:                 Out("LED0", ((key & 0b11111) ^ (key >> 5)) * 2 + 1),
-0024:   OPB     XOR             20:                 Out("LED0", ((key & 0b11111) ^ (key >> 5)) * 2 + 1),
-0025:   MUL     00000002        20:                 Out("LED0", ((key & 0b11111) ^ (key >> 5)) * 2 + 1),
-0026:   ADD     00000001        20:                 Out("LED0", ((key & 0b11111) ^ (key >> 5)) * 2 + 1),
-0027:   BLOAD   LED0            20:                 Out("LED0", ((key & 0b11111) ^ (key >> 5)) * 2 + 1),
-0028:   OPB     OUT             20:                 Out("LED0", ((key & 0b11111) ^ (key >> 5)) * 2 + 1),
-0029:   JUMP    001D:
+0000:   JUMP    0019:                   9:      Thread[
+0001:   JUMP    0001:                   8:      with ReLMLoader(loader="loader/output_files/relm_de0cv.svf"):
+0002:   JUMP    0002:                   8:      with ReLMLoader(loader="loader/output_files/relm_de0cv.svf"):
+0003:   JUMP    0003:                   8:      with ReLMLoader(loader="loader/output_files/relm_de0cv.svf"):
+0004:   JUMP    0004:                   8:      with ReLMLoader(loader="loader/output_files/relm_de0cv.svf"):
+0005:   JUMP    0005:                   8:      with ReLMLoader(loader="loader/output_files/relm_de0cv.svf"):
+0006:   JUMP    0006:                   8:      with ReLMLoader(loader="loader/output_files/relm_de0cv.svf"):
+0007:   JUMP    0008:                   6:      from relm_de0cv import *
+0008:   IN      JTAG                    6:      from relm_de0cv import *
+0009:   BLOAD   PUTOP                   6:      from relm_de0cv import *
+000A:   OPB     OUT                     6:      from relm_de0cv import *
+000B:   OPB     LOAD                    6:      from relm_de0cv import *
+000C:   AND     00C00000                6:      from relm_de0cv import *
+000D:   JEQ     0013:                   6:      from relm_de0cv import *
+000E:   AND     00800000                6:      from relm_de0cv import *
+000F:   OPB     JEQ                     6:      from relm_de0cv import *
+0010:   LOAD    00000000                6:      from relm_de0cv import *
+0011:   OPB     PUT                     6:      from relm_de0cv import *
+0012:   JUMP    0008:                   6:      from relm_de0cv import *
+0013:   LOAD    00000000                6:      from relm_de0cv import *
+0014:   MUL     00010000                6:      from relm_de0cv import *
+0015:   OPB     OR                      6:      from relm_de0cv import *
+0016:   PUT     0010:                   6:      ->      from relm_de0cv import *
+0017:   PUT     0013:                   6:      ->      from relm_de0cv import *
+0018:   JUMP    0008:                       DoLoop
+0019:   LOAD    LED1                    10:     LED(
+001A:   OUT     7DDB4B4B                10:     LED(
+001B:   LOAD    LED0                    10:     LED(
+001C:   OUT     EF030000                10:     LED(
+001D:   IN      KEY                     19:     key := Int(In("KEY")),
+001E:   PUT     0020:                   20:     ->      Out("LED0", ((key & 0b11111) ^ (key >> 5)) * 2 + 1),
+001F:   PUT     0022:                   20:     ->      Out("LED0", ((key & 0b11111) ^ (key >> 5)) * 2 + 1),
+0020:   LOAD    00000000                20:     Out("LED0", ((key & 0b11111) ^ (key >> 5)) * 2 + 1),
+0021:   AND     0000001F                20:     Out("LED0", ((key & 0b11111) ^ (key >> 5)) * 2 + 1),
+0022:   BLOAD   00000000                20:     Out("LED0", ((key & 0b11111) ^ (key >> 5)) * 2 + 1),
+0023:   SAR     00000020                20:     Out("LED0", ((key & 0b11111) ^ (key >> 5)) * 2 + 1),
+0024:   OPB     XOR                     20:     Out("LED0", ((key & 0b11111) ^ (key >> 5)) * 2 + 1),
+0025:   MUL     00000002                20:     Out("LED0", ((key & 0b11111) ^ (key >> 5)) * 2 + 1),
+0026:   ADD     00000001                20:     Out("LED0", ((key & 0b11111) ^ (key >> 5)) * 2 + 1),
+0027:   BLOAD   LED0                    20:     Out("LED0", ((key & 0b11111) ^ (key >> 5)) * 2 + 1),
+0028:   OPB     OUT                     20:     Out("LED0", ((key & 0b11111) ^ (key >> 5)) * 2 + 1),
+0029:   JUMP    001D:                       DoLoop
 SVF configuration: loader/output_files/relm_de0cv.svf
 IDCODE: 2B050DD
 ..................................................
@@ -306,9 +308,9 @@ Pythonの通常の代入文 __[変数名 = 式]__ は式としては評価でき
 
 このアセンブリコード出力は以下の様に、I/Oポートからのボタン状態の取得と、PUT命令２つに展開されます。
 ~~~
-001D:   IN      KEY             19:                 key := Int(In("KEY")),
-001E:   PUT     0020:           19:                 key := Int(In("KEY")),
-001F:   PUT     0022:           19:                 key := Int(In("KEY")),
+001D:   IN      KEY                     19:     key := Int(In("KEY")),
+001E:   PUT     0020:                   20:     ->      Out("LED0", ((key & 0b11111) ^ (key >> 5)) * 2 + 1),
+001F:   PUT     0022:                   20:     ->      Out("LED0", ((key & 0b11111) ^ (key >> 5)) * 2 + 1),
 ~~~
 
 ここでPUT命令が２つあるのは key の参照が２箇所あるためで、Int型変数の実体は、実は全ての参照箇所のオペランドとなります。
@@ -415,7 +417,7 @@ __Thread[ ]__ ブロックの前に __Define[ ]__ ブロックで関数オブジ
 
 このように、スレッドを起動せずに後で参照される関数や配列といったオブジェクトを定義する場合、__Define[ ]__ ブロックを使用します。
 
-PS/2ポートにデータを創出するsendPS2関数定義の冒頭は以下になります。
+PS/2ポートにデータを送出するsendPS2関数定義の冒頭は以下になります。
 
 ~~~ py
         sendPS2 := Function(data := Int())[
@@ -438,10 +440,10 @@ PS/2ポートにデータを創出するsendPS2関数定義の冒頭は以下に
 ~~~
 この部分のアセンブリコード出力は以下の様になり、パラメータ変数への代入と、戻り先番地（以下では0xB4）をアキュムレータに入れて関数のエントリーポイントにジャンプするコードに展開されます。
 ~~~
-00BC:   LOAD    000000ED        78:             sendPS2(0xED),  # Keyboard LED command
-00BD:   PUT     0021:           11:             sendPS2 := Function(data := Int())[
-00BE:   LOAD    000000B4        78:             sendPS2(0xED),  # Keyboard LED command
-00BF:   JUMP    0019:           78:             sendPS2(0xED),  # Keyboard LED command
+00BC:   LOAD    000000ED                78:     sendPS2(0xED),  # Keyboard LED command
+00BD:   PUT     0021:                   16:     ->      data & 0xFF,
+00BE:   LOAD    000000B4                78:     sendPS2(0xED),  # Keyboard LED command
+00BF:   JUMP    0019:                   78:     sendPS2(0xED),  # Keyboard LED command
 ~~~
 
 関数の戻り先番地は回転待ちのペナルティを抑えるために最適化されますので、必ずしも連続したコード配置にはなりません。
