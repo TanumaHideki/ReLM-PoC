@@ -19,23 +19,13 @@ ReLM[:] = (
     "UART",
     "FIFO1",
 )[::-1]
-ReLM[0x1D::0x20] = "DIV", "DIVX"
-BinaryOp.useB.add("DIV")
-
-
-def Div():
-    return Function(num := UInt(), denom := UInt())[
-        D := UInt(denom),
-        s := UInt(RegBU(AccU, num).opb("DIVX")),
-        d := UInt(RegBU - AccU),
-        RegBU(0, 0),
-        Do()[
-            Code("DIV", D.put()),
-            Code("SHR", s.put()),
-            (AccU * d).opb("DIV"),
-            Code("SHR", s.put()),
-        ].While(AccU != 0),
-    ].Return(RegBU)
+ReLM[0x18] = "FADD"
+ReLM[0x19] = "FMUL"
+ReLM[0x1A::0x20] = "FDIV", "FDIVLOOP"
+ReLM[0x1B::0x20] = "DIV", "DIVLOOP"
+ReLM[0x1C::0x20] = "ITOF", "ISIGN"
+ReLM[0x1D::0x20] = ("ROUND", "TRUNC"), "FTOI"
+ReLM[0x1E] = "FCOMP"
 
 
 def LED(hex3=None, hex2=None, hex1=None, hex0=None, led=None):

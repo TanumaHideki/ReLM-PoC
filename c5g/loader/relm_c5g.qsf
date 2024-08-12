@@ -43,9 +43,6 @@ set_global_assignment -name TOP_LEVEL_ENTITY relm_c5g
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 23.1STD.0
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "20:00:59  APRIL 22, 2024"
 set_global_assignment -name LAST_QUARTUS_VERSION "23.1std.1 Lite Edition"
-set_global_assignment -name SDC_FILE ../relm_c5g.sdc
-set_global_assignment -name VERILOG_FILE ../relm_c5g.v
-set_global_assignment -name VERILOG_FILE ../../relm.v
 set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
 set_global_assignment -name EDA_SIMULATION_TOOL "Questa Intel FPGA (Verilog)"
 set_global_assignment -name EDA_TIME_SCALE "1 ps" -section_id eda_simulation
@@ -76,4 +73,8 @@ set_global_assignment -name OUTPUT_IO_TIMING_FAR_END_VMEAS "HALF SIGNAL SWING" -
 set_global_assignment -name OUTPUT_IO_TIMING_FAR_END_VMEAS "HALF SIGNAL SWING" -fall
 set_global_assignment -name ACTIVE_SERIAL_CLOCK FREQ_100MHZ
 set_global_assignment -name OPTIMIZATION_MODE BALANCED
+set_global_assignment -name VERILOG_FILE ../../relm_custom_div_fp.v
+set_global_assignment -name SDC_FILE ../relm_c5g.sdc
+set_global_assignment -name VERILOG_FILE ../relm_c5g.v
+set_global_assignment -name VERILOG_FILE ../../relm.v
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
