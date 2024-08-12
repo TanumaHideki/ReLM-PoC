@@ -190,7 +190,7 @@ RegB and Acc are [intrinsics](https://en.wikipedia.org/wiki/Intrinsic_function) 
 The code data shown above is a memory image with only this program loader running.
 
 The program loader running in the ReLM environment on the FPGA can rewrite instruction code (OpCode) and its operand at any address.  
-So, the loader can fill in program code after the loader at the address 0x19 and the following from the host PC via JTAG.  
+So, the loader can fill in program code after the loader at the address 0x19 and the following from the host PC via [JTAG](https://en.wikipedia.org/wiki/JTAG).  
 And afterwards, rewrite the operands of the thread entry (addressed from 0 to 7) to finally boot the threads.
 
 By using this program loader environment, it is possible to proceed with application software development work with no need for troublesome logic synthesis.
@@ -298,7 +298,7 @@ Code sent to the FPGA is written in __Thread[ ]__ or __Define[ ]__ blocks, and t
 
 Definitions of array data and function objects referred after are written in the __Define[ ]__ block.
 
-To develop a [domain-specific language](https://en.wikipedia.org/wiki/Domain-specific_language) within the regular Python syntax, code blocks are written as sequences of comma-separated expressions, like the elements of an array.
+To develop a [domain-specific language](https://en.wikipedia.org/wiki/Domain-specific_language) within the regular Python syntax, code blocks are written as sequences of comma-separated expressions like the elements of an array.
 
 To handle such unfamiliar notation, it is encouraged to use a code formatting tool. (Here, [Black Formatter](https://black.readthedocs.io/en/stable/) in Visual Studio Code environment is used.)
 
@@ -320,7 +320,7 @@ This assembly code output is extended into the following three rows: acquisition
 001F:   PUT     0022:                   20:     ->      Out("LED0", ((key & 0b11111) ^ (key >> 5)) * 2 + 1),
 ~~~
 
-The reason of two PUT instructions here is because the "key" is referenced in two places, and the entity of the Int type variable is actually the operands in all the reference places.
+The reason of two PUT instructions here is because the "key" is referenced in two places, and the entity of the Int type variable is actually the operand in all the reference places.
 ~~~ py
             Out("LED0", ((key & 0b11111) ^ (key >> 5)) * 2 + 1),
 ~~~
