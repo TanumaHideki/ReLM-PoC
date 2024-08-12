@@ -190,7 +190,7 @@ RegB and Acc are [intrinsics](https://en.wikipedia.org/wiki/Intrinsic_function) 
 The code data shown above is a memory image with only this program loader running.
 
 The program loader running in the ReLM environment on the FPGA can rewrite instruction code (OpCode) and its operand at any address.  
-So, the loader can fill in program code after the loader at the address 0x19 and the following from the host PC via JTAG.  
+So, the loader can fill in program code after the loader at the address 0x19 and the following from the host PC via [JTAG](https://en.wikipedia.org/wiki/JTAG).  
 And afterwards, rewrite the operands of the thread entry (addressed from 0 to 7) to finally boot the threads.
 
 By using this program loader environment, it is possible to proceed with application software development work with no need for troublesome logic synthesis.
