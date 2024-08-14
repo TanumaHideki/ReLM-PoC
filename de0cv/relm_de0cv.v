@@ -232,7 +232,7 @@ module relm_de0cv(clk, sw_in, key_in, ps2_inout, vga_r_out, vga_g_out, vga_b_out
 
 `include "coverage.txt"
 	generate
-		if (!USE_POP_JTAG && !USE_PUSH_PUTOP) begin
+		if (!USE_POP_JTAG && !USE_PUSH_PUTOP) begin : no_loader
 			relm #(
 				.WID(WID),
 				.WAD(WAD),
@@ -256,7 +256,7 @@ module relm_de0cv(clk, sw_in, key_in, ps2_inout, vga_r_out, vga_g_out, vga_b_out
 				.op_d_in(0)
 			);
 		end
-		else begin
+		else begin : use_loader
 			wire [WD:0] putop_d;
 			wire [WD:0] jtag_d;
 			wire [23:0] jtag_ir;
