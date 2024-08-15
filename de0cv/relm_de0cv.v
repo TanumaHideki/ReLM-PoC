@@ -265,8 +265,10 @@ module relm_de0cv(clk, sw_in, key_in, ps2_inout, vga_r_out, vga_g_out, vga_b_out
 			relm #(
 				.WID(WID),
 				.WAD(WAD),
-				.NPUSH(NPUSH + 1),
-				.NPOP(NPOP + 1),
+				.NPUSH(NPUSH),
+				.MPUSH(USE_PUSH_PUTOP),
+				.NPOP(NPOP),
+				.MPOP(USE_POP_JTAG),
 				.WSHIFT(5),
 				.WD(WD),
 				.WOP(WOP),
