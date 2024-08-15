@@ -230,99 +230,103 @@ module relm_de0cv(clk, sw_in, key_in, ps2_inout, vga_r_out, vga_g_out, vga_b_out
 	assign {key_d, ps2_d, pop3_d, pop2_d, pop1_d, sram_ad_d} = pop_d;
 	wire [NPOP*(WD+1)-1:0] pop_q = {key_q, ps2_q, pop3_q, pop2_q, pop1_q, sram_rd_q};
 
-`ifdef NO_LOADER
-	relm #(
-		.WID(WID),
-		.WAD(WAD),
-		.NPUSH(NPUSH),
-		.NPOP(NPOP),
-		.WSHIFT(5),
-		.WD(WD),
-		.WOP(WOP),
-		.WC(WC),
-		.CODE("code00"),
-		.DATA("data00"),
-		.EXT(".txt")
-	) relm(
-		.clk(clk),
-		.push_out(push_d),
-		.push_in(push_retry),
-		.pop_out(pop_d),
-		.pop_in(pop_q),
-		.op_we_in(0),
-		.op_wa_in(0),
-		.op_d_in(0)
-	);
-`else
-	wire [WD:0] putop_d;
-	wire [WD:0] jtag_d;
-	wire [23:0] jtag_ir;
-	reg jtag_ready = 0;
+`include "coverage.txt"
+	generate
+		if (!USE_POP_JTAG && !USE_PUSH_PUTOP) begin : no_loader
+			relm #(
+				.WID(WID),
+				.WAD(WAD),
+				.NPUSH(NPUSH),
+				.NPOP(NPOP),
+				.WSHIFT(5),
+				.WD(WD),
+				.WOP(WOP),
+				.WC(WC),
+				.CODE("code00"),
+				.DATA("data00"),
+				.EXT(".txt")
+			) relm(
+				.clk(clk),
+				.push_out(push_d),
+				.push_in(push_retry),
+				.pop_out(pop_d),
+				.pop_in(pop_q),
+				.op_we_in(0),
+				.op_wa_in(0),
+				.op_d_in(0)
+			);
+		end
+		else begin : use_loader
+			wire [WD:0] putop_d;
+			wire [WD:0] jtag_d;
+			wire [23:0] jtag_ir;
+			reg jtag_ready = 0;
 
-	relm #(
-		.WID(WID),
-		.WAD(WAD),
-		.NPUSH(NPUSH + 1),
-		.NPOP(NPOP + 1),
-		.WSHIFT(5),
-		.WD(WD),
-		.WOP(WOP),
-		.WC(WC),
-		.CODE("code00"),
-		.DATA("data00"),
-		.EXT(".txt")
-	) relm(
-		.clk(clk),
-		.push_out({putop_d, push_d}),
-		.push_in({1'b0, push_retry}),
-		.pop_out({jtag_d, pop_d}),
-		.pop_in({~jtag_ready, {WD-24{1'b0}}, jtag_ir, pop_q}),
-		.op_we_in(putop_d[23]),
-		.op_wa_in(putop_d[0+:WAD+WID]),
-		.op_d_in(putop_d[22-:WOP])
-	);
+			relm #(
+				.WID(WID),
+				.WAD(WAD),
+				.NPUSH(NPUSH + 1),
+				.NPOP(NPOP + 1),
+				.WSHIFT(5),
+				.WD(WD),
+				.WOP(WOP),
+				.WC(WC),
+				.CODE("code00"),
+				.DATA("data00"),
+				.EXT(".txt")
+			) relm(
+				.clk(clk),
+				.push_out({putop_d, push_d}),
+				.push_in({1'b0, push_retry}),
+				.pop_out({jtag_d, pop_d}),
+				.pop_in({~jtag_ready, {WD-24{1'b0}}, jtag_ir, pop_q}),
+				.op_we_in(putop_d[23]),
+				.op_wa_in(putop_d[0+:WAD+WID]),
+				.op_d_in(putop_d[22-:WOP])
+			);
 
-	wire jtag_tck, jtag_uir;
-	reg [2:0] jtag_we = 0;
-	always @(posedge clk) begin
-		jtag_we <= {jtag_we[1:0], jtag_uir};
-		if (jtag_we[2:1] == 2'b10) jtag_ready <= 1;
-		else if (jtag_d[WD]) jtag_ready <= 0;
-	end
-	sld_virtual_jtag #(
-		.sld_instance_index(1),
-		.sld_ir_width(24)
-	) jtag(
-		.tck(jtag_tck),
-		.tdi(),
-		.ir_in(jtag_ir),
-		.tdo(1'b0),
-		.ir_out(24'd0),
-		.virtual_state_cdr(),
-		.virtual_state_sdr(),
-		.virtual_state_e1dr(),
-		.virtual_state_pdr(),
-		.virtual_state_e2dr(),
-		.virtual_state_udr(),
-		.virtual_state_cir(),
-		.virtual_state_uir(jtag_uir),
-		.tms(),
-		.jtag_state_tlr(),
-		.jtag_state_rti(),
-		.jtag_state_sdrs(),
-		.jtag_state_cdr(),
-		.jtag_state_sdr(),
-		.jtag_state_e1dr(),
-		.jtag_state_pdr(),
-		.jtag_state_e2dr(),
-		.jtag_state_udr(),
-		.jtag_state_sirs(),
-		.jtag_state_cir(),
-		.jtag_state_sir(),
-		.jtag_state_e1ir(),
-		.jtag_state_pir(),
-		.jtag_state_e2ir(),
-		.jtag_state_uir()
-	);
-`endif
+			wire jtag_tck, jtag_uir;
+			reg [2:0] jtag_we = 0;
+			always @(posedge clk) begin
+				jtag_we <= {jtag_we[1:0], jtag_uir};
+				if (jtag_we[2:1] == 2'b10) jtag_ready <= 1;
+				else if (jtag_d[WD]) jtag_ready <= 0;
+			end
+			sld_virtual_jtag #(
+				.sld_instance_index(1),
+				.sld_ir_width(24)
+			) jtag(
+				.tck(jtag_tck),
+				.tdi(),
+				.ir_in(jtag_ir),
+				.tdo(1'b0),
+				.ir_out(24'd0),
+				.virtual_state_cdr(),
+				.virtual_state_sdr(),
+				.virtual_state_e1dr(),
+				.virtual_state_pdr(),
+				.virtual_state_e2dr(),
+				.virtual_state_udr(),
+				.virtual_state_cir(),
+				.virtual_state_uir(jtag_uir),
+				.tms(),
+				.jtag_state_tlr(),
+				.jtag_state_rti(),
+				.jtag_state_sdrs(),
+				.jtag_state_cdr(),
+				.jtag_state_sdr(),
+				.jtag_state_e1dr(),
+				.jtag_state_pdr(),
+				.jtag_state_e2dr(),
+				.jtag_state_udr(),
+				.jtag_state_sirs(),
+				.jtag_state_cir(),
+				.jtag_state_sir(),
+				.jtag_state_e1ir(),
+				.jtag_state_pir(),
+				.jtag_state_e2ir(),
+				.jtag_state_uir()
+			);
+		end
+	endgenerate
 endmodule

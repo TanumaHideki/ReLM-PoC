@@ -26,9 +26,11 @@ class Code(Statement):
         operand: Code | tuple[Code] | int | str | float = 0,
         debug: str | bool = True,
         offset: int = 0,
+        push: str | None = None,
     ):
         self.op = op
         self.offset = offset
+        self.push = push
         if isinstance(operand, Code):
             self.operand = operand.operand
             self.ref = [operand]
@@ -1081,17 +1083,17 @@ def Out(
     for e in expr:
         match e:
             case int() | str():
-                burst.append(Code(op, e))
+                burst.append(Code(op, e, push=port))
             case Int():
-                burst.append(Code(op, e.put()))
+                burst.append(Code(op, e.put(), push=port))
             case BinaryOp():
                 init.append(Int(e))
                 opb = len(burst)
-                burst.append(Code(op, init[-1].put()))
+                burst.append(Code(op, init[-1].put(), push=port))
             case _:
                 raise TypeError(f"{type(e)} is not supported")
     if opb >= 0:
-        burst[opb] = Code("OPB", op)
+        burst[opb] = Code("OPB", op, push=port)
         init[-1].ref[0] = Code("BLOAD", port)
         return Block[(*init, *burst)]
     else:
@@ -1650,11 +1652,18 @@ class ReLM(metaclass=Mnemonic):
                 print("...", file=file)
         return self
 
-    def save(self, *path: str, code="code{:02d}.txt", data="data{:02d}.txt") -> ReLM:
+    def save(
+        self,
+        *path: str,
+        code="code{:02d}.txt",
+        data="data{:02d}.txt",
+        coverage="coverage.txt",
+    ) -> ReLM:
         path = Path(*path).resolve()
         if path.is_file():
             path = path.parent
         path.mkdir(exist_ok=True)
+        count = Coverage()
         for i in range(ReLM.ncpu):
             pcode = path.joinpath(code.format(i))
             print(pcode)
@@ -1663,11 +1672,52 @@ class ReLM(metaclass=Mnemonic):
                 print(pdata)
                 with open(pdata, "w") as fdata:
                     for c in self.memory[i :: ReLM.ncpu]:
+                        count.count(i, c)
                         op = self.mnemonic[c.op]
                         print(f"{op:b}", file=fcode)
                         operand = self.mnemonic[c.operand]
                         print(f"{operand & 0xFFFFFFFF:X}", file=fdata)
+        pcount = path.joinpath(coverage)
+        print(pcount)
+        with open(pcount, "w") as fcount:
+            count.save(fcount)
         return self
+
+
+class Coverage:
+    def __init__(self):
+        self.op = {}
+        self.opb = {}
+        self.pop = {"JTAG": 0}
+        self.push = {"PUTOP": 0}
+
+    @staticmethod
+    def update(count: dict, key: str, id: int) -> None:
+        if isinstance(key, str):
+            count[key] = count.get(key, 0) | (1 << id)
+
+    def count(self, id: int, code: Code) -> None:
+        self.update(self.op, code.op, id)
+        self.update(self.push, code.push, id)
+        match code.op:
+            case "OPB":
+                self.update(self.opb, code.operand, id)
+            case "IO" | "IN" | "POP":
+                self.update(self.pop, code.operand, id)
+
+    @staticmethod
+    def print(count: dict, name: str, file=None) -> None:
+        for k, v in count.items():
+            print(
+                f"localparam [{ReLM.ncpu-1}:0] USE_{name}_{k} = {ReLM.ncpu}'b{v:b};",
+                file=file,
+            )
+
+    def save(self, file) -> None:
+        self.print(self.op, "OP", file)
+        self.print(self.opb, "OPB", file)
+        self.print(self.pop, "POP", file)
+        self.print(self.push, "PUSH", file)
 
 
 ReLM[:] = (
