@@ -96,8 +96,8 @@ module relm_pe(clk, pc_in, pc_out, a_in, a_out, cb_in, cb_out,
 	parameter ID = 0;
 	parameter WID = 0;
 	parameter WAD = 0;
-	parameter WPUSH = 0;
-	parameter WPOP = 0;
+	parameter NPUSH = 0;
+	parameter NPOP = 0;
 	parameter WSHIFT = 5;
 	parameter WD = 32;
 	parameter WOP = 5;
@@ -168,8 +168,8 @@ module relm_pe(clk, pc_in, pc_out, a_in, a_out, cb_in, cb_out,
 	wire [WD-1:0] xb = (!pc[WAD+WID] & opb) ? cb[WD-1:0] : x;
 
 	wire [NID-1:0] put_decode;
-	localparam NPOP = 2 ** WPOP;
-	wire [NPOP-1:0] pop_decode;
+	localparam WPOP = $clog2(NPOP);
+	wire [2**WPOP-1:0] pop_decode;
 	localparam WXB = (WID > WPOP) ? WID : WPOP;
 	relm_decode_shared #(WID, WPOP) xb_decode(
 		.d_in(xb[0+:WXB]),
@@ -191,8 +191,8 @@ module relm_pe(clk, pc_in, pc_out, a_in, a_out, cb_in, cb_out,
 
 	localparam NSHIFT = 2 ** WSHIFT;
 	wire [NSHIFT-1:0] a_shift;
-	localparam NPUSH = 2 ** WPUSH;
-	wire [NPUSH-1:0] push_decode;
+	localparam WPUSH = $clog2(NPUSH);
+	wire [2**WPUSH-1:0] push_decode;
 	localparam WA = (WSHIFT > WPUSH) ? WSHIFT : WPUSH;
 	relm_decode_shared #(WSHIFT, WPUSH) a_decode(
 		.d_in(a[0+:WA]),
@@ -215,7 +215,7 @@ module relm_pe(clk, pc_in, pc_out, a_in, a_out, cb_in, cb_out,
 	wire retry_put = |(put_decode & ad_ne_xb & wb_en);
 
 	reg push;
-	wire [NPUSH-1:0] push_stb = push_decode & {NPUSH{push}};
+	wire [NPUSH-1:0] push_stb = push_decode[NPUSH-1:0] & {NPUSH{push}};
 	output [NPUSH*(WD+1)-1:0] push_out;
 	relm_select #(NPUSH, WD+1) push_select(
 		.s_in(push_stb),
@@ -224,10 +224,10 @@ module relm_pe(clk, pc_in, pc_out, a_in, a_out, cb_in, cb_out,
 		.q_out(push_out)
 	);
 	input [NPUSH-1:0] push_in;
-	wire retry_push = |(push_decode & push_in);
+	wire retry_push = |(push_decode[NPUSH-1:0] & push_in);
 
 	reg pop;
-	wire [NPOP-1:0] pop_stb = pop_decode & {NPOP{pop}};
+	wire [NPOP-1:0] pop_stb = pop_decode[NPOP-1:0] & {NPOP{pop}};
 	output [NPOP*(WD+1)-1:0] pop_out;
 	relm_select #(NPOP, WD+1) pop_select(
 		.s_in(pop_stb),
@@ -349,9 +349,14 @@ endmodule
 
 module relm(clk, push_out, push_in, pop_out, pop_in, op_we_in, op_wa_in, op_d_in);
 	parameter WID = 0;
+	localparam NID = 2 ** WID;
 	parameter WAD = 0;
 	parameter NPUSH = 0;
+	parameter [NID-1:0] MPUSH = 0;
+	localparam LPUSH = MPUSH ? NPUSH + 1 : NPUSH;
 	parameter NPOP = 0;
+	parameter [NID-1:0] MPOP = 0;
+	localparam LPOP = MPOP ? NPOP + 1 : NPOP;
 	parameter WSHIFT = 5;
 	parameter WD = 32;
 	parameter WOP = 5;
@@ -359,7 +364,6 @@ module relm(clk, push_out, push_in, pop_out, pop_in, op_we_in, op_wa_in, op_d_in
 	parameter CODE = "code00";
 	parameter DATA = "data00";
 	parameter EXT = ".txt";
-	localparam NID = 2 ** WID;
 	input clk;
 	wire [NID*(WAD+WID+1)-1:0] pc;
 	wire [NID*WD-1:0] a;
@@ -367,42 +371,40 @@ module relm(clk, push_out, push_in, pop_out, pop_in, op_we_in, op_wa_in, op_d_in
 	wire [NID*NID*WAD-1:0] wb_ad;
 	wire [NID*NID*WD-1:0] wb_d;
 	wire [NID*NID-1:0] wb_en;
-	localparam WPUSH = $clog2(NPUSH);
-	localparam MPUSH = 2 ** WPUSH;
-	localparam WPOP = $clog2(NPOP);
-	localparam MPOP = 2 ** WPOP;
-	wire [NID*MPUSH*(WD+1)-1:0] push;
-	wire [MPUSH*(WD+1)-1:0] push_mix;
-	output [NPUSH*(WD+1)-1:0] push_out;
-	assign push_out = push_mix[NPUSH*(WD+1)-1:0];
-	relm_mix #(NID, MPUSH*(WD+1)) mix_push(
+	wire [NID*LPUSH*(WD+1)-1:0] push;
+	output [LPUSH*(WD+1)-1:0] push_out;
+	relm_mix #(NID, LPUSH*(WD+1)) mix_push(
 		.s_in({NID{1'b1}}),
 		.d_in(push),
-		.q_out(push_mix)
+		.q_out(push_out)
 	);
-	input [NPUSH-1:0] push_in;
-	wire [NID*MPOP*(WD+1)-1:0] pop;
-	wire [MPOP*(WD+1)-1:0] pop_mix;
-	output [NPOP*(WD+1)-1:0] pop_out;
-	assign pop_out = pop_mix[NPOP*(WD+1)-1:0];
-	relm_mix #(NID, MPOP*(WD+1)) mix_pop(
+	input [LPUSH-1:0] push_in;
+	wire [NID*LPOP*(WD+1)-1:0] pop;
+	output [LPOP*(WD+1)-1:0] pop_out;
+	relm_mix #(NID, LPOP*(WD+1)) mix_pop(
 		.s_in({NID{1'b1}}),
 		.d_in(pop),
-		.q_out(pop_mix)
+		.q_out(pop_out)
 	);
-	input [NPOP*(WD+1)-1:0] pop_in;
+	input [LPOP*(WD+1)-1:0] pop_in;
 	input op_we_in;
 	input [WAD+WID-1:0] op_wa_in;
 	input [WOP-1:0] op_d_in;
 	genvar i;
 	generate
 		for (i = 0; i < NID - 1; i = i + 1) begin : ring
+			localparam NMPUSH = MPUSH[i] ? NPUSH + 1 : NPUSH;
+			localparam NMPOP = MPOP[i] ? NPOP + 1 : NPOP;
+			wire [NMPUSH*(WD+1)-1:0] push_mix;
+			assign push[i*LPUSH*(WD+1)+:LPUSH*(WD+1)] = {{WD+1{1'b0}}, push_mix};
+			wire [NMPOP*(WD+1)-1:0] pop_mix;
+			assign pop[i*LPOP*(WD+1)+:LPOP*(WD+1)] = {{WD+1{1'b0}}, pop_mix};
 			relm_pe #(
 				.ID(i),
 				.WID(WID),
 				.WAD(WAD),
-				.WPUSH(WPUSH),
-				.WPOP(WPOP),
+				.NPUSH(NMPUSH),
+				.NPOP(NMPOP),
 				.WSHIFT(WSHIFT),
 				.WD(WD),
 				.WOP(WOP),
@@ -424,22 +426,28 @@ module relm(clk, push_out, push_in, pop_out, pop_in, op_we_in, op_wa_in, op_d_in
 				.wb_d_out(wb_d[(i+1)*NID*WD+:NID*WD]),
 				.wb_en_in(wb_en[i*NID+:NID]),
 				.wb_en_out(wb_en[(i+1)*NID+:NID]),
-				.push_out(push[i*MPUSH*(WD+1)+:MPUSH*(WD+1)]),
-				.push_in({{MPUSH-NPUSH{1'b0}}, push_in}),
-				.pop_out(pop[i*MPOP*(WD+1)+:MPOP*(WD+1)]),
-				.pop_in({{(MPOP-NPOP)*(WD+1){1'b0}}, pop_in}),
+				.push_out(push_mix),
+				.push_in(push_in[NMPUSH-1:0]),
+				.pop_out(pop_mix),
+				.pop_in(pop_in[NMPOP*(WD+1)-1:0]),
 				.op_we_in(op_we_in),
 				.op_wa_in(op_wa_in),
 				.op_d_in(op_d_in)
 			);
 		end
 	endgenerate
+	localparam NMPUSH = MPUSH[NID-1] ? NPUSH + 1 : NPUSH;
+	localparam NMPOP = MPOP[NID-1] ? NPOP + 1 : NPOP;
+	wire [NMPUSH*(WD+1)-1:0] push_mix;
+	assign push[NID*LPUSH*(WD+1)-1-:LPUSH*(WD+1)] = {{WD+1{1'b0}}, push_mix};
+	wire [NMPOP*(WD+1)-1:0] pop_mix;
+	assign pop[NID*LPOP*(WD+1)-1-:LPOP*(WD+1)] = {{WD+1{1'b0}}, pop_mix};
 	relm_pe #(
 		.ID(NID-1),
 		.WID(WID),
 		.WAD(WAD),
-		.WPUSH(WPUSH),
-		.WPOP(WPOP),
+		.NPUSH(NMPUSH),
+		.NPOP(NMPOP),
 		.WSHIFT(WSHIFT),
 		.WD(WD),
 		.WOP(WOP),
@@ -461,10 +469,10 @@ module relm(clk, push_out, push_in, pop_out, pop_in, op_we_in, op_wa_in, op_d_in
 		.wb_d_out(wb_d[0+:NID*WD]),
 		.wb_en_in(wb_en[NID*NID-1-:NID]),
 		.wb_en_out(wb_en[0+:NID]),
-		.push_out(push[NID*MPUSH*(WD+1)-1-:MPUSH*(WD+1)]),
-		.push_in({{MPUSH-NPUSH{1'b0}}, push_in}),
-		.pop_out(pop[NID*MPOP*(WD+1)-1-:MPOP*(WD+1)]),
-		.pop_in({{(MPOP-NPOP)*(WD+1){1'b0}}, pop_in}),
+		.push_out(push_mix),
+		.push_in(push_in[NMPUSH-1:0]),
+		.pop_out(pop_mix),
+		.pop_in(pop_in[NMPOP*(WD+1)-1:0]),
 		.op_we_in(op_we_in),
 		.op_wa_in(op_wa_in),
 		.op_d_in(op_d_in)
