@@ -1565,6 +1565,10 @@ class ReLM(metaclass=Mnemonic):
     mnemonic = Mnemonic.mnemonic
     on_render = None
     ncpu = 0
+    op = {}
+    opb = {}
+    pop = {"JTAG": 0}
+    push = {"PUTOP": 0}
 
     def __init__(self, ncpu: int, loader: bool = True):
         assert ncpu & (ncpu - 1) == 0, "ncpu must be power of 2"
@@ -1686,15 +1690,15 @@ class ReLM(metaclass=Mnemonic):
 
 class Coverage:
     def __init__(self):
-        self.op = {}
-        self.opb = {}
-        self.pop = {"JTAG": 0}
-        self.push = {"PUTOP": 0}
+        self.op = dict(ReLM.op)
+        self.opb = dict(ReLM.opb)
+        self.pop = dict(ReLM.pop)
+        self.push = dict(ReLM.push)
 
     @staticmethod
     def update(count: dict, key: str, id: int) -> None:
-        if isinstance(key, str):
-            count[key] = count.get(key, 0) | (1 << id)
+        if key in count:
+            count[key] |= 1 << id
 
     def count(self, id: int, code: Code) -> None:
         self.update(self.op, code.op, id)
@@ -1707,9 +1711,10 @@ class Coverage:
 
     @staticmethod
     def print(count: dict, name: str, file=None) -> None:
+        m = (1 << ReLM.ncpu) - 1
         for k, v in count.items():
             print(
-                f"localparam [{ReLM.ncpu-1}:0] USE_{name}_{k} = {ReLM.ncpu}'b{v:b};",
+                f"localparam [{ReLM.ncpu-1}:0] USE_{name}_{k} = {ReLM.ncpu}'b{v & m:b};",
                 file=file,
             )
 
