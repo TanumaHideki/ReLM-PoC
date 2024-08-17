@@ -396,9 +396,9 @@ module relm(clk, push_out, push_in, pop_out, pop_in, op_we_in, op_wa_in, op_d_in
 			localparam NMPUSH = MPUSH[i] ? NPUSH + 1 : NPUSH;
 			localparam NMPOP = MPOP[i] ? NPOP + 1 : NPOP;
 			wire [NMPUSH*(WD+1)-1:0] push_mix;
-			assign push[i*LPUSH*(WD+1)+:LPUSH*(WD+1)] = {{WD+1{1'b0}}, push_mix};
+			assign push[i*LPUSH*(WD+1)+:LPUSH*(WD+1)] = {{(LPUSH-NMPUSH)*(WD+1){1'b0}}, push_mix};
 			wire [NMPOP*(WD+1)-1:0] pop_mix;
-			assign pop[i*LPOP*(WD+1)+:LPOP*(WD+1)] = {{WD+1{1'b0}}, pop_mix};
+			assign pop[i*LPOP*(WD+1)+:LPOP*(WD+1)] = {{(LPOP-NMPOP)*(WD+1){1'b0}}, pop_mix};
 			relm_pe #(
 				.ID(i),
 				.WID(WID),
@@ -439,9 +439,9 @@ module relm(clk, push_out, push_in, pop_out, pop_in, op_we_in, op_wa_in, op_d_in
 	localparam NMPUSH = MPUSH[NID-1] ? NPUSH + 1 : NPUSH;
 	localparam NMPOP = MPOP[NID-1] ? NPOP + 1 : NPOP;
 	wire [NMPUSH*(WD+1)-1:0] push_mix;
-	assign push[NID*LPUSH*(WD+1)-1-:LPUSH*(WD+1)] = {{WD+1{1'b0}}, push_mix};
+	assign push[NID*LPUSH*(WD+1)-1-:LPUSH*(WD+1)] = {{(LPUSH-NMPUSH)*(WD+1){1'b0}}, push_mix};
 	wire [NMPOP*(WD+1)-1:0] pop_mix;
-	assign pop[NID*LPOP*(WD+1)-1-:LPOP*(WD+1)] = {{WD+1{1'b0}}, pop_mix};
+	assign pop[NID*LPOP*(WD+1)-1-:LPOP*(WD+1)] = {{(LPOP-NMPOP)*(WD+1){1'b0}}, pop_mix};
 	relm_pe #(
 		.ID(NID-1),
 		.WID(WID),
