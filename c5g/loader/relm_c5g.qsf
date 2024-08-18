@@ -77,4 +77,6 @@ set_global_assignment -name VERILOG_FILE ../../relm_custom_div_fp.v
 set_global_assignment -name SDC_FILE ../relm_c5g.sdc
 set_global_assignment -name VERILOG_FILE ../relm_c5g.v
 set_global_assignment -name VERILOG_FILE ../../relm.v
+set_global_assignment -name QII_AUTO_PACKED_REGISTERS "MINIMIZE AREA WITH CHAINS"
+set_global_assignment -name ALM_REGISTER_PACKING_EFFORT HIGH
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
