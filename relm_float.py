@@ -100,8 +100,9 @@ class FloatExprB(ExprB):
             .opb("DIVLOOP")
             .opb("DIVLOOP")
             .opb("DIVLOOP")
+            .opb("DIVLOOP")
             .opb("FDIVLOOP"),
-            "ITOF":16.0,
+            "ITOF":8.0,
             AccF * y,
         ]
 

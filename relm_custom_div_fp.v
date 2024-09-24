@@ -85,7 +85,8 @@ module relm_custom(op_in, a_in, cb_in, x_in, xb_in, opb_in, a_out, cb_out);
 	wire [WD:0] div_n0 = {b_in, a_in[WD-1]};
 	wire [WD:0] div_n1 = div_n0 - {1'b0, c_in};
 	wire div_gt1 = div_n1[WD] & !div_n0[WD];
-	wire [WD:0] div_nx0 = {div_gt1 ? div_n0[WD-1:0] : div_n1[WD-1:0], a_in[WD-2]};
+	wire [WD-1:0] div_nx = div_gt1 ? div_n0[WD-1:0] : div_n1[WD-1:0];
+	wire [WD:0] div_nx0 = {div_nx, a_in[WD-2]};
 	wire [WD:0] div_nx1 = div_nx0 - {1'b0, c_in};
 	wire div_gtx1 = div_nx1[WD] & !div_nx0[WD];
 	wire [WD-1:0] div_nxx = div_gtx1 ? div_nx0[WD-1:0] : div_nx1[WD-1:0];
@@ -159,7 +160,7 @@ module relm_custom(op_in, a_in, cb_in, x_in, xb_in, opb_in, a_out, cb_out);
 			6'b1?1010: begin // OPB FDIVLOOP
 				c_out <= c_in; // D
 				b_out <= {WD{1'bx}};
-				a_out <= {a_in[WD-4:0], !div_gt1, !div_gtx1, |div_nxx}; // N, Q, sticky
+				a_out <= {a_in[WD-3:0], !div_gt1, |div_nx}; // N, Q, sticky
 			end
 			6'b0??011, 6'b1?0011: begin // (OPB) DIV
 				c_out <= xb_in; // D
