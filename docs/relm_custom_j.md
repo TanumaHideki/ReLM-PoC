@@ -229,8 +229,9 @@ FDIV命令は、オペランド（XB）の被除数とアキュムレータ（Ac
             .opb("DIVLOOP")
             .opb("DIVLOOP")
             .opb("DIVLOOP")
+            .opb("DIVLOOP")
             .opb("FDIVLOOP"),
-            "ITOF":16.0,
+            "ITOF":8.0,
             AccF * y,
         ]
 ~~~
@@ -239,7 +240,7 @@ FDIV命令は、オペランド（XB）の被除数とアキュムレータ（Ac
 
 ~~~
 9B9B:   FDIV    +1.000000E+00           50:     y := Float(1.0 / x),
-9B9C:   PUT     9BAC:                   50:     ->      y := Float(1.0 / x),
+9B9C:   PUT     9BAD:                   50:     ->      y := Float(1.0 / x),
 9B9D:   LOAD    00000000                50:     y := Float(1.0 / x),
 9B9E:   OPB     DIVLOOP                 50:     y := Float(1.0 / x),
 9B9F:   OPB     DIVLOOP                 50:     y := Float(1.0 / x),
@@ -253,10 +254,11 @@ FDIV命令は、オペランド（XB）の被除数とアキュムレータ（Ac
 9BA7:   OPB     DIVLOOP                 50:     y := Float(1.0 / x),
 9BA8:   OPB     DIVLOOP                 50:     y := Float(1.0 / x),
 9BA9:   OPB     DIVLOOP                 50:     y := Float(1.0 / x),
-9BAA:   OPB     FDIVLOOP                50:     y := Float(1.0 / x),
-9BAB:   ITOF    +1.600000E+01           50:     y := Float(1.0 / x),
-9BAC:   FMUL    00000000                50:     y := Float(1.0 / x),
-9BAD:   OPB     ITOF                    50:     y := Float(1.0 / x),
+9BAA:   OPB     DIVLOOP                 50:     y := Float(1.0 / x),
+9BAB:   OPB     FDIVLOOP                50:     y := Float(1.0 / x),
+9BAC:   ITOF    +8.000000E+00           50:     y := Float(1.0 / x),
+9BAD:   FMUL    00000000                50:     y := Float(1.0 / x),
+9BAE:   OPB     ITOF                    50:     y := Float(1.0 / x),
 ~~~
 
 DIVLOOP命令の後のFDIVLOOP命令は浮動小数点除算用にDIVLOOP命令の動作を少し変更したもので、２ビットの商の後に丸め処理用の[stickyビット](https://en.wikipedia.org/wiki/Floating-point_arithmetic#Addition_and_subtraction)を付加するように変更したものです。
