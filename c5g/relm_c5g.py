@@ -12,12 +12,19 @@ ReLM[:] = (
     "HEX",
     "LED",
     "FIFO1",
+    "FIFO2",
+    "FIFO3",
+    "HDMI",
 )[::-1]
 ReLM[:] = (
     "JTAG",
     "KEY",
     "UART",
     "FIFO1",
+    "FIFO2",
+    "FIFO3",
+    "HDMIPAL",
+    "I2C",
 )[::-1]
 ReLM[0x18] = "FADD"
 ReLM[0x19] = "FMUL"

@@ -24,7 +24,9 @@ module relm_unused(d_in, q_out);
 endmodule
 
 module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
-		hex3_out, hex2_out, hex1_out, hex0_out, ledr_out, ledg_out);
+		hex3_out, hex2_out, hex1_out, hex0_out, ledr_out, ledg_out,
+		hdmi_r_out, hdmi_g_out, hdmi_b_out, hdmi_clk_out, hdmi_de_out, hdmi_hs_out, hdmi_vs_out,
+		hdmi_int_in, hdmi_scl_out, hdmi_sda_inout);
 	parameter WD = 32;
 	parameter WC = `WC;
 
@@ -120,7 +122,113 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 		if (!uart_tdata[8] && uart_d[WD-1]) uart_tdata <= {1'b1, uart_d[7:0]};
 	end
 
-	parameter NFIFO = 1;
+	(* chip_pin = "AD25, AC25, AB25, AA24, AB26, R26, R24, P21" *)
+	output reg [7:0] hdmi_r_out = 0;
+	(* chip_pin = "P26, N25, P23, P22, R25, R23, T26, T24" *)
+	output reg [7:0] hdmi_g_out = 0;
+	(* chip_pin = "T23, U24, V25, V24, W26, W25, AA26, V23" *)
+	output reg [7:0] hdmi_b_out = 0;
+	(* chip_pin = "Y25" *)
+	output hdmi_clk_out;
+	(* chip_pin = "Y26" *)
+	output reg hdmi_de_out = 0;
+	(* chip_pin = "U26" *)
+	output reg hdmi_hs_out = 0;
+	(* chip_pin = "U25" *)
+	output reg hdmi_vs_out = 0;
+	(* chip_pin = "T12" *)
+	input hdmi_int_in;
+	wire hdmi_empty;
+	reg [10:0] hdmi_x = 0;
+	wire [10:0] hdmi_x_next = hdmi_x + {10'd0, ~hdmi_empty};
+	assign hdmi_clk_out = hdmi_x[0];
+	reg [9:0] hdmi_y = 0;
+	wire [9:0] hdmi_y_next = hdmi_y + 10'd1;
+	wire [WD-1:0] hdmi_q;
+	reg [1:0] hdmi_en = 0;
+	reg [31:0] hdmi_pixel;
+	reg [1:0] hdmi_int_reg = 0;
+	wire [WD:0] hdmipal_d;
+	wire [WD:0] hdmipal_q = {{WD{1'b0}}, hdmi_int_reg[1]};
+	(* ramstyle = "no_rw_check, MLAB" *) reg [23:0] hdmi_palette [0:15];
+	always @(posedge clk) begin
+		hdmi_int_reg <= {hdmi_int_reg[0], hdmi_int_in};
+		case (hdmi_x)
+			100*16-1: begin
+				hdmi_hs_out <= 0; // HSYNC
+				hdmi_x <= 0;
+				case (hdmi_y)
+					524: begin
+						hdmi_vs_out <= 0; // VSYNC
+						hdmi_y <= 0;
+					end
+					1: begin
+						hdmi_vs_out <= 1;
+						hdmi_y <= hdmi_y_next;
+					end
+					default: hdmi_y <= hdmi_y_next;
+				endcase
+			end
+			12*16-1: begin
+				hdmi_hs_out <= 1;
+				hdmi_x <= hdmi_x_next;
+			end
+			default: hdmi_x <= hdmi_x_next;
+		endcase
+		case (hdmi_x)
+			18*16-3: begin
+				hdmi_en[0] <= 1;
+				if (hdmi_y == 35) hdmi_en[1] <= 1;
+			end
+			98*16-3: begin
+				hdmi_en[0] <= 0;
+				if (hdmi_y == 35+479) hdmi_en[1] <= 0;
+			end
+		endcase
+		if (hdmipal_d[7]) hdmi_palette[hdmipal_d[3:0]] <= hdmipal_d[31:8];
+		casez (hdmi_x[3:0])
+			4'b???1: begin
+				hdmi_pixel <= {hdmi_pixel[27:0], 4'd0};
+				{hdmi_r_out, hdmi_g_out, hdmi_b_out} <= hdmi_palette[hdmi_pixel[31:28]];
+			end
+			4'b1110: if (&hdmi_en) hdmi_pixel <= hdmi_q;
+		endcase
+	end
+	wire [WD:0] hdmi_d;
+	wire hdmi_retry;
+	relm_fifo #(
+		.WAD(8),
+		.WD(WD)
+	) fifo_hdmi(
+		.clk(clk),
+		.re_in(hdmi_x[3:0] == 4'b1110 && &hdmi_en),
+		.we_in(hdmi_d[WD]),
+		.d_in(hdmi_d[0+:WD]),
+		.empty_out(hdmi_empty),
+		.full_out(hdmi_retry),
+		.q_out(hdmi_q)
+	);
+
+	(* chip_pin = "B7" *)
+	output hdmi_scl_out;
+	(* chip_pin = "G11" *)
+	inout hdmi_sda_inout;
+	reg i2c_scl = 1;
+	assign hdmi_scl_out = i2c_scl ? 1'bz : 1'b0;
+	reg i2c_sda = 1;
+	assign hdmi_sda_inout = i2c_sda ? 1'bz : 1'b0;
+	reg [1:0] i2c_sda_reg = 3;
+	wire [WD:0] i2c_d;
+	wire [WD:0] i2c_q = {{WD{1'b0}}, i2c_sda_reg[1]};
+	always @(posedge clk) begin
+		i2c_sda_reg <= {i2c_sda_reg[0], hdmi_sda_inout};
+		if (i2c_d[WD]) begin
+			i2c_sda <= i2c_d[WD-1];
+			i2c_scl <= i2c_d[0];
+		end
+	end
+
+	parameter NFIFO = 3;
 
 	wire [(WD+1)*NFIFO-1:0] pushf_d, popf_d, popf_q;
 	wire [NFIFO-1:0] pushf_retry;
@@ -144,15 +252,15 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 	parameter WAD = 12;
 	parameter WOP = 5;
 
-	parameter NPUSH = 2 + NFIFO;
-	parameter NPOP = 2 + NFIFO;
+	parameter NPUSH = 3 + NFIFO;
+	parameter NPOP = 4 + NFIFO;
 
 	wire [NPUSH*(WD+1)-1:0] push_d;
-	assign {hex_d, led_d, pushf_d} = push_d;
-	wire [NPUSH-1:0] push_retry = {hex_retry, led_retry, pushf_retry};
+	assign {hex_d, led_d, pushf_d, hdmi_d} = push_d;
+	wire [NPUSH-1:0] push_retry = {hex_retry, led_retry, pushf_retry, hdmi_retry};
 	wire [NPOP*(WD+1)-1:0] pop_d;
-	assign {key_d, uart_d, popf_d} = pop_d;
-	wire [NPOP*(WD+1)-1:0] pop_q = {key_q, uart_q, popf_q};
+	assign {key_d, uart_d, popf_d, hdmipal_d, i2c_d} = pop_d;
+	wire [NPOP*(WD+1)-1:0] pop_q = {key_q, uart_q, popf_q, hdmipal_q, i2c_q};
 
 `include "coverage.txt"
 	generate
