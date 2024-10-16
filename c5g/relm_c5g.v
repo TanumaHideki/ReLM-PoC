@@ -190,6 +190,7 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 			4'b???1: begin
 				hdmi_pixel <= {hdmi_pixel[27:0], 4'd0};
 				{hdmi_r_out, hdmi_g_out, hdmi_b_out} <= hdmi_palette[hdmi_pixel[31:28]];
+				hdmi_de_out <= &hdmi_en;
 			end
 			4'b1110: if (&hdmi_en) hdmi_pixel <= hdmi_q;
 		endcase
@@ -228,7 +229,7 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 		end
 	end
 
-	parameter NFIFO = 3;
+	parameter NFIFO = 1;
 
 	wire [(WD+1)*NFIFO-1:0] pushf_d, popf_d, popf_q;
 	wire [NFIFO-1:0] pushf_retry;

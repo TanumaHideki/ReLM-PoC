@@ -84,8 +84,9 @@ module relm_custom(op_in, a_in, cb_in, x_in, xb_in, opb_in, a_out, cb_out);
 
 	wire [WD:0] div_n0 = {b_in, a_in[WD-1]};
 	wire [WD:0] div_n1 = div_n0 - {1'b0, c_in};
-	wire div_gt1 = div_n1[WD] & !div_n0[WD];
-	wire [WD-1:0] div_nx = div_gt1 ? div_n0[WD-1:0] : div_n1[WD-1:0];
+	wire div_gt1;
+	relm_compare #(WD+1) compare_gt1(div_n0, {1'b0, c_in}, div_gt1);
+	wire [WD-1:0] div_nx = div_gt1 ? div_n0[WD-1:0] : div_n0[WD-1:0] - c_in;
 	wire [WD:0] div_nx0 = {div_nx, a_in[WD-2]};
 	wire [WD:0] div_nx1 = div_nx0 - {1'b0, c_in};
 	wire div_gtx1 = div_nx1[WD] & !div_nx0[WD];
