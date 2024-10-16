@@ -20,7 +20,7 @@ module relm_compare(a_in, b_in, gt_out);
 	assign gt_out = |(ab & ~ba);
 endmodule
 
-`define WC 32
+`define WC 0
 
 module relm_custom(op_in, a_in, cb_in, x_in, xb_in, opb_in, a_out, cb_out);
 	parameter WD = 32;
@@ -29,15 +29,15 @@ module relm_custom(op_in, a_in, cb_in, x_in, xb_in, opb_in, a_out, cb_out);
 	input [WOP-1:0] op_in;
 	input [WD-1:0] a_in;
 	input [WC+WD-1:0] cb_in;
-	wire [WD-1:0] c_in, b_in;
-	assign {c_in, b_in} = cb_in;
+	wire [WD-1:0] b_in;
+	assign b_in = cb_in;
 	input [WD-1:0] x_in;
 	input [WD-1:0] xb_in;
 	input opb_in;
 	output reg [WD-1:0] a_out;
 	output [WC+WD-1:0] cb_out;
-	reg [WD-1:0] c_out, b_out;
-	assign cb_out = {c_out, b_out};
+	reg [WD-1:0] b_out;
+	assign cb_out = b_out;
 
 	wire [7:0] a_exp = a_in[WD-2:WD-9];
 	wire a_zero = !a_exp;
@@ -75,23 +75,6 @@ module relm_custom(op_in, a_in, cb_in, x_in, xb_in, opb_in, a_out, cb_out);
 	wire fmul_zero = fmul_e[9] | a_zero | xb_zero | a_nan | xb_nan;
 	wire fmul_inf = (fmul_e[9:8] == 2'b01) | a_inf | xb_inf;
 	wire [47:0] fmul_ax = {1'd1, a_in[22:0]} * {1'd1, xb_in[22:0]};
-
-	wire [WD-1:0] fdiv_d = {1'b1, a_in[22:0], 8'd0}; // D
-	wire [9:0] fdiv_e = {2'b00, xb_exp} - {2'b00, a_exp} + 10'h7F;
-	wire fdiv_zero = fdiv_e[9] | xb_zero | a_inf;
-	wire fdiv_inf = (fdiv_e[9:8] == 2'b01) | xb_inf | a_zero;
-	wire fdiv_nan = (xb_zero & a_zero) | (xb_inf & a_inf) | xb_nan | a_nan;
-
-	wire [WD:0] div_n0 = {b_in, a_in[WD-1]};
-	wire [WD:0] div_n1 = div_n0 - {1'b0, c_in};
-	wire div_gt1 = div_n1[WD] & !div_n0[WD];
-	wire [WD-1:0] div_nx = div_gt1 ? div_n0[WD-1:0] : div_n1[WD-1:0];
-	wire [WD:0] div_nx0 = {div_nx, a_in[WD-2]};
-	wire [WD:0] div_nx1 = div_nx0 - {1'b0, c_in};
-	wire div_gtx1 = div_nx1[WD] & !div_nx0[WD];
-	wire [WD-1:0] div_nxx = div_gtx1 ? div_nx0[WD-1:0] : div_nx1[WD-1:0];
-	wire [1:0] div_q = xb_in[WD-1:2] ? 2'b00 : (xb_in[1:0] == 2'b11) ? {1'b0, &a_in[WD-1:WD-2]} : (xb_in[1:0] == 2'b10) ? {1'b0, a_in[WD-1]} : (xb_in[1:0] == 2'b01) ? a_in[WD-1:WD-2] : 2'bxx;
-	wire [1:0] div_r = xb_in[WD-1:2] ? a_in[WD-1:WD-2] : (xb_in[1:0] == 2'b11) ? {a_in[WD-1] & !a_in[WD-2], a_in[WD-2] & !a_in[WD-1]} : (xb_in[1:0] == 2'b10) ? {1'b0, a_in[WD-2]} : (xb_in[1:0] == 2'b01) ? 2'b00 : 2'bxx;
 
 	wire [WD-1:0] a_lower;
 	relm_lower #(WD) lower_a(a_in, a_lower);
@@ -143,67 +126,38 @@ module relm_custom(op_in, a_in, cb_in, x_in, xb_in, opb_in, a_out, cb_out);
 	begin
 		casez ({opb_in, x_in[WOP+1:WOP], op_in[2:0]})
 			6'b???000: begin // (OPB) FADD
-				c_out <= c_in;
 				b_out <= {fadd_max[31:23], fadd_inf, fadd_zero, {WD-11{1'bx}}};
 				a_out <= fadd_mlr;
 			end
 			6'b???001: begin // (OPB) FMUL
-				c_out <= c_in;
 				b_out <= {a_in[WD-1] ^ xb_in[WD-1], fmul_e[9:8] ? 8'h7F : fmul_e[7:0], fmul_inf, fmul_zero, {WD-11{1'bx}}};
 				a_out <= {fmul_ax[47:17], |fmul_ax[16:0]};
 			end
-			6'b0??010, 6'b1?0010: begin // (OPB) FDIV
-				c_out <= fdiv_d; // D
-				b_out <= {2'd1, xb_in[22:0], 7'd0}; // R
-				a_out <= {a_in[WD-1] ^ xb_in[WD-1], fdiv_inf ? 8'hFF : fdiv_zero ? 8'h00 : fdiv_e[7:0], fdiv_nan, 22'd0};
-			end
-			6'b1?1010: begin // OPB FDIVLOOP
-				c_out <= c_in; // D
-				b_out <= {WD{1'bx}};
-				a_out <= {a_in[WD-3:0], !div_gt1, |div_nx}; // N, Q, sticky
-			end
-			6'b0??011, 6'b1?0011: begin // (OPB) DIV
-				c_out <= xb_in; // D
-				b_out <= {30'd0, div_r}; // R
-				a_out <= {a_in[WD-3:0], div_q}; // N, Q
-			end
-			6'b1?1011: begin // OPB DIVLOOP
-				c_out <= c_in; // D
-				b_out <= div_nxx; // R
-				a_out <= {a_in[WD-3:0], !div_gt1, !div_gtx1}; // N, Q
-			end
 			6'b0??100, 6'b1?0100: begin // (OPB) ITOF
-				c_out <= c_in;
 				b_out <= b_in;
 				a_out <= itof_a;
 			end
 			6'b1?1100: begin // OPB ISIGN
-				c_out <= c_in;
 				b_out <= {a_in[WD-1], 8'd157, 2'd0, {WD-11{1'bx}}};
 				a_out <= a_in[WD-1] ? -a_in : a_in;
 			end
 			6'b0??101: begin // ROUND
-				c_out <= c_in;
 				b_out <= {a_in[WD-1], (!x_in[WD-9] || (a_in[WD-1] == x_in[WD-1] && trunc_fract)) ? x_in[WD-2:WD-9] : 8'h00, x_in[WD-10:0]};
 				a_out <= a_in;
 			end
 			6'b1?0101: begin // OPB TRUNC
-				c_out <= c_in;
 				b_out <= b_in;
 				a_out <= {a_in[WD-1], a_in[30:0] & ~trunc_fmask};
 			end
 			6'b1?1101: begin // OPB FTOI
-				c_out <= c_in;
 				b_out <= ftoi_s;
 				a_out <= a_in[WD-1] ? -ftoi_m : ftoi_m;
 			end
 			6'b???110: begin // (OPB) FCOMP
-				c_out <= c_in;
 				b_out <= b_in;
 				a_out <= fcomp_gt ? 32'd1 : (fcomp_a == fcomp_xb) ? 32'd0 : 32'hFFFFFFFF;
 			end
 			default: begin
-				c_out <= {WD{1'bx}};
 				b_out <= {WD{1'bx}};
 				a_out <= {WD{1'bx}};
 			end

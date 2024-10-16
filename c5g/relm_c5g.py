@@ -12,8 +12,6 @@ ReLM[:] = (
     "HEX",
     "LED",
     "FIFO1",
-    "FIFO2",
-    "FIFO3",
     "HDMI",
 )[::-1]
 ReLM[:] = (
@@ -21,8 +19,6 @@ ReLM[:] = (
     "KEY",
     "UART",
     "FIFO1",
-    "FIFO2",
-    "FIFO3",
     "HDMIPAL",
     "I2C",
 )[::-1]
