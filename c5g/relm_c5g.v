@@ -220,7 +220,7 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 	assign hdmi_sda_inout = i2c_sda ? 1'bz : 1'b0;
 	reg [1:0] i2c_sda_reg = 3;
 	wire [WD:0] i2c_d;
-	wire [WD:0] i2c_q = {{WD{1'b0}}, i2c_sda_reg[1]};
+	wire [WD:0] i2c_q = {{WD-8{1'b0}}, i2c_sda_reg[1], 8'd0};
 	always @(posedge clk) begin
 		i2c_sda_reg <= {i2c_sda_reg[0], hdmi_sda_inout};
 		if (i2c_d[WD]) begin
@@ -257,11 +257,11 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 	parameter NPOP = 4 + NFIFO;
 
 	wire [NPUSH*(WD+1)-1:0] push_d;
-	assign {hex_d, led_d, pushf_d, hdmi_d} = push_d;
-	wire [NPUSH-1:0] push_retry = {hex_retry, led_retry, pushf_retry, hdmi_retry};
+	assign {pushf_d, hex_d, led_d, hdmi_d} = push_d;
+	wire [NPUSH-1:0] push_retry = {pushf_retry, hex_retry, led_retry, hdmi_retry};
 	wire [NPOP*(WD+1)-1:0] pop_d;
-	assign {key_d, uart_d, popf_d, hdmipal_d, i2c_d} = pop_d;
-	wire [NPOP*(WD+1)-1:0] pop_q = {key_q, uart_q, popf_q, hdmipal_q, i2c_q};
+	assign {popf_d, key_d, i2c_d, hdmipal_d, uart_d} = pop_d;
+	wire [NPOP*(WD+1)-1:0] pop_q = {popf_q, key_q, i2c_q, hdmipal_q, uart_q};
 
 `include "coverage.txt"
 	generate

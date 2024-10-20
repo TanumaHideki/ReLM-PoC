@@ -9,18 +9,18 @@ from relm_jtag import USBBlaster
 
 ReLM[:] = (
     "PUTOP",
+    "FIFO1",
     "HEX",
     "LED",
-    "FIFO1",
     "HDMI",
 )[::-1]
 ReLM[:] = (
     "JTAG",
-    "KEY",
-    "UART",
     "FIFO1",
-    "HDMIPAL",
+    "KEY",
     "I2C",
+    "HDMIPAL",
+    "UART",
 )[::-1]
 ReLM[0x18] = "FADD"
 ReLM[0x19] = "FMUL"
