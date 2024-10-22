@@ -140,10 +140,8 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 	input hdmi_int_in;
 	wire hdmi_empty;
 	reg [10:0] hdmi_x = 0;
-	wire [10:0] hdmi_x_next = hdmi_x + {10'd0, ~hdmi_empty};
 	assign hdmi_clk_out = hdmi_x[0];
 	reg [9:0] hdmi_y = 0;
-	wire [9:0] hdmi_y_next = hdmi_y + 10'd1;
 	wire [WD-1:0] hdmi_q;
 	reg [1:0] hdmi_en = 0;
 	reg [31:0] hdmi_pixel;
@@ -155,34 +153,50 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 		hdmi_int_reg <= {hdmi_int_reg[0], hdmi_int_in};
 		case (hdmi_x)
 			100*16-1: begin
-				hdmi_hs_out <= 0; // HSYNC
 				hdmi_x <= 0;
+			end
+			default: begin
+				hdmi_x <= hdmi_x + 11'd1;
+			end
+		endcase
+		case (hdmi_y)
+			524: begin
+				hdmi_y <= 0;
+			end
+			default: begin
+				hdmi_y <= hdmi_y + 10'd1;
+			end
+		endcase
+		case (hdmi_x)
+			100*16-1: begin
+				hdmi_hs_out <= 0; // HSYNC
 				case (hdmi_y)
 					524: begin
 						hdmi_vs_out <= 0; // VSYNC
-						hdmi_y <= 0;
 					end
 					1: begin
 						hdmi_vs_out <= 1;
-						hdmi_y <= hdmi_y_next;
 					end
-					default: hdmi_y <= hdmi_y_next;
 				endcase
 			end
 			12*16-1: begin
 				hdmi_hs_out <= 1;
-				hdmi_x <= hdmi_x_next;
 			end
-			default: hdmi_x <= hdmi_x_next;
 		endcase
 		case (hdmi_x)
 			18*16-3: begin
 				hdmi_en[0] <= 1;
-				if (hdmi_y == 35) hdmi_en[1] <= 1;
 			end
 			98*16-3: begin
 				hdmi_en[0] <= 0;
-				if (hdmi_y == 35+479) hdmi_en[1] <= 0;
+			end
+		endcase
+		case (hdmi_y)
+			35: begin
+				hdmi_en[1] <= 1;
+			end
+			35+480: begin
+				hdmi_en[1] <= 0;
 			end
 		endcase
 		if (hdmipal_d[7]) hdmi_palette[hdmipal_d[3:0]] <= hdmipal_d[31:8];
