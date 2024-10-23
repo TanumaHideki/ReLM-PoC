@@ -147,58 +147,32 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 	reg [31:0] hdmi_pixel;
 	reg [1:0] hdmi_int_reg = 0;
 	wire [WD:0] hdmipal_d;
-	wire [WD:0] hdmipal_q = {{WD{1'b0}}, hdmi_int_reg[1]};
+	wire [WD:0] hdmipal_q = {{WD-8{1'b0}}, hdmi_int_reg[1] & hdmi_empty, 8'd0};
 	(* ramstyle = "no_rw_check, MLAB" *) reg [23:0] hdmi_palette [0:15];
 	always @(posedge clk) begin
 		hdmi_int_reg <= {hdmi_int_reg[0], hdmi_int_in};
-		case (hdmi_x)
-			100*16-1: begin
-				hdmi_x <= 0;
-			end
-			default: begin
-				hdmi_x <= hdmi_x + 11'd1;
-			end
-		endcase
-		case (hdmi_y)
-			524: begin
+		if (hdmipal_d[6] || hdmi_x == 100*16-1) begin
+			hdmi_hs_out <= 0; // HSYNC
+			hdmi_x <= 0;
+			if (hdmipal_d[6] || hdmi_y == 524) begin
+				hdmi_vs_out <= 0; // VSYNC
 				hdmi_y <= 0;
 			end
-			default: begin
+			else begin
+				if (hdmi_y == 1) hdmi_vs_out <= 1;
 				hdmi_y <= hdmi_y + 10'd1;
 			end
-		endcase
+		end
+		else begin
+			if (hdmi_x == 12*16-1) hdmi_hs_out <= 1;
+			hdmi_x <= hdmi_x + 11'd1;
+		end
 		case (hdmi_x)
-			100*16-1: begin
-				hdmi_hs_out <= 0; // HSYNC
-				case (hdmi_y)
-					524: begin
-						hdmi_vs_out <= 0; // VSYNC
-					end
-					1: begin
-						hdmi_vs_out <= 1;
-					end
-				endcase
-			end
-			12*16-1: begin
-				hdmi_hs_out <= 1;
-			end
+			18*16-3: hdmi_en[0] <= 1;
+			98*16-3: hdmi_en[0] <= 0;
 		endcase
-		case (hdmi_x)
-			18*16-3: begin
-				hdmi_en[0] <= 1;
-			end
-			98*16-3: begin
-				hdmi_en[0] <= 0;
-			end
-		endcase
-		case (hdmi_y)
-			35: begin
-				hdmi_en[1] <= 1;
-			end
-			35+480: begin
-				hdmi_en[1] <= 0;
-			end
-		endcase
+		if (hdmipal_d[6] || hdmi_y == 35+480) hdmi_en[1] <= 0;
+		else if (hdmi_y == 35) hdmi_en[1] <= 1;
 		if (hdmipal_d[7]) hdmi_palette[hdmipal_d[3:0]] <= hdmipal_d[31:8];
 		casez (hdmi_x[3:0])
 			4'b???1: begin
@@ -217,7 +191,7 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 	) fifo_hdmi(
 		.clk(clk),
 		.re_in(hdmi_x[3:0] == 4'b1110 && &hdmi_en),
-		.we_in(hdmi_d[WD]),
+		.we_in(hdmi_d[WD] & ~hdmi_int_reg[1]),
 		.d_in(hdmi_d[0+:WD]),
 		.empty_out(hdmi_empty),
 		.full_out(hdmi_retry),
