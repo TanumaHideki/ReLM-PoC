@@ -6,112 +6,39 @@ sys.path.append(str(Path(__file__).parent.parent))
 from relm_c5g import *
 
 
-def I2C(sda, scl, wait=0, init=None):
-    b = Block[IO("I2C", (sda << 31) | scl)]
-    if wait:
-        b[
-            Acc(wait + 1),
-            Do()[...].While(Acc - 1 != 0),
-        ]
-    return b
-
-
 Define[
-    I2C_start := Function()[
-        Acc(4 + 1),
-        Do()[...].While(Acc - 1 != 0),
-        I2C(0, 1, 2),
-        I2C(0, 0, 2),
-    ],
-    I2C_stop := Function()[
-        I2C(0, 0, 3),
-        I2C(0, 1, 2),
-        I2C(1, 1),
-    ],
-    I2C_ack := Function()[
-        I2C(1, 0, 3),
-        I2C(1, 1, 3),
-        I2C(1, 0, 2),
-    ],
-    I2C_send := Function()[
-        *[
-            Block[
-                IO("I2C", +RegB),
-                Acc(3 + 1),
-                Do()[...].While(Acc - 1 != 0),
-                IO("I2C", RegB | 1),
-                Acc(3 + 1),
-                Do()[...].While(Acc - 1 != 0),
-                IO("I2C", (RegB * 2).swapAB()),
-                Acc(2 + 1),
-                Do()[...].While(Acc - 1 != 0),
-            ]
-            for _ in range(8)
-        ],
-        I2C_ack(),
-    ],
-    I2C_recv := Function()[
-        I2C(1, 0, 3),
-        I2C(1, 1, 3),
-        RegB(IO("I2C", 0x80000000), 2 + 1),
-        Do()[...].While(Acc - 1 != 0),
-        *[
-            Block[
-                I2C(1, 0, 3),
-                I2C(1, 1, 3),
-                RegB(IO("I2C", 0x80000000) + RegB + RegB, 2 + 1),
-                Do()[...].While(Acc - 1 != 0),
-            ]
-            for _ in range(7)
-        ],
-        I2C_ack(),
-    ],
+    i2c := I2C(),
 ]
-
-
-def I2C_write(device, address, data, mask=0):
-    data = (device << 24) | (address << 16) | ((data & mask if mask else data) << 8)
-    regb = RegB & ((~mask & 0xFF) << 8) | data if mask else data
-    return Block[
-        IO("I2C", RegB(regb, 0x80000001)),
-        I2C_start(),
-        I2C_send(),
-        I2C_send(),
-        I2C_send(),
-        I2C_stop(),
-    ]
-
-
-def I2C_read(device, address):
-    return Block[
-        IO(
-            "I2C",
-            RegB((device << 24) | (address << 16) | (device << 8) | 0x100, 0x80000001),
-        ),
-        I2C_start(),
-        I2C_send(),
-        I2C_send(),
-        I2C(1, 1, 0),
-        I2C_start(),
-        I2C_send(),
-        I2C_recv(),
-        I2C_stop(),
-    ]
-
-
-def I2C_update(device, address, mask, data):
-    return Block[
-        I2C_read(device, address),
-        I2C_write(device, address, data, mask),
-    ]
-
 
 with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
     Thread[
+        Out("HDMIPAL", *[i * 0x11111101 + 0x80 for i in range(16)]),
+        Do()[
+            Do()[
+                i2c.read(0x72, 0x42),
+                Out("LED", RegB),
+            ].While(RegB & 0x6000 != 0x6000),
+            i2c.update(0x72, 0x41, 0x40, 0),
+            i2c.write(0x72, 0x98, 0x03),
+            i2c.update(0x72, 0x9A, 0xE0, 0xE0),
+            i2c.write(0x72, 0x9C, 0x30),
+            i2c.update(0x72, 0x9D, 0x03, 0x01),
+            i2c.write(0x72, 0xA2, 0xA4),
+            i2c.write(0x72, 0xA3, 0xA4),
+            i2c.write(0x72, 0xE0, 0xD0),
+            Out("HDMIPAL", 0x40),
+            Do()[
+                Acc("HDMI"),
+                vram := Array(*([0xFEDCBA98, 0x01234567] * (40 * 480))),
+                i2c.read(0x72, 0x42),
+            ].While(RegB & 0x6000 == 0x6000),
+        ],
+    ]
+    Thread[
         LED(
             hex3=0b0111110,  # H
-            hex2=0b1101101,  # E
-            hex1=0b0100101,  # L
-            hex0=0b1110111,  # O
+            hex2=0b1010111,  # D
+            hex1=0b1110110,  # M
+            hex0=0b0110110,  # I
         ),
     ]

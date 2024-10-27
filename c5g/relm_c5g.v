@@ -145,12 +145,10 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 	wire [WD-1:0] hdmi_q;
 	reg [1:0] hdmi_en = 0;
 	reg [31:0] hdmi_pixel;
-	reg [1:0] hdmi_int_reg = 0;
 	wire [WD:0] hdmipal_d;
-	wire [WD:0] hdmipal_q = {{WD-8{1'b0}}, hdmi_int_reg[1] & hdmi_empty, 8'd0};
+	wire hdmipal_retry = 0;
 	(* ramstyle = "no_rw_check, MLAB" *) reg [23:0] hdmi_palette [0:15];
 	always @(posedge clk) begin
-		hdmi_int_reg <= {hdmi_int_reg[0], hdmi_int_in};
 		if (hdmipal_d[6] || hdmi_x == 100*16-1) begin
 			hdmi_hs_out <= 0; // HSYNC
 			hdmi_x <= 0;
@@ -190,8 +188,9 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 		.WD(WD)
 	) fifo_hdmi(
 		.clk(clk),
+		.clear_in(hdmipal_d[6]),
 		.re_in(hdmi_x[3:0] == 4'b1110 && &hdmi_en),
-		.we_in(hdmi_d[WD] & ~hdmi_int_reg[1]),
+		.we_in(hdmi_d[WD]),
 		.d_in(hdmi_d[0+:WD]),
 		.empty_out(hdmi_empty),
 		.full_out(hdmi_retry),
@@ -241,15 +240,15 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 	parameter WAD = 12;
 	parameter WOP = 5;
 
-	parameter NPUSH = 3 + NFIFO;
-	parameter NPOP = 4 + NFIFO;
+	parameter NPUSH = 4 + NFIFO;
+	parameter NPOP = 3 + NFIFO;
 
 	wire [NPUSH*(WD+1)-1:0] push_d;
-	assign {pushf_d, hex_d, led_d, hdmi_d} = push_d;
-	wire [NPUSH-1:0] push_retry = {pushf_retry, hex_retry, led_retry, hdmi_retry};
+	assign {hdmipal_d, hdmi_d, led_d, hex_d, pushf_d} = push_d;
+	wire [NPUSH-1:0] push_retry = {hdmipal_retry, hdmi_retry, led_retry, hex_retry, pushf_retry};
 	wire [NPOP*(WD+1)-1:0] pop_d;
-	assign {popf_d, key_d, i2c_d, hdmipal_d, uart_d} = pop_d;
-	wire [NPOP*(WD+1)-1:0] pop_q = {popf_q, key_q, i2c_q, hdmipal_q, uart_q};
+	assign {uart_d, i2c_d, key_d, popf_d} = pop_d;
+	wire [NPOP*(WD+1)-1:0] pop_q = {uart_q, i2c_q, key_q, popf_q};
 
 `include "coverage.txt"
 	generate

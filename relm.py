@@ -1129,6 +1129,9 @@ class FIFO:
         assert not self.locked, "FIFO is locked"
         return IO(self.port, 0x0, load=load, op="POP") == 0
 
+    def Clear(self, load: str = "LOAD") -> Expr:
+        return IO(self.port, 0x80000001, load=load, op="POP")
+
     def Pop(self, unsigned: bool = False, load: str = "LOAD") -> Expr:
         if self.locked:
             return In(self.port, unsigned=unsigned, op="POP")

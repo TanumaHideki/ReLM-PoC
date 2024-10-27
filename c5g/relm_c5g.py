@@ -3,24 +3,24 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent))
 
-from relm import *
+from relm_float import *
 from relm_jtag import USBBlaster
 
 
 ReLM[:] = (
     "PUTOP",
-    "FIFO1",
-    "HEX",
-    "LED",
+    "HDMIPAL",
     "HDMI",
+    "LED",
+    "HEX",
+    "FIFO1",
 )[::-1]
 ReLM[:] = (
     "JTAG",
-    "FIFO1",
-    "KEY",
-    "I2C",
-    "HDMIPAL",
     "UART",
+    "I2C",
+    "KEY",
+    "FIFO1",
 )[::-1]
 ReLM[0x18] = "FADD"
 ReLM[0x19] = "FMUL"
@@ -29,6 +29,8 @@ ReLM[0x1B::0x20] = "DIV", "DIVLOOP"
 ReLM[0x1C::0x20] = "ITOF", "ISIGN"
 ReLM[0x1D::0x20] = ("ROUND", "TRUNC"), "FTOI"
 ReLM[0x1E] = "FCOMP"
+
+FIFO("FIFO1", 2048)
 
 
 def LED(hex3=None, hex2=None, hex1=None, hex0=None, led=None):
@@ -43,6 +45,112 @@ def LED(hex3=None, hex2=None, hex1=None, hex0=None, led=None):
     if led is not None:
         block[Out("LED", led)]
     return block
+
+
+class I2C(Block):
+    def io(self, sda, scl, wait=0):
+        b = Block[IO("I2C", (sda << 31) | scl)]
+        if wait:
+            b[
+                Acc(wait + 1),
+                Do()[...].While(Acc - 1 != 0),
+            ]
+        return b
+
+    def __init__(self):
+        super().__init__()
+        self.start = Function()[
+            Acc(4 + 1),
+            Do()[...].While(Acc - 1 != 0),
+            self.io(0, 1, 2),
+            self.io(0, 0, 2),
+        ]
+        self.stop = Function()[
+            self.io(0, 0, 3),
+            self.io(0, 1, 2),
+            self.io(1, 1),
+        ]
+        self.ack = Function()[
+            self.io(1, 0, 3),
+            self.io(1, 1, 3),
+            self.io(1, 0, 2),
+        ]
+        self.send = Function()[
+            *[
+                Block[
+                    IO("I2C", +RegB),
+                    Acc(3 + 1),
+                    Do()[...].While(Acc - 1 != 0),
+                    IO("I2C", RegB | 1),
+                    Acc(3 + 1),
+                    Do()[...].While(Acc - 1 != 0),
+                    IO("I2C", (RegB * 2).swapAB()),
+                    Acc(2 + 1),
+                    Do()[...].While(Acc - 1 != 0),
+                ]
+                for _ in range(8)
+            ],
+            self.ack(),
+        ]
+        self.recv = Function()[
+            self.io(1, 0, 3),
+            self.io(1, 1, 3),
+            RegB(IO("I2C", 0x80000000), 2 + 1),
+            Do()[...].While(Acc - 1 != 0),
+            *[
+                Block[
+                    self.io(1, 0, 3),
+                    self.io(1, 1, 3),
+                    RegB(IO("I2C", 0x80000000) + RegB + RegB, 2 + 1),
+                    Do()[...].While(Acc - 1 != 0),
+                ]
+                for _ in range(7)
+            ],
+            self.ack(),
+        ]
+        self[
+            self.start,
+            self.stop,
+            self.ack,
+            self.send,
+            self.recv,
+        ]
+
+    def write(self, device, address, data, mask=0):
+        data = (device << 24) | (address << 16) | ((data & mask if mask else data) << 8)
+        regb = RegB & ((~mask & 0xFF) << 8) | data if mask else data
+        return Block[
+            IO("I2C", RegB(regb, 0x80000001)),
+            self.start(),
+            self.send(),
+            self.send(),
+            self.send(),
+            self.stop(),
+        ]
+
+    def read(self, device, address):
+        return Block[
+            IO(
+                "I2C",
+                RegB(
+                    (device << 24) | (address << 16) | (device << 8) | 0x100, 0x80000001
+                ),
+            ),
+            self.start(),
+            self.send(),
+            self.send(),
+            self.io(1, 1, 0),
+            self.start(),
+            self.send(),
+            self.recv(),
+            self.stop(),
+        ]
+
+    def update(self, device, address, mask, data):
+        return Block[
+            self.read(device, address),
+            self.write(device, address, data, mask),
+        ]
 
 
 operand = Int()
@@ -78,10 +186,10 @@ class ReLMLoader(ReLM):
 
     def send(self, jtag, start, stop=None) -> None:
         for i, c in enumerate(self.memory[start:stop], start):
-            operand = self.mnemonic.get(c.operand, c.operand)
+            operand = self.mnemonic[c.operand]
             jtag.write_int((operand >> 16) & 0xFFFF)
             jtag.write_int(operand & 0xFFFF)
-            op = self.mnemonic.get(c.op, c.op) | 0b100000
+            op = self.mnemonic[c.op] | 0b100000
             jtag.write_int((op << 18) | i)
 
     def run(self):

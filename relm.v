@@ -310,6 +310,15 @@ module relm_pe(clk, pc_in, pc_out, a_in, a_out, cb_in, cb_out,
 	wire [WD:0] a_add = {1'b0, a ^ a_sign} + {1'b1, xb ^ x_sign} + {{WD{1'b0}}, op[3] | op[4]};
 	wire [WD-1:0] a_xor = a ^ xb;
 	wire [WD-1:0] a_logic = (op[0] ? a & xb : {WD{1'b0}}) | (op[1] ? a_xor : {WD{1'b0}});
+	wire [WC+WD-1:0] cb_put;
+	generate
+		if (WC) begin : use_c
+			assign cb_put = {cb[WC+WD-1:WD], a_put};
+		end
+		else begin : nouse_c
+			assign cb_put = a_put;
+		end
+	endgenerate
 	output reg [WD-1:0] a_out;
 	output reg [WC+WD-1:0] cb_out;
 	always @*
@@ -338,7 +347,7 @@ module relm_pe(clk, pc_in, pc_out, a_in, a_out, cb_in, cb_out,
 		endcase
 		casez (op)
 			5'b0001?: // BLOAD, BSLOAD
-				cb_out <= WC ? {cb[WC+WD-1-:WC], a_put} : a_put;
+				cb_out <= cb_put;
 			5'b110??, 5'b1110?, 5'b11110: // custom
 				cb_out <= cb_custom;
 			default: // otherwise
@@ -479,10 +488,10 @@ module relm(clk, push_out, push_in, pop_out, pop_in, op_we_in, op_wa_in, op_d_in
 	);
 endmodule
 
-module relm_fifo(clk, re_in, we_in, d_in, empty_out, full_out, q_out);
+module relm_fifo(clk, clear_in, re_in, we_in, d_in, empty_out, full_out, q_out);
 	parameter WAD = 0;
 	parameter WD = 0;
-	input clk, re_in, we_in;
+	input clk, clear_in, re_in, we_in;
 	input [WD-1:0] d_in;
 	reg ready = 0;
 	output empty_out;
@@ -498,11 +507,11 @@ module relm_fifo(clk, re_in, we_in, d_in, empty_out, full_out, q_out);
 	output [WD-1:0] q_out;
 	always @(posedge clk)
 	begin
-		{ready, full} <= (ra_next[0+:WAD] != wa_next[0+:WAD]) ?
+		{ready, full} <= ((ra_next[0+:WAD] != wa_next[0+:WAD]) ?
 			{ra_next[0+:WAD] != wa[0+:WAD], 1'b0} :
-			{2{ra_next[WAD] ^ wa_next[WAD]}};
+			{2{ra_next[WAD] ^ wa_next[WAD]}}) & {~clear_in, ~clear_in};
 		ra <= ra_next;
-		wa <= wa_next;
+		wa <= clear_in ? ra_next : wa_next;
 	end
 	relm_dpmem #(
 		.WAD(WAD),
@@ -526,16 +535,17 @@ module relm_fifo_io(clk, push_d, push_retry, pop_d, pop_q);
 	input [WD:0] pop_d;
 	output [WD:0] pop_q;
 	reg lock_stb = 0;
-	always @(posedge clk) if (pop_d[WD-1]) lock_stb <= 1;
+	always @(posedge clk) if (pop_d[WD-1] & !pop_d[0]) lock_stb <= 1;
 	wire pop_stb = lock_stb | pop_d[0];
 	wire empty;
 	wire [WD-1:0] pop;
-	assign pop_q = (pop_stb) ? {empty, pop} : {{WD{1'b0}}, ~empty};
+	assign pop_q = (pop_stb) ? {empty & !pop_d[WD-1], pop} : {{WD{1'b0}}, ~empty};
 	relm_fifo #(
 		.WAD(WAD),
 		.WD(WD)
 	) fifo(
 		.clk(clk),
+		.clear_in(pop_d[WD-1] & pop_d[0]),
 		.re_in(pop_stb & pop_d[WD]),
 		.we_in(push_d[WD]),
 		.d_in(push_d[0+:WD]),

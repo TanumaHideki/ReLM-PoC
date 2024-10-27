@@ -17,7 +17,7 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
             Do()[uin := Int(IO("UART", 0x40000000) & 0x400000FF),].While(uin == 0),
             Out("LED", uin),
             uout := Int((uin & 0xFF) | 0x80000000),
-            Do()[uin := Int(IO("UART", uout) & 0x80000000),].While(uin == 0),
-            Do()[uin := Int(IO("UART", uout) & 0x80000000),].While(uin == 0),
+            Do()[IO("UART", uout) & 0x80000000].While(Acc == 0),
+            Do()[IO("UART", uout) & 0x80000000].While(Acc == 0),
         ],
     ]
