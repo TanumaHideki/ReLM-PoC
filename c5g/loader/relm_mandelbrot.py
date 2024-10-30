@@ -6,7 +6,12 @@ sys.path.append(str(Path(__file__).parent.parent))
 from relm_c5g import *
 
 with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
-    Define[i2c := I2C(),]
+    Define[
+        i2c := I2C(),
+        mutex := Mutex(),
+        sem1 := Semaphore(),
+        sem2 := Semaphore(),
+    ]
     Thread[
         Out(
             "HDMIPAL",
@@ -27,11 +32,16 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
             0xFFFFFF8E,
             0x00FF008F,
         ),
+        scale := Float(1.0),
+        center_x := Float(-0.743643135),
+        center_y := Float(0.131825963),
+        rows := FIFO.Alloc(480 + 1),
+        rows.Push(*([-1] * 14), -2),
         LED(
-            hex3=0b1011011,  # m
-            hex2=0b1111110,  # A
-            hex1=0b0001110,  # n
-            hex0=0b0011111,  # d
+            hex3=0b1101100,  # F
+            hex2=0b0001100,  # r
+            hex1=0b0001101,  # c
+            hex0=0b0101101,  # t
         ),
         Do()[
             Do()[
@@ -55,22 +65,7 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
         ],
     ]
     Define[
-        rows := FIFO.Alloc(480 + 15),
-        mutex := Mutex(),
-        sem_start := Semaphore(),
-        sem_work := Semaphore(),
-        scale := Float(),
-        center_x := Float(),
-        center_y := Float(),
-    ]
-    Thread[
-        sem_start.Acquire(13),
-        scale(1.0),
-        center_x(-0.743643135),
-        center_y(0.131825963),
-        sem_work.Release(13),
-        Do()[
-            sem_start.Acquire(13),
+        master := Function()[
             Do()[...].While(
                 (In("KEY") & 0b100000000001111 == 0) & (In("KEY") & 0b10000 != 0)
             ),
@@ -97,81 +92,68 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
                 center_y(-0.0203968),
                 scale(1.0),
             ],
-            rows.Push(*[i for i in range(480)], *([-1] * 13)),
-            sem_work.Release(13),
+            rows.Push(*[i for i in range(480)], *([-1] * 14), -2),
         ],
     ]
-
-    def task():
+    for _ in range(15):
         Define[
             px := ArrayF(*([0.0] * 60)),
             py := ArrayF(*([0.0] * 60)),
         ]
         Thread[
-            sem_start.Release(),
-            sem_work.Acquire(),
             Do()[
-                sem_start.Release(),
-                sem_work.Acquire(),
+                mutex[iy := Int(rows.Pop()),],
+                If(iy == -1)[sem1.Release(), sem2.Acquire(), Continue()],
+                If(iy == -2)[sem1.Acquire(14), master(), sem2.Release(14), Continue()],
+                pos := Int(iy * 80),
+                cy := Float((239.5 - ToFloat(iy)) * scale + center_y),
+                qy2 := Float(AccF**2),
+                ix := UInt(0),
                 Do()[
-                    mutex[iy := Int(rows.Pop())],
-                    If(iy == -1)[Break()],
-                    pos := Int(iy * 80),
-                    cy := Float((239.5 - ToFloat(iy)) * scale + center_y),
-                    qy2 := Float(AccF**2),
-                    ix := UInt(0),
+                    pixel := UInt(),
+                    pcount := Int(8),
                     Do()[
-                        pixel := UInt(),
-                        pcount := Int(8),
-                        Do()[
-                            cx := Float((ToFloat(ix) - 319.5) * scale + center_x),
-                            qx := Float(AccF - 0.25),
-                            q := Float(AccF**2 + qy2),
-                            If((AccF + qx) * q * 4.0 <= qy2)[color := Int(1)].Else[
-                                If((cx + 1.0) ** 2 + qy2 <= (1.0 / 16.0))[
-                                    color(2)
-                                ].Else[
-                                    iter := UInt(0),
-                                    pindex := Int(Acc),
-                                    x2 := Float(AccF),
-                                    y2 := Float(AccF),
-                                    x := Float(AccF),
-                                    y := Float(AccF),
-                                    Do()[
-                                        iter(iter + 1),
-                                        If(Acc == 0xAAA)[Break()],
-                                        y(y * x * 2.0 + cy),
-                                        x2(x(x2 - y2 + cx) ** 2),
-                                        If(pindex == 60)[
-                                            pi := Int(0),
-                                            While(
-                                                (pi != 60)
-                                                & (
-                                                    (px[pi] - x) ** 2
-                                                    + (py[pi] - y) ** 2
-                                                    > 1.0e-10
-                                                )
-                                            )[pi(pi + 1)],
-                                            If(pi != 60)[iter(0), Break()],
-                                            pindex(0),
-                                        ],
-                                        px[pindex](x),
-                                        py[pindex](y),
-                                        pindex(pindex + 1),
-                                    ].While(y2(y**2) + x2 <= math.exp(math.tau)),
-                                    ((+iter).opb("BLOADX") >> 1).opb("XOR"),
-                                    color(Acc.bit_count() + 3),
-                                ],
+                        cx := Float((ToFloat(ix) - 319.5) * scale + center_x),
+                        qx := Float(AccF - 0.25),
+                        q := Float(AccF**2 + qy2),
+                        If((AccF + qx) * q * 4.0 <= qy2)[color := Int(1)].Else[
+                            If((cx + 1.0) ** 2 + qy2 <= (1.0 / 16.0))[color(2)].Else[
+                                iter := UInt(0),
+                                pindex := Int(Acc),
+                                x2 := Float(AccF),
+                                y2 := Float(AccF),
+                                x := Float(AccF),
+                                y := Float(AccF),
+                                Do()[
+                                    iter(iter + 1),
+                                    If(Acc == 0xAAA)[Break()],
+                                    y(y * x * 2.0 + cy),
+                                    x2(x(x2 - y2 + cx) ** 2),
+                                    If(pindex == 60)[
+                                        pi := Int(0),
+                                        While(
+                                            (pi != 60)
+                                            & (
+                                                (px[pi] - x) ** 2 + (py[pi] - y) ** 2
+                                                > 1.0e-10
+                                            )
+                                        )[pi(pi + 1)],
+                                        If(pi != 60)[iter(0), Break()],
+                                        pindex(0),
+                                    ],
+                                    px[pindex](x),
+                                    py[pindex](y),
+                                    pindex(pindex + 1),
+                                ].While(y2(y**2) + x2 <= math.exp(math.tau)),
+                                ((+iter).opb("BLOADX") >> 1).opb("XOR"),
+                                color(Acc.bit_count() + 3),
                             ],
-                            pixel(pixel * 16 + color),
-                            ix(ix + 1),
-                        ].While(pcount(pcount - 1) != 0),
-                        vram[pos](pixel),
-                        pos(pos + 1),
-                    ].While(ix < 640),
-                ],
+                        ],
+                        pixel(pixel * 16 + color),
+                        ix(ix + 1),
+                    ].While(pcount(pcount - 1) != 0),
+                    vram[pos](pixel),
+                    pos(pos + 1),
+                ].While(ix < 640),
             ],
         ]
-
-    for _ in range(13):
-        task()
