@@ -14,6 +14,8 @@ ReLM[:] = (
     "LED",
     "HEX",
     "FIFO1",
+    "FIFO2",
+    "FIFO3",
 )[::-1]
 ReLM[:] = (
     "JTAG",
@@ -21,6 +23,8 @@ ReLM[:] = (
     "I2C",
     "KEY",
     "FIFO1",
+    "FIFO2",
+    "FIFO3",
 )[::-1]
 ReLM[0x18] = "FADD"
 ReLM[0x19] = "FMUL"
@@ -31,6 +35,8 @@ ReLM[0x1D::0x20] = ("ROUND", "TRUNC"), "FTOI"
 ReLM[0x1E] = "FCOMP"
 
 FIFO("FIFO1", 2048)
+FIFO("FIFO2", 2048)
+FIFO("FIFO3", 2048)
 
 
 def LED(hex3=None, hex2=None, hex1=None, hex0=None, led=None):
@@ -157,8 +163,8 @@ operand = Int()
 Loader[
     Do()[
         Out("PUTOP", In("JTAG")),
-        If(RegB & 0xC00000 != 0)[
-            (Acc & 0x800000).opb("JEQ"),
+        If(RegB & 0xE00000 != 0)[
+            (Acc & 0xA00000).opb("JEQ"),
             (+operand).opb("PUT"),
             Continue(),
         ],
@@ -168,6 +174,38 @@ Loader[
 del operand
 
 
+class JTAGLoader(Label):
+    def __init__(self):
+        super().__init__()
+        self.jtag = None
+        self.offset = 0
+
+    def deploy(self, memory: list[Code], ncpu: int) -> bool:
+        self.address = len(memory)
+        return True
+
+    def __getitem__(self, offset):
+        self.offset = offset
+        return self
+
+    def __call__(self, *data):
+        if data:
+            if self.jtag is None:
+                self.jtag = USBBlaster()
+                self.jtag.shift_ir(0xE)
+                self.jtag.write_int(0)
+            for d in data:
+                self.jtag.write_int((d >> 16) & 0xFFFF)
+                self.jtag.write_int(d & 0xFFFF)
+                self.jtag.write_int(0x200000 | (self.address + self.offset))
+                self.offset += 1
+        else:
+            if self.jtag is not None:
+                self.jtag.close()
+                self.jtag = None
+        return self
+
+
 class ReLMLoader(ReLM):
     def __init__(
         self,
@@ -175,8 +213,8 @@ class ReLMLoader(ReLM):
         dump: bool = True,
         loader: str | bool = False,
         release_loader: bool = False,
-        WID: int = 4,
-        WAD: int = 12,
+        WID: int = 3,
+        WAD: int = 13,
     ):
         super().__init__(1 << WID, loader or release_loader)
         self.release = release

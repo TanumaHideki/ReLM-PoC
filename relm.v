@@ -545,7 +545,7 @@ module relm_fifo_io(clk, push_d, push_retry, pop_d, pop_q);
 		.WD(WD)
 	) fifo(
 		.clk(clk),
-		.clear_in(pop_d[WD-1] & pop_d[0]),
+		.clear_in(pop_d[WD-1] & pop_d[0] & !lock_stb),
 		.re_in(pop_stb & pop_d[WD]),
 		.we_in(push_d[WD]),
 		.d_in(push_d[0+:WD]),

@@ -35,13 +35,13 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
         scale := Float(1.0),
         center_x := Float(-0.743643135),
         center_y := Float(0.131825963),
-        rows := FIFO.Alloc(480 + 1),
-        rows.Push(*([-1] * 14), -2),
+        rows := FIFO.Alloc(480 + ReLM.ncpu),
+        rows.Push(*([-1] * (ReLM.ncpu - 2)), -2),
         LED(
             hex3=0b1101100,  # F
             hex2=0b0001100,  # r
-            hex1=0b0001101,  # c
-            hex0=0b0101101,  # t
+            hex1=0b1111110,  # A
+            hex0=0b1100101,  # C
         ),
         Do()[
             Do()[
@@ -92,10 +92,10 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
                 center_y(-0.0203968),
                 scale(1.0),
             ],
-            rows.Push(*[i for i in range(480)], *([-1] * 14), -2),
+            rows.Push(*[i for i in range(480)], *([-1] * (ReLM.ncpu - 2)), -2),
         ],
     ]
-    for _ in range(15):
+    for _ in range(ReLM.ncpu - 1):
         Define[
             px := ArrayF(*([0.0] * 60)),
             py := ArrayF(*([0.0] * 60)),
@@ -104,7 +104,12 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
             Do()[
                 mutex[iy := Int(rows.Pop()),],
                 If(iy == -1)[sem1.Release(), sem2.Acquire(), Continue()],
-                If(iy == -2)[sem1.Acquire(14), master(), sem2.Release(14), Continue()],
+                If(iy == -2)[
+                    sem1.Acquire(ReLM.ncpu - 2),
+                    master(),
+                    sem2.Release(ReLM.ncpu - 2),
+                    Continue(),
+                ],
                 pos := Int(iy * 80),
                 cy := Float((239.5 - ToFloat(iy)) * scale + center_y),
                 qy2 := Float(AccF**2),

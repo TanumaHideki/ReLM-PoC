@@ -216,7 +216,7 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 		end
 	end
 
-	parameter NFIFO = 1;
+	parameter NFIFO = 3;
 
 	wire [(WD+1)*NFIFO-1:0] pushf_d, popf_d, popf_q;
 	wire [NFIFO-1:0] pushf_retry;
@@ -236,8 +236,8 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 		end
 	endgenerate
 
-	parameter WID = 4;
-	parameter WAD = 12;
+	parameter WID = 3;
+	parameter WAD = 13;
 	parameter WOP = 5;
 
 	parameter NPUSH = 4 + NFIFO;
