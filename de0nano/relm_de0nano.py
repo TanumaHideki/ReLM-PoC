@@ -9,6 +9,8 @@ from relm_jtag import USBBlaster
 
 ReLM[:] = (
     "PUTOP",
+    "RGBLED2",
+    "RGBLED1",
     "LED",
     "FIFO1",
 )[::-1]
@@ -32,26 +34,19 @@ FIFO("FIFO1", 256)
 class GSensor(Block):
     def io(self, sda, scl, wait=0, rd=0, cs=1):
         expr = IO("I2C", (sda << 31) | (cs << 2) | (rd << 1) | scl)
-        return (
-            Block[
-                expr,
-                Acc(wait + 1),
-                Do()[...].While(Acc - 1 != 0),
-            ]
-            if wait
-            else expr
-        )
+        if isinstance(wait, int):
+            if wait:
+                wait = Acc(wait + 1)
+            else:
+                return expr
+        return Block[
+            expr,
+            wait,
+            Do()[...].While(Acc - 1 != 0),
+        ]
 
     def __init__(self):
         super().__init__()
-        self.start = Function()[
-            self.io(1, 1, 1, rd=1, cs=0),
-            self.io(1, 1, 0, rd=1, cs=1),
-        ]
-        self.stop = Function()[
-            self.io(1, 1, 0, rd=1, cs=1),
-            self.io(1, 1, 0, rd=1, cs=0),
-        ]
         self.send = Function()[
             *[
                 Block[
@@ -69,51 +64,36 @@ class GSensor(Block):
             *[
                 Block[
                     self.io(1, 0, 1, rd=1),
-                    RegB(self.io(1, 1, 0, rd=1) + RegB + RegB, 1 + 1),
-                    Do()[...].While(Acc - 1 != 0),
+                    self.io(1, 1, RegB(Acc + RegB + RegB, 1 + 1), rd=1),
                 ]
-                for _ in range(8)
+                for _ in range(7)
             ],
+            self.io(1, 0, 1, rd=1),
+            self.io(1, 1, RegB((AccU + RegBU + RegBU) >> 16, 1 + 1), rd=1),
         ]
         self[
-            self.start,
-            self.stop,
             self.send,
             self.recv,
         ]
 
     def write(self, address, data):
         return Block[
-            IO("I2C", RegB((address << 24) | (data << 16), 0x80000001)),
-            self.start(),
+            self.io(1, 1, RegB((address << 24) | (data << 16), 1 + 1), rd=1, cs=0),
+            self.io(1, 1, 0, rd=1, cs=1),
             self.send(),
             self.send(),
-            self.send(),
-            self.stop(),
+            self.io(1, 1, 0, rd=1, cs=1),
+            self.io(1, 1, 0, rd=1, cs=0),
         ]
 
-    def read(self, device, address):
+    def read(self, address, length=1):
         return Block[
-            IO(
-                "I2C",
-                RegB(
-                    (device << 24) | (address << 16) | (device << 8) | 0x100, 0x80000001
-                ),
-            ),
-            self.start(),
+            self.io(1, 1, RegB(0xC0000000 | (address << 24), 1 + 1), rd=1, cs=0),
+            self.io(1, 1, 0, rd=1, cs=1),
             self.send(),
-            self.send(),
-            self.io(1, 1, 0),
-            self.start(),
-            self.send(),
-            self.recv(),
-            self.stop(),
-        ]
-
-    def update(self, device, address, mask, data):
-        return Block[
-            self.read(device, address),
-            self.write(device, address, data, mask),
+            *[self.recv() for _ in range(length)],
+            self.io(1, 1, 0, rd=1, cs=1),
+            self.io(1, 1, 0, rd=1, cs=0),
         ]
 
 

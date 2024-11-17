@@ -23,7 +23,7 @@ module relm_unused(d_in, q_out);
 	output [WD:0] q_out = d_in;
 endmodule
 
-module relm_de0nano(clk, sw_in, key_in, led_out, i2c_scl_out, i2c_sda_inout, gs_int_in, gs_cs_out);
+module relm_de0nano(clk, sw_in, key_in, led_out, i2c_scl_out, i2c_sda_inout, gs_int_in, gs_cs_out, rgbled1_out, rgbled2_out);
 	parameter WD = 32;
 	parameter WC = `WC;
 
@@ -47,6 +47,22 @@ module relm_de0nano(clk, sw_in, key_in, led_out, i2c_scl_out, i2c_sda_inout, gs_
 		if (led_d[WD]) led_out <= led_d[0+:8];
 	end
 	wire led_retry = 0;
+
+	(* chip_pin = "D5, A5, B5, A4, B4, B3, A3, A2, C3, D3, K15, J14, J13" *)
+	output reg [12:0] rgbled1_out;
+	wire [WD:0] rgbled1_d;
+	always @(posedge clk) begin
+		if (rgbled1_d[WD]) rgbled1_out <= rgbled1_d[0+:13];
+	end
+	wire rgbled1_retry = 0;
+
+	(* chip_pin = "D8, E7, E6, C8, C6, A7, D6, B7, A6, B6, J16, M10, L13" *)
+	output reg [12:0] rgbled2_out;
+	wire [WD:0] rgbled2_d;
+	always @(posedge clk) begin
+		if (rgbled2_d[WD]) rgbled2_out <= rgbled2_d[0+:13];
+	end
+	wire rgbled2_retry = 0;
 
 	(* chip_pin = "F2" *)
 	output reg i2c_scl_out = 1;
@@ -95,12 +111,12 @@ module relm_de0nano(clk, sw_in, key_in, led_out, i2c_scl_out, i2c_sda_inout, gs_
 	parameter WAD = 10;
 	parameter WOP = 5;
 
-	parameter NPUSH = 1 + NFIFO;
+	parameter NPUSH = 3 + NFIFO;
 	parameter NPOP = 2 + NFIFO;
 
 	wire [NPUSH*(WD+1)-1:0] push_d;
-	assign {led_d, pushf_d} = push_d;
-	wire [NPUSH-1:0] push_retry = {led_retry, pushf_retry};
+	assign {rgbled2_d, rgbled1_d, led_d, pushf_d} = push_d;
+	wire [NPUSH-1:0] push_retry = {rgbled2_retry, rgbled1_retry, led_retry, pushf_retry};
 	wire [NPOP*(WD+1)-1:0] pop_d;
 	assign {i2c_d, key_d, popf_d} = pop_d;
 	wire [NPOP*(WD+1)-1:0] pop_q = {i2c_q, key_q, popf_q};
