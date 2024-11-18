@@ -66,10 +66,8 @@ class GSensor(Block):
                     self.io(1, 0, 1, rd=1),
                     self.io(1, 1, RegB(Acc + RegB + RegB, 1 + 1), rd=1),
                 ]
-                for _ in range(7)
+                for _ in range(8)
             ],
-            self.io(1, 0, 1, rd=1),
-            self.io(1, 1, RegB((AccU + RegBU + RegBU) >> 16, 1 + 1), rd=1),
         ]
         self[
             self.send,
