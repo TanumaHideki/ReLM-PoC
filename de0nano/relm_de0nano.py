@@ -9,16 +9,20 @@ from relm_jtag import USBBlaster
 
 ReLM[:] = (
     "PUTOP",
+    "RGBLED4",
+    "RGBLED3",
     "RGBLED2",
     "RGBLED1",
     "LED",
     "FIFO1",
+    "SRAM",
 )[::-1]
 ReLM[:] = (
     "JTAG",
     "I2C",
     "KEY",
     "FIFO1",
+    "SRAM",
 )[::-1]
 ReLM[0x18] = "FADD"
 ReLM[0x19] = "FMUL"
@@ -29,6 +33,7 @@ ReLM[0x1D::0x20] = ("ROUND", "TRUNC"), "FTOI"
 ReLM[0x1E] = "FCOMP"
 
 FIFO("FIFO1", 256)
+sram = SRAM("SRAM", 0, 256)
 
 
 class GSensor(Block):

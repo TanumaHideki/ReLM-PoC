@@ -10,7 +10,7 @@ with ReLMLoader(loader="loader/output_files/relm_de0nano.svf"):
     blue = Label()
     Thread[
         Do()[
-            Acc("RGBLED1"),
+            Acc("RGBLED3"),
             align := Label(),
             Code("OUT", 0b1010101010011),
             green << "JUMP",
