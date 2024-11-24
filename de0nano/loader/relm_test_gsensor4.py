@@ -28,7 +28,7 @@ with ReLMLoader(loader="loader/output_files/relm_de0nano.svf"):
             s2(s2 + y * y - x * x),
             v := Int(s2 * n - s1 * s1),
             Out("LED", v >> 14),
-            If((w >= (3 << 18)) & (v < (3 << 18)))[
+            If((w >= (1 << 18)) & (v < (1 << 18)))[
                 signal := Int(1), Out("RGBLED1", 0b1111111111000)
             ].Else[Out("RGBLED1", 0b111), signal(0)],
             w(v),

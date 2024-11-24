@@ -19,6 +19,7 @@ ReLM[:] = (
 )[::-1]
 ReLM[:] = (
     "JTAG",
+    "ADC",
     "I2C",
     "KEY",
     "FIFO1",
@@ -37,7 +38,7 @@ sram = SRAM("SRAM", 0, 256)
 
 
 class GSensor(Block):
-    def io(self, sda, scl, wait=0, rd=0, cs=1):
+    def io(self, sda, scl, wait=0, rd=0, cs=0):
         expr = IO("I2C", (sda << 31) | (cs << 2) | (rd << 1) | scl)
         if isinstance(wait, int):
             if wait:
@@ -55,10 +56,10 @@ class GSensor(Block):
         self.send = Function()[
             *[
                 Block[
-                    IO("I2C", RegB | 4),
+                    IO("I2C", RegB),
                     Acc(1 + 1),
                     Do()[...].While(Acc - 1 != 0),
-                    IO("I2C", (RegB * 2).swapAB() | 5),
+                    IO("I2C", (RegB * 2).swapAB() | 1),
                     Acc(1 + 1),
                     Do()[...].While(Acc - 1 != 0),
                 ]
@@ -81,23 +82,76 @@ class GSensor(Block):
 
     def write(self, address, data):
         return Block[
-            self.io(1, 1, RegB((address << 24) | (data << 16), 1 + 1), rd=1, cs=0),
-            self.io(1, 1, 0, rd=1, cs=1),
+            self.io(1, 1, RegB((address << 24) | (data << 16), 1 + 1), rd=1, cs=1),
+            self.io(1, 1, 0, rd=1),
             self.send(),
             self.send(),
+            self.io(1, 1, 0, rd=1),
             self.io(1, 1, 0, rd=1, cs=1),
-            self.io(1, 1, 0, rd=1, cs=0),
         ]
 
     def read(self, address, length=1):
         return Block[
-            self.io(1, 1, RegB(0xC0000000 | (address << 24), 1 + 1), rd=1, cs=0),
-            self.io(1, 1, 0, rd=1, cs=1),
+            self.io(1, 1, RegB(0xC0000000 | (address << 24), 1 + 1), rd=1, cs=1),
+            self.io(1, 1, 0, rd=1),
             self.send(),
             *[self.recv() for _ in range(length)],
+            self.io(1, 1, 0, rd=1),
             self.io(1, 1, 0, rd=1, cs=1),
-            self.io(1, 1, 0, rd=1, cs=0),
         ]
+
+
+class ADC(Block):
+    def io(self, sclk, wait=0, cs=0):
+        expr = IO("ADC", (cs << 1) | sclk)
+        if isinstance(wait, int):
+            if wait:
+                wait = Acc(wait + 1)
+            else:
+                return expr
+        return Block[
+            expr,
+            wait,
+            Do()[...].While(Acc - 1 != 0),
+        ]
+
+    def __init__(self):
+        super().__init__()
+        self.recv = Function(ch := Int())[
+            self.io(0, 1),
+            self.io(1, 1),
+            self.io(0, 1),
+            self.io(1, 1),
+            IO("I2C", (+ch).opb("BLOADX")),
+            Acc(1 + 1),
+            Do()[...].While(Acc - 1 != 0),
+            IO("I2C", (RegB * 2).swapAB() | 1),
+            Acc(1 + 1),
+            Do()[...].While(Acc - 1 != 0),
+            IO("I2C", RegB),
+            Acc(1 + 1),
+            Do()[...].While(Acc - 1 != 0),
+            IO("I2C", (RegB * 2).swapAB() | 1),
+            Acc(1 + 1),
+            Do()[...].While(Acc - 1 != 0),
+            IO("I2C", RegB),
+            Acc(1 + 1),
+            Do()[...].While(Acc - 1 != 0),
+            RegB(IO("I2C", RegB | 1), 1 + 1),
+            Do()[...].While(Acc - 1 != 0),
+            *[
+                Block[
+                    self.io(0, 1),
+                    self.io(1, RegB(Acc + RegB + RegB, 1 + 1)),
+                ]
+                for _ in range(11)
+            ],
+            self.io(1, 0, cs=1),
+        ].Return(RegB)
+        self[self.recv,]
+
+    def read(self, ch=None):
+        return self.recv() if ch is None else self.recv(ch << 29)
 
 
 operand = Int()

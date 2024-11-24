@@ -23,7 +23,8 @@ module relm_unused(d_in, q_out);
 	output [WD:0] q_out = d_in;
 endmodule
 
-module relm_de0nano(clk, sw_in, key_in, led_out, i2c_scl_out, i2c_sda_inout, gs_int_in, gs_cs_out, rgbled1_out, rgbled2_out, rgbled3_out, rgbled4_out);
+module relm_de0nano(clk, sw_in, key_in, led_out, i2c_scl_out, i2c_sda_inout, gs_int_in, gs_cs_n_out,
+	adc_cs_n_out, adc_saddr_out, adc_sdat_in, adc_sclk_out, rgbled1_out, rgbled2_out, rgbled3_out, rgbled4_out);
 	parameter WD = 32;
 	parameter WC = `WC;
 
@@ -90,16 +91,36 @@ module relm_de0nano(clk, sw_in, key_in, led_out, i2c_scl_out, i2c_sda_inout, gs_
 	(* chip_pin = "M2" *)
 	input gs_int_in;
 	(* chip_pin = "G5" *)
-	output reg gs_cs_out = 1;
+	output reg gs_cs_n_out = 1;
 	wire [WD:0] i2c_d;
 	wire [WD:0] i2c_q = {{WD-24{1'b0}}, i2c_sda_reg[1], 24'd0};
 	always @(posedge clk) begin
 		i2c_sda_reg <= {i2c_sda_reg[0], i2c_sda_inout};
 		if (i2c_d[WD]) begin
 			i2c_sda[1] <= i2c_d[WD-1];
-			gs_cs_out <= ~i2c_d[2];
+			gs_cs_n_out <= i2c_d[2];
 			i2c_sda[0] <= i2c_d[1];
 			i2c_scl_out <= i2c_d[0];
+		end
+	end
+
+	(* chip_pin = "A10" *)
+	output reg adc_cs_n_out = 1;
+	(* chip_pin = "B10" *)
+	output reg adc_saddr_out = 0;
+	(* chip_pin = "A9" *)
+	input adc_sdat_in;
+	reg [1:0] adc_sdat_reg = 0;
+	(* chip_pin = "B14" *)
+	output reg adc_sclk_out = 1;
+	wire [WD:0] adc_d;
+	wire [WD:0] adc_q = {{WD{1'b0}}, adc_sdat_reg[1]};
+	always @(posedge clk) begin
+		adc_sdat_reg <= {adc_sdat_reg[0], adc_sdat_in};
+		if (adc_d[WD]) begin
+			adc_saddr_out <= adc_d[WD-1];
+			adc_cs_n_out <= adc_d[1];
+			adc_sclk_out <= adc_d[0];
 		end
 	end
 
@@ -140,14 +161,14 @@ module relm_de0nano(clk, sw_in, key_in, led_out, i2c_scl_out, i2c_sda_inout, gs_
 	parameter WOP = 5;
 
 	parameter NPUSH = 6 + NFIFO;
-	parameter NPOP = 3 + NFIFO;
+	parameter NPOP = 4 + NFIFO;
 
 	wire [NPUSH*(WD+1)-1:0] push_d;
 	assign {rgbled4_d, rgbled3_d, rgbled2_d, rgbled1_d, led_d, pushf_d, sram_wr_d} = push_d;
 	wire [NPUSH-1:0] push_retry = {rgbled4_retry, rgbled3_retry, rgbled2_retry, rgbled1_retry, led_retry, pushf_retry, sram_retry};
 	wire [NPOP*(WD+1)-1:0] pop_d;
-	assign {i2c_d, key_d, popf_d, sram_ad_d} = pop_d;
-	wire [NPOP*(WD+1)-1:0] pop_q = {i2c_q, key_q, popf_q, sram_rd_q};
+	assign {adc_d, i2c_d, key_d, popf_d, sram_ad_d} = pop_d;
+	wire [NPOP*(WD+1)-1:0] pop_q = {adc_q, i2c_q, key_q, popf_q, sram_rd_q};
 
 `include "coverage.txt"
 	generate
