@@ -201,6 +201,38 @@ class JTAGLoader(Label):
         return self
 
 
+class JTAGLoader(Label):
+    def __init__(self):
+        super().__init__()
+        self.jtag = None
+        self.offset = 0
+
+    def deploy(self, memory: list[Code], ncpu: int) -> bool:
+        self.address = len(memory)
+        return True
+
+    def __getitem__(self, offset):
+        self.offset = offset
+        return self
+
+    def __call__(self, *data):
+        if data:
+            if self.jtag is None:
+                self.jtag = USBBlaster()
+                self.jtag.shift_ir(0xE)
+                self.jtag.write_int(0)
+            for d in data:
+                self.jtag.write_int((d >> 16) & 0xFFFF)
+                self.jtag.write_int(d & 0xFFFF)
+                self.jtag.write_int(0x200000 | (self.address + self.offset))
+                self.offset += 1
+        else:
+            if self.jtag is not None:
+                self.jtag.close()
+                self.jtag = None
+        return self
+
+
 class ReLMLoader(ReLM):
     def __init__(
         self,
