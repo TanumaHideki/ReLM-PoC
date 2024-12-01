@@ -3,7 +3,7 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent))
 
-from relm import *
+from relm_float import *
 from relm_jtag import USBBlaster
 
 
@@ -20,7 +20,6 @@ ReLM[:] = (
 ReLM[:] = (
     "JTAG",
     "ADC",
-    "I2C",
     "KEY",
     "FIFO1",
     "SRAM",
@@ -118,31 +117,31 @@ class ADC(Block):
     def __init__(self):
         super().__init__()
         self.recv = Function(ch := Int())[
-            self.io(0, 1),
-            self.io(1, 1),
-            self.io(0, 1),
-            self.io(1, 1),
-            IO("I2C", (+ch).opb("BLOADX")),
-            Acc(1 + 1),
+            self.io(0, 2),
+            self.io(1, 2),
+            self.io(0, 2),
+            self.io(1, 2),
+            IO("ADC", (+ch).opb("BLOADX")),
+            Acc(2 + 1),
             Do()[...].While(Acc - 1 != 0),
-            IO("I2C", (RegB * 2).swapAB() | 1),
-            Acc(1 + 1),
+            IO("ADC", (RegB * 2).swapAB() | 1),
+            Acc(2 + 1),
             Do()[...].While(Acc - 1 != 0),
-            IO("I2C", RegB),
-            Acc(1 + 1),
+            IO("ADC", RegB),
+            Acc(2 + 1),
             Do()[...].While(Acc - 1 != 0),
-            IO("I2C", (RegB * 2).swapAB() | 1),
-            Acc(1 + 1),
+            IO("ADC", (RegB * 2).swapAB() | 1),
+            Acc(2 + 1),
             Do()[...].While(Acc - 1 != 0),
-            IO("I2C", RegB),
-            Acc(1 + 1),
+            IO("ADC", RegB),
+            Acc(2 + 1),
             Do()[...].While(Acc - 1 != 0),
-            RegB(IO("I2C", RegB | 1), 1 + 1),
+            RegB(IO("ADC", RegB | 1), 2 + 1),
             Do()[...].While(Acc - 1 != 0),
             *[
                 Block[
-                    self.io(0, 1),
-                    self.io(1, RegB(Acc + RegB + RegB, 1 + 1)),
+                    self.io(0, 2),
+                    self.io(1, RegB(Acc + RegB + RegB, 2 + 1)),
                 ]
                 for _ in range(11)
             ],
@@ -222,6 +221,7 @@ class JTAGLoader(Label):
                 self.jtag.shift_ir(0xE)
                 self.jtag.write_int(0)
             for d in data:
+                d = ReLM.mnemonic[d]
                 self.jtag.write_int((d >> 16) & 0xFFFF)
                 self.jtag.write_int(d & 0xFFFF)
                 self.jtag.write_int(0x200000 | (self.address + self.offset))
@@ -240,8 +240,8 @@ class ReLMLoader(ReLM):
         dump: bool = True,
         loader: str | bool = False,
         release_loader: bool = False,
-        WID: int = 3,
-        WAD: int = 13,
+        WID: int = 2,
+        WAD: int = 11,
     ):
         super().__init__(1 << WID, loader or release_loader)
         self.release = release

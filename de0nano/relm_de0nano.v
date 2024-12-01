@@ -23,8 +23,9 @@ module relm_unused(d_in, q_out);
 	output [WD:0] q_out = d_in;
 endmodule
 
-module relm_de0nano(clk, sw_in, key_in, led_out, i2c_scl_out, i2c_sda_inout, gs_int_in, gs_cs_n_out,
-	adc_cs_n_out, adc_saddr_out, adc_sdat_in, adc_sclk_out, rgbled1_out, rgbled2_out, rgbled3_out, rgbled4_out);
+module relm_de0nano(clk, sw_in, key_in, led_out,
+	adc_cs_n_out, adc_saddr_out, adc_sdat_in, adc_sclk_out,
+	rgbled1_out, rgbled2_out, rgbled3_out, rgbled4_out);
 	parameter WD = 32;
 	parameter WC = `WC;
 
@@ -81,6 +82,7 @@ module relm_de0nano(clk, sw_in, key_in, led_out, i2c_scl_out, i2c_sda_inout, gs_
 	end
 	wire rgbled4_retry = 0;
 
+`ifdef GSENSOR
 	(* chip_pin = "F2" *)
 	output reg i2c_scl_out = 1;
 	(* chip_pin = "F1" *)
@@ -103,6 +105,7 @@ module relm_de0nano(clk, sw_in, key_in, led_out, i2c_scl_out, i2c_sda_inout, gs_
 			i2c_scl_out <= i2c_d[0];
 		end
 	end
+`endif
 
 	(* chip_pin = "A10" *)
 	output reg adc_cs_n_out = 1;
@@ -156,19 +159,19 @@ module relm_de0nano(clk, sw_in, key_in, led_out, i2c_scl_out, i2c_sda_inout, gs_
 		end
 	endgenerate
 
-	parameter WID = 3;
-	parameter WAD = 10;
+	parameter WID = 2;
+	parameter WAD = 11;
 	parameter WOP = 5;
 
 	parameter NPUSH = 6 + NFIFO;
-	parameter NPOP = 4 + NFIFO;
+	parameter NPOP = 3 + NFIFO;
 
 	wire [NPUSH*(WD+1)-1:0] push_d;
 	assign {rgbled4_d, rgbled3_d, rgbled2_d, rgbled1_d, led_d, pushf_d, sram_wr_d} = push_d;
 	wire [NPUSH-1:0] push_retry = {rgbled4_retry, rgbled3_retry, rgbled2_retry, rgbled1_retry, led_retry, pushf_retry, sram_retry};
 	wire [NPOP*(WD+1)-1:0] pop_d;
-	assign {adc_d, i2c_d, key_d, popf_d, sram_ad_d} = pop_d;
-	wire [NPOP*(WD+1)-1:0] pop_q = {adc_q, i2c_q, key_q, popf_q, sram_rd_q};
+	assign {adc_d, key_d, popf_d, sram_ad_d} = pop_d;
+	wire [NPOP*(WD+1)-1:0] pop_q = {adc_q, key_q, popf_q, sram_rd_q};
 
 `include "coverage.txt"
 	generate

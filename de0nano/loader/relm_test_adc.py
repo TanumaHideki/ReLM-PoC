@@ -7,36 +7,38 @@ from relm_de0nano import *
 
 with ReLMLoader(loader="loader/output_files/relm_de0nano.svf"):
     Define[adc := ADC()]
-    n = 32
-    sram_n = sram.Alloc(n)
     Thread[
-        d_th := Int(1),
-        d_max := Int(),
-        i := Int(),
+        x_max := Int(),
+        x_min := Int(x_max(adc.read())),
+        state := Int(),
         Do()[
-            x := Int(sram_n[i]),
-            y := Int(),
-            sram_n[i](y(adc.read())),
-            d := Int(x - y),
-            If(d >= d_th)[signal := Int(1)],
-            If(d > d_max)[d_max(d)],
-            Out("RGBLED1", d << 3),
-            i((i + 1) & (n - 1)),
+            x := Int(adc.read()),
+            Out("RGBLED1", x << 3 | 6),
+            x_th := Int(),
+            If(x <= x_th((x_max + x_min) >> 1))[
+                If(state != 0)[
+                    signal := Int(1),
+                    state(0),
+                    x_min(x_th),
+                ],
+                If(x < x_min)[x_min(x)],
+            ].Else[
+                If(state == 0)[
+                    state(3),
+                    x_max(x_th),
+                ],
+                If(x > x_max)[x_max(x)],
+            ],
+            Out("RGBLED2", ((1 << (x >> 3)) - 1) << 3 | state),
         ],
     ]
     Thread[
         Do()[
             If(signal == 0)[Continue()],
-            Out("RGBLED2", 0b1111111111011),
-            Out("RGBLED3", 0b1111111111101),
-            Out("RGBLED4", 0b1111111111110),
-            d_max(0),
-            Acc(300000),
+            Out("RGBLED4", 0b1111111111101),
+            Acc(500000),
             Do()[...].While(Acc - 1 != 0),
-            Out("RGBLED2", 0b111),
-            Out("RGBLED3", 0b111),
             Out("RGBLED4", 0b111),
-            d_th((d_max + 1) >> 1),
             signal(0),
         ]
     ]
