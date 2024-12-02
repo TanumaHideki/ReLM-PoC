@@ -29,14 +29,14 @@ with ReLMLoader(loader="loader/output_files/relm_de0nano.svf"):
                 ],
                 If(x > x_max)[x_max(x)],
             ],
-            Out("RGBLED2", ((1 << (x >> 3)) - 1) << 3 | state),
+            Out("RGBLED2", ((1 << (x >> 4)) - 1) << 3 | state),
         ],
     ]
     Thread[
         Do()[
             If(signal == 0)[Continue()],
             Out("RGBLED4", 0b1111111111101),
-            Acc(500000),
+            Acc(200000),
             Do()[...].While(Acc - 1 != 0),
             Out("RGBLED4", 0b111),
             signal(0),

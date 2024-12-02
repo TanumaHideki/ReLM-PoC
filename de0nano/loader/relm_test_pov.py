@@ -7,9 +7,13 @@ from relm_de0nano import *
 
 
 def pov(y, c, led):
-    x = [Float() for _ in range(10)]
+    x = [Int() for _ in range(10)]
     p = [Int() for _ in range(10)]
     block = Block[
+        x0 := Int(),
+        x1 := Int(),
+        p[0](x1(x0 + y[0] + 1) >> 8),
+        x0(x1 - (p[0] ^ 1)),
         If(x[0](x[0] + y[0]) >= 1.0)[p[0]((1 << 12) + c), x[0](x[0] - 1.0)].Else[
             p[0](c)
         ]

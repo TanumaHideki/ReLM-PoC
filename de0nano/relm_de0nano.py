@@ -3,7 +3,7 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent))
 
-from relm_float import *
+from relm import *
 from relm_jtag import USBBlaster
 
 
@@ -117,31 +117,31 @@ class ADC(Block):
     def __init__(self):
         super().__init__()
         self.recv = Function(ch := Int())[
-            self.io(0, 2),
-            self.io(1, 2),
-            self.io(0, 2),
-            self.io(1, 2),
+            self.io(0, 1),
+            self.io(1, 1),
+            self.io(0, 1),
+            self.io(1, 1),
             IO("ADC", (+ch).opb("BLOADX")),
-            Acc(2 + 1),
+            Acc(1 + 1),
             Do()[...].While(Acc - 1 != 0),
             IO("ADC", (RegB * 2).swapAB() | 1),
-            Acc(2 + 1),
+            Acc(1 + 1),
             Do()[...].While(Acc - 1 != 0),
             IO("ADC", RegB),
-            Acc(2 + 1),
+            Acc(1 + 1),
             Do()[...].While(Acc - 1 != 0),
             IO("ADC", (RegB * 2).swapAB() | 1),
-            Acc(2 + 1),
+            Acc(1 + 1),
             Do()[...].While(Acc - 1 != 0),
             IO("ADC", RegB),
-            Acc(2 + 1),
+            Acc(1 + 1),
             Do()[...].While(Acc - 1 != 0),
-            RegB(IO("ADC", RegB | 1), 2 + 1),
+            RegB(IO("ADC", RegB | 1), 1 + 1),
             Do()[...].While(Acc - 1 != 0),
             *[
                 Block[
-                    self.io(0, 2),
-                    self.io(1, RegB(Acc + RegB + RegB, 2 + 1)),
+                    self.io(0, 1),
+                    self.io(1, RegB(Acc + RegB + RegB, 1 + 1)),
                 ]
                 for _ in range(11)
             ],
@@ -200,39 +200,6 @@ class JTAGLoader(Label):
         return self
 
 
-class JTAGLoader(Label):
-    def __init__(self):
-        super().__init__()
-        self.jtag = None
-        self.offset = 0
-
-    def deploy(self, memory: list[Code], ncpu: int) -> bool:
-        self.address = len(memory)
-        return True
-
-    def __getitem__(self, offset):
-        self.offset = offset
-        return self
-
-    def __call__(self, *data):
-        if data:
-            if self.jtag is None:
-                self.jtag = USBBlaster()
-                self.jtag.shift_ir(0xE)
-                self.jtag.write_int(0)
-            for d in data:
-                d = ReLM.mnemonic[d]
-                self.jtag.write_int((d >> 16) & 0xFFFF)
-                self.jtag.write_int(d & 0xFFFF)
-                self.jtag.write_int(0x200000 | (self.address + self.offset))
-                self.offset += 1
-        else:
-            if self.jtag is not None:
-                self.jtag.close()
-                self.jtag = None
-        return self
-
-
 class ReLMLoader(ReLM):
     def __init__(
         self,
@@ -240,8 +207,8 @@ class ReLMLoader(ReLM):
         dump: bool = True,
         loader: str | bool = False,
         release_loader: bool = False,
-        WID: int = 2,
-        WAD: int = 11,
+        WID: int = 3,
+        WAD: int = 10,
     ):
         super().__init__(1 << WID, loader or release_loader)
         self.release = release

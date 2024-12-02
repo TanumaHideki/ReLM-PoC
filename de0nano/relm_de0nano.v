@@ -159,8 +159,8 @@ module relm_de0nano(clk, sw_in, key_in, led_out,
 		end
 	endgenerate
 
-	parameter WID = 2;
-	parameter WAD = 11;
+	parameter WID = 3;
+	parameter WAD = 10;
 	parameter WOP = 5;
 
 	parameter NPUSH = 6 + NFIFO;
