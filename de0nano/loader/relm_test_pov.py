@@ -7,22 +7,18 @@ from relm_de0nano import *
 
 
 def pov(y, c, led):
-    x = [Int() for _ in range(10)]
-    p = [Int() for _ in range(10)]
     block = Block[
         x0 := Int(),
         x1 := Int(),
-        p[0](x1(x0 + y[0] + 1) >> 8),
-        x0(x1 - (p[0] ^ 1)),
-        If(x[0](x[0] + y[0]) >= 1.0)[p[0]((1 << 12) + c), x[0](x[0] - 1.0)].Else[
-            p[0](c)
-        ]
+        q := Int(x1(y[0] + x0) >> 8),
+        x0(x1 - q * 0xFF),
     ]
     for i in range(1, 10):
         block[
-            If(x[i](x[i] + y[i]) >= 1.0)[
-                p[i](p[i - 1] | (1 << (12 - i))), x[i](x[i] - 1.0)
-            ].Else[p[i](p[i - 1])]
+            x0 := Int(),
+            x1 := Int(),
+            q := Int(x1(y[0] + x0) >> 8),
+            x0(x1 - q * 0xFF),
         ]
     return block[Out(led, p[9])]
 
