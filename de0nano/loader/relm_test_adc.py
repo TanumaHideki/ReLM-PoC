@@ -29,7 +29,7 @@ with ReLMLoader(loader="loader/output_files/relm_de0nano.svf"):
                 ],
                 If(x > x_max)[x_max(x)],
             ],
-            Out("RGBLED2", ((1 << (x >> 4)) - 1) << 3 | state),
+            Out("RGBLED2", ((1 << (x >> 5)) - 1) << 3 | state),
         ],
     ]
     Thread[

@@ -208,13 +208,16 @@ class ReLMLoader(ReLM):
         loader: str | bool = False,
         release_loader: bool = False,
         WID: int = 3,
-        WAD: int = 10,
+        WAD: int = 11,
+        WAD2: int = 9,
     ):
         super().__init__(1 << WID, loader or release_loader)
         self.release = release
         self.dump = dump
         self.loader = loader
-        self.size = 1 << (WID + WAD)
+        self.size = (
+            ((1 << (WAD - 1)) + (1 << WAD2)) << WID if WAD2 else 1 << (WID + WAD)
+        )
 
     def send(self, jtag, start, stop=None) -> None:
         for i, c in enumerate(self.memory[start:stop], start):

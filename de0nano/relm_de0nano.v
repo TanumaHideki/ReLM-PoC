@@ -1,5 +1,6 @@
 module relm_dpmem(clk, we_in, wa_in, ra_in, d_in, q_out);
 	parameter WAD = 0;
+	parameter WAD2 = 0;
 	parameter WD = 0;
 	parameter FILEH = 0;
 	parameter FILEB = 0;
@@ -7,14 +8,34 @@ module relm_dpmem(clk, we_in, wa_in, ra_in, d_in, q_out);
 	input [WAD-1:0] wa_in, ra_in;
 	input [WD-1:0] d_in;
 	output reg [WD-1:0] q_out = 0;
-	(* ramstyle = "M9K" *) reg [WD-1:0] mem [0:2**WAD-1];
+	generate
+		if (WAD2) begin
+			reg [WD-1:0] q1 = 0;
+			reg [WD-1:0] q2 = 0;
+			reg q_sel = 0;
+			always @* q_out <= q_sel ? q2 : q1;
+			(* ramstyle = "M9K" *) reg [WD-1:0] mem [0:2**(WAD-1)-1];
+			(* ramstyle = "M9K" *) reg [WD-1:0] mem2 [0:2**WAD2-1];
+			always @(posedge clk)
+			begin
+				if (we_in && !wa_in[WAD-1]) mem[wa_in[0+:WAD-1]] <= d_in;
+				if (we_in && wa_in[WAD-1]) mem2[wa_in[0+:WAD2]] <= d_in;
+				q1 <= mem[ra_in[0+:WAD-1]];
+				q2 <= mem2[ra_in[0+:WAD2]];
+				q_sel <= ra_in[WAD-1];
+			end
+		end
+		else begin
+			(* ramstyle = "M9K" *) reg [WD-1:0] mem [0:2**WAD-1];
+			always @(posedge clk)
+			begin
+				if (we_in) mem[wa_in] <= d_in;
+				q_out <= mem[ra_in];
+			end
+		end
+	endgenerate
 	initial if (FILEH) $readmemh(FILEH, mem);
 	initial if (FILEB) $readmemb(FILEB, mem);
-	always @(posedge clk)
-	begin
-		if (we_in) mem[wa_in] <= d_in;
-		q_out <= mem[ra_in];
-	end
 endmodule
 
 module relm_unused(d_in, q_out);
@@ -160,7 +181,8 @@ module relm_de0nano(clk, sw_in, key_in, led_out,
 	endgenerate
 
 	parameter WID = 3;
-	parameter WAD = 10;
+	parameter WAD = 11;
+	parameter WAD2 = 9;
 	parameter WOP = 5;
 
 	parameter NPUSH = 6 + NFIFO;
@@ -179,6 +201,7 @@ module relm_de0nano(clk, sw_in, key_in, led_out,
 			relm #(
 				.WID(WID),
 				.WAD(WAD),
+				.WAD2(WAD2),
 				.NPUSH(NPUSH),
 				.NPOP(NPOP),
 				.WSHIFT(5),
@@ -208,6 +231,7 @@ module relm_de0nano(clk, sw_in, key_in, led_out,
 			relm #(
 				.WID(WID),
 				.WAD(WAD),
+				.WAD2(WAD2),
 				.NPUSH(NPUSH),
 				.MPUSH(USE_PUSH_PUTOP),
 				.NPOP(NPOP),
