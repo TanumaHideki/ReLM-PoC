@@ -34,7 +34,7 @@ def pov_filter(y1, y0, y, i, a, b):
     ]
 
 
-def pov_fifo(y1, y0, y, fifo: FIFO, a=6, b=2):
+def pov_fifo(y1, y0, y, fifo: FIFO, a=3, b=1):
     block = Block()
     for i in range(10):
         block[
