@@ -1,5 +1,6 @@
 module relm_dpmem(clk, we_in, wa_in, ra_in, d_in, q_out);
 	parameter WAD = 0;
+	parameter WAD2 = 0;
 	parameter WD = 0;
 	parameter FILEH = 0;
 	parameter FILEB = 0;

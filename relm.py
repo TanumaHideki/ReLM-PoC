@@ -225,7 +225,7 @@ class ExprB(BinaryOp):
             case ExprB():
                 return lhs[l := Int(lhs), rhs, op[-1] : l.put()]
             case RegBType():
-                return lhs[r := Int(rhs), lhs, op[0] : r.put()]
+                return lhs[lhs.opb(op[0])]
             case _:
                 return NotImplemented
 
@@ -237,8 +237,10 @@ class ExprB(BinaryOp):
                 return lhs[rhs, op[-1] : lhs.put()]
             case Expr():
                 return lhs[RegB(rhs, lhs).opb(op[0])]
-            case ExprB() | RegBType():
+            case ExprB():
                 return lhs[l := Int(lhs), rhs, op[-1] : l.put()]
+            case RegBType():
+                return lhs[rhs.opb(op[-1])]
             case _:
                 return NotImplemented
 
@@ -361,7 +363,7 @@ class Expr(ExprB):
                 return self[self.codes]
             else:
                 break
-        return self[op:0, self]
+        return self["OPB":"BLOADX", self]
 
     def binary(lhs: Expr, rhs: int | str | BinaryOp, *op: str) -> ExprB:
         match rhs:
@@ -369,8 +371,6 @@ class Expr(ExprB):
                 return super().binary(rhs, *op)
             case ExprB():
                 return lhs[RegB(rhs, lhs).opb(op[0])]
-            case RegBType():
-                return lhs[lhs.opb(op[0])]
             case _:
                 return super().binary(rhs, *op)
 
@@ -378,8 +378,6 @@ class Expr(ExprB):
         match lhs:
             case ExprB():
                 return lhs[RegB(lhs, rhs).opb(op[-1])]
-            case RegBType():
-                return lhs[rhs.opb(op[-1])]
             case _:
                 return super().rbinary(lhs, *op)
 
@@ -670,7 +668,7 @@ class RegBType(BinaryOp):
     def __call__(
         self,
         regb: int | str | BinaryOp,
-        acc: int | str | Int | Expr = 0,
+        acc: int | str | Int | Expr = Acc,
         op: str = "BLOAD",
     ) -> ExprB:
         if isinstance(acc, (int, str, Int)):

@@ -96,6 +96,7 @@ module relm_pe(clk, pc_in, pc_out, a_in, a_out, cb_in, cb_out,
 	parameter ID = 0;
 	parameter WID = 0;
 	parameter WAD = 0;
+	parameter WAD2 = 0;
 	parameter NPUSH = 0;
 	parameter NPOP = 0;
 	parameter WSHIFT = 5;
@@ -136,6 +137,7 @@ module relm_pe(clk, pc_in, pc_out, a_in, a_out, cb_in, cb_out,
 	wire [WD-1:0] x_mem;
 	relm_dpmem #(
 		.WAD(WAD),
+		.WAD2(WAD2),
 		.WD(WD),
 		.FILEH({DATA + ID / 10 * 256 + ID % 10, EXT})
 	) dpmem_x(
@@ -152,6 +154,7 @@ module relm_pe(clk, pc_in, pc_out, a_in, a_out, cb_in, cb_out,
 	wire [WOP-1:0] op_mem;
 	relm_dpmem #(
 		.WAD(WAD),
+		.WAD2(WAD2),
 		.WD(WOP),
 		.FILEB({CODE + ID / 10 * 256 + ID % 10, EXT})
 	) dpmem_op(
@@ -360,6 +363,7 @@ module relm(clk, push_out, push_in, pop_out, pop_in, op_we_in, op_wa_in, op_d_in
 	parameter WID = 0;
 	localparam NID = 2 ** WID;
 	parameter WAD = 0;
+	parameter WAD2 = 0;
 	parameter NPUSH = 0;
 	parameter [NID-1:0] MPUSH = 0;
 	localparam LPUSH = MPUSH ? NPUSH + 1 : NPUSH;
@@ -412,6 +416,7 @@ module relm(clk, push_out, push_in, pop_out, pop_in, op_we_in, op_wa_in, op_d_in
 				.ID(i),
 				.WID(WID),
 				.WAD(WAD),
+				.WAD2(WAD2),
 				.NPUSH(NMPUSH),
 				.NPOP(NMPOP),
 				.WSHIFT(WSHIFT),
@@ -455,6 +460,7 @@ module relm(clk, push_out, push_in, pop_out, pop_in, op_we_in, op_wa_in, op_d_in
 		.ID(NID-1),
 		.WID(WID),
 		.WAD(WAD),
+		.WAD2(WAD2),
 		.NPUSH(NMPUSH),
 		.NPOP(NMPOP),
 		.WSHIFT(WSHIFT),
