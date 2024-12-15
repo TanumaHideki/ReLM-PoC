@@ -34,7 +34,7 @@ def pov_filter(y1, y0, y, i, a, b):
     ]
 
 
-def pov_fifo(y1, y0, y, fifo: FIFO, a=3, b=1):
+def pov_fifo(y1, y0, y, fifo: FIFO, a=6, b=2):
     block = Block()
     for i in range(10):
         block[
@@ -89,7 +89,8 @@ with ReLMLoader(loader="loader/output_files/relm_de0nano.svf"):
             x_th := Int(),
             If(x <= x_th((x_max + x_min) >> 1))[
                 If(state != 0)[
-                    signal := Int(1),
+                    alter := Int(),
+                    signal := Int(alter(alter ^ 1)),
                     state(0),
                     x_min(x_th),
                 ],
@@ -120,12 +121,12 @@ with ReLMLoader(loader="loader/output_files/relm_de0nano.svf"):
                 pov_fifo(red1, red0, red, fifo),
                 pov_fifo(green1, green0, green, fifo),
                 pov_fifo(blue1, blue0, blue, fifo),
-                Acc(1250),
+                Acc(500),
                 Do()[...].While(Acc - 1 != 0),
                 pov_fifo(red0, red1, red, fifo),
                 pov_fifo(green0, green1, green, fifo),
                 pov_fifo(blue0, blue1, blue, fifo),
-                Acc(1250),
+                Acc(500),
                 Do()[...].While(Acc - 1 != 0),
             ].While(x(x + 1) != (width >> 1)),
             pov_zero(red, green, blue, red0, green0, blue0, red1, green1, blue1),
@@ -194,7 +195,7 @@ class Grabber:
         green = np.frombuffer(image[1].tobytes(), dtype=np.uint32)
         blue = np.frombuffer(image[2].tobytes(), dtype=np.uint32)
         self.vram[0]
-        for x in range(self.width * 10 - 10, -10, -10):
+        for x in range(0, self.width * 10, 10):
             for y in range(x, x + 10):
                 vram(int(red[y]))
             for y in range(x, x + 10):
