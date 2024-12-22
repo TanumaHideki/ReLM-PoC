@@ -129,29 +129,28 @@ class USBBlaster(JTAG):
         )
         return data.value
 
-    def __init__(self, dll="usbblstr32", index=0, format="IDCODE: {:X}"):
+    index = 0
+
+    def __init__(self, idcode=None, dll="usbblstr32"):
         super().__init__()
         self.dll = ctypes.cdll.LoadLibrary(dll)
         self.ftHandle = ctypes.c_void_p()
-        idcode = 0
         count = 0
         while True:
-            assert not self.dll.FT_Open(
-                index, ctypes.byref(self.ftHandle)
-            ), "USB Blaster connection failed"
+            status = self.dll.FT_Open(self.index, ctypes.byref(self.ftHandle))
+            assert (
+                not status
+            ), f"USB Blaster connection failed (index: {self.index}, error code: {status})"
             self.shift_ir(0x6)
             i = self.read_int(0)
-            if idcode == i:
-                count += 1
-                if count == 3:
-                    break
-            else:
-                idcode = i
+            print(f"IDCODE: {i:X} (index: {self.index})")
+            if idcode is None or idcode == self.read_int(0):
+                break
+            count += 1
+            if count == 3:
                 count = 0
-                self.dll.FT_ResetDevice(self.ftHandle)
+                self.index += 1
             self.dll.FT_Close(self.ftHandle)
-        if format:
-            print(format.format(idcode))
 
     def close(self):
         self.reset()

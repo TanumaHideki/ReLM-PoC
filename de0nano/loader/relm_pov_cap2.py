@@ -34,7 +34,7 @@ def pov_filter(y1, y0, y, i, a, b):
     ]
 
 
-def pov_fifo(y1, y0, y, fifo: FIFO, a=6, b=2):
+def pov_fifo(y1, y0, y, fifo: FIFO, a=9, b=3):
     block = Block()
     for i in range(10):
         block[
@@ -121,12 +121,12 @@ with ReLMLoader(loader="loader/output_files/relm_de0nano.svf"):
                 pov_fifo(red1, red0, red, fifo),
                 pov_fifo(green1, green0, green, fifo),
                 pov_fifo(blue1, blue0, blue, fifo),
-                Acc(500),
+                Acc(wait := 300),
                 Do()[...].While(Acc - 1 != 0),
                 pov_fifo(red0, red1, red, fifo),
                 pov_fifo(green0, green1, green, fifo),
                 pov_fifo(blue0, blue1, blue, fifo),
-                Acc(500),
+                Acc(wait),
                 Do()[...].While(Acc - 1 != 0),
             ].While(x(x + 1) != (width >> 1)),
             pov_zero(red, green, blue, red0, green0, blue0, red1, green1, blue1),
