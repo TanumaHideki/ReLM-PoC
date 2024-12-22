@@ -215,12 +215,14 @@ class ReLMLoader(ReLM):
         release_loader: bool = False,
         WID: int = 3,
         WAD: int = 13,
+        IDCODE: int = 0x2B020DD,
     ):
         super().__init__(1 << WID, loader or release_loader)
         self.release = release
         self.dump = dump
         self.loader = loader
         self.size = 1 << (WID + WAD)
+        self.IDCODE = IDCODE
 
     def send(self, jtag, start, stop=None) -> None:
         for i, c in enumerate(self.memory[start:stop], start):
@@ -240,13 +242,13 @@ class ReLMLoader(ReLM):
                 path = Path(__file__, "..", self.loader)
                 if path.is_file():
                     print(f"SVF configuration: {self.loader}")
-                    with USBBlaster() as jtag:
+                    with USBBlaster(self.IDCODE) as jtag:
                         jtag.playSVF(path)
                 else:
                     print(f"SVF file not found: {self.loader}")
                     print("Please make sure the loader is running on FPGA.")
             print("Loading instructions...")
-            with USBBlaster() as jtag:
+            with USBBlaster(self.IDCODE) as jtag:
                 jtag.shift_ir(0xE)
                 jtag.write_int(0)
                 self.send(jtag, start)
