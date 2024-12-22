@@ -137,19 +137,22 @@ class USBBlaster(JTAG):
         self.ftHandle = ctypes.c_void_p()
         count = 0
         while True:
-            status = self.dll.FT_Open(self.index, ctypes.byref(self.ftHandle))
+            status = self.dll.FT_Open(USBBlaster.index, ctypes.byref(self.ftHandle))
+            if status == 3:  # FT_DEVICE_NOT_OPENED
+                USBBlaster.index += 1
+                continue
             assert (
                 not status
-            ), f"USB Blaster connection failed (index: {self.index}, error code: {status})"
+            ), f"USB Blaster connection failed (index: {USBBlaster.index}, error code: {status})"
             self.shift_ir(0x6)
             i = self.read_int(0)
-            print(f"IDCODE: {i:X} (index: {self.index})")
+            print(f"IDCODE: {i:X} (index: {USBBlaster.index})")
             if idcode is None or idcode == self.read_int(0):
                 break
             count += 1
             if count == 3:
                 count = 0
-                self.index += 1
+                USBBlaster.index += 1
             self.dll.FT_Close(self.ftHandle)
 
     def close(self):
