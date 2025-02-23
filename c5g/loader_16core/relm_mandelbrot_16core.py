@@ -3,9 +3,9 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent))
 
-from relm_c5g import *
+from relm_c5g_16core import *
 
-with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
+with ReLMLoader(loader="loader_16core/output_files/relm_c5g_16core.svf"):
     Define[
         i2c := I2C(),
         mutex := Mutex(),
