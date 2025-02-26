@@ -71,7 +71,7 @@ with ReLMLoader(loader="loader_16core/output_files/relm_c5g_16core.svf"):
                 (key & 0b100000000001111 == 0) & (key & 0b10000 != 0)
             ),
             If(key & (1 << 14) != 0)[scale(scale / 0.75)].Else[
-                If(scale(scale * 0.75) < 1.0e-7)[key(key_next)],
+                If(scale(scale * 0.75) < 1.0e-8)[key(key_next)],
             ],
             If(key & 0b1000 != 0)[
                 center_x(-0.743643135),
@@ -101,10 +101,6 @@ with ReLMLoader(loader="loader_16core/output_files/relm_c5g_16core.svf"):
         ],
     ]
     for _ in range(ReLM.ncpu - 1):
-        Define[
-            px := ArrayF(*([0.0] * 60)),
-            py := ArrayF(*([0.0] * 60)),
-        ]
         Thread[
             Do()[
                 mutex[iy := Int(rows.Pop()),],
@@ -129,33 +125,36 @@ with ReLMLoader(loader="loader_16core/output_files/relm_c5g_16core.svf"):
                         If((AccF + qx) * q * 4.0 <= qy2)[color := Int(1)].Else[
                             If((cx + 1.0) ** 2 + qy2 <= (1.0 / 16.0))[color(2)].Else[
                                 iter := UInt(0),
-                                pindex := Int(Acc),
                                 x2 := Float(AccF),
                                 y2 := Float(AccF),
                                 x := Float(AccF),
                                 y := Float(AccF),
+                                px := Float(AccF),
+                                py := Float(AccF),
+                                pindex := Int(-1),
+                                period := Int(1),
                                 Do()[
-                                    iter(iter + 1),
-                                    If(Acc == 0xAAA)[Break()],
                                     y(y * x * 2.0 + cy),
                                     x2(x(x2 - y2 + cx) ** 2),
-                                    If(pindex == 60)[
-                                        pi := Int(0),
-                                        While(
-                                            (pi != 60)
-                                            & (
-                                                (px[pi] - x) ** 2 + (py[pi] - y) ** 2
-                                                > 1.0e-10
-                                            )
-                                        )[pi(pi + 1)],
-                                        If(pi != 60)[iter(0), Break()],
-                                        pindex(0),
+                                    If(pindex(pindex + 1) > 0)[
+                                        If(
+                                            abs(px - x) + abs(py - y) < 1.0e-5,
+                                            True,
+                                        )[
+                                            iter2 := UInt(0),
+                                            Break(),
+                                        ],
+                                        If(pindex == period, True)[
+                                            pindex(-period(period * 2)),
+                                            px(x),
+                                            py(y),
+                                        ].Else[...],
                                     ],
-                                    px[pindex](x),
-                                    py[pindex](y),
-                                    pindex(pindex + 1),
-                                ].While(y2(y**2) + x2 <= math.exp(math.tau)),
-                                ((+iter).opb("BLOADX") >> 1).opb("XOR"),
+                                ].While(
+                                    (iter2(iter(iter + 1)) != 0xAAA)
+                                    & (y2(y**2) + x2 <= math.exp(math.tau))
+                                ),
+                                ((+iter2).opb("BLOADX") >> 1).opb("XOR"),
                                 color(Acc.bit_count() + 3),
                             ],
                         ],
