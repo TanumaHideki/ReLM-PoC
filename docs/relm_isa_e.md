@@ -91,7 +91,7 @@ Now, if it is obvious that RHS does not change Register (B), the code sequence c
 | | OPB ADD | Acc := Acc + B | |
 
 However, replace a LOAD instruction to BLOAD in the case that the LOAD is the first instruction to change Acc in RHS sequence (which is often the case in the compiler output), and rename it RHS'.  
-(If not, an additional instruction is to place "BLOAD 0" before RHS sequence.)
+(If not, an additional instruction is to place "OPB BLOADX" before RHS sequence.)
 
 Though BLOAD(X) and BSLOAD(X), (the latter is related to shift operations), are the only four of basic instructions to change Register (B), they enable various operations in combination with OPB.
 
