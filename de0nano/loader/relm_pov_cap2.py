@@ -121,7 +121,7 @@ with ReLMLoader(loader="loader/output_files/relm_de0nano.svf"):
                 pov_fifo(red1, red0, red, fifo),
                 pov_fifo(green1, green0, green, fifo),
                 pov_fifo(blue1, blue0, blue, fifo),
-                Acc(wait := 300),
+                Acc(wait := 250),
                 Do()[...].While(Acc - 1 != 0),
                 pov_fifo(red0, red1, red, fifo),
                 pov_fifo(green0, green1, green, fifo),
