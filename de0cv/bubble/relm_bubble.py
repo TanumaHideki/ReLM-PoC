@@ -474,8 +474,7 @@ with ReLMLoader(__file__, loader=loader):
                         dispDice.Switch(nrand(6) + 1, console.fifo_print.port),
                         vsync(0),
                     ],
-                    If(keyboard.IsEmpty())[Continue()],
-                ].While(keyboard.Pop() != 0x5A),
+                ].While(keyboard.IsEmpty() | (keyboard.Pop() != 0x5A)),
             ].Else[
                 count := Int(30),
                 Do()[

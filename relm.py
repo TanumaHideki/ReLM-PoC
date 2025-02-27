@@ -886,7 +886,7 @@ def Break(align: bool = False) -> Block:
 class Do(Loop):
     def __getitem__(self, block: Any) -> DoLoop:
         Loop.current = self.parent
-        return DoLoop(self, Block[self.continue_][block])
+        return DoLoop(self, Block[block])
 
 
 class While(Loop):
@@ -897,7 +897,7 @@ class While(Loop):
 
     def __getitem__(self, block: Any) -> DoLoop:
         Loop.current = self.parent
-        b = Block[self.continue_, self.whiletrue.expr]
+        b = Block[self.whiletrue.expr]
         if self.align is None:
             self.align = Label()
             b[self.align]
@@ -910,6 +910,7 @@ class DoLoop(Statement):
         self.block = block
 
     def render(self, codes: list[Code]) -> list[Code]:
+        codes.append(self.loop.continue_)
         if not self.block.terminal():
             self.block[self.loop.Continue()]
         self.block.render(codes)
@@ -921,24 +922,38 @@ class DoLoop(Statement):
     def terminal(self) -> bool:
         return not self.loop.break_.ref
 
+    def Break(self) -> DoBreak:
+        return DoBreak(self.loop, self.block)
+
     def While(self, while_: Bool) -> DoWhile:
         return DoWhile(self.loop, self.block, while_)
 
 
+class DoBreak(Statement):
+    def __init__(self, loop: Loop, block: Block):
+        self.loop = loop
+        self.block = block
+
+    def render(self, codes: list[Code]) -> list[Code]:
+        codes.append(self.loop.continue_)
+        self.block.render(codes)
+        codes.append(self.loop.break_)
+        return codes
+
+
 class DoWhile(Statement):
-    def __init__(self, loop: Loop, block: Block, while_: Bool | bool):
+    def __init__(self, loop: Loop, block: Block, while_: Bool):
         self.loop = loop
         self.block = block
         self.while_ = while_
 
     def render(self, codes: list[Code]) -> list[Code]:
+        codes.append(repeat := Label())
         self.block.render(codes)
-        if isinstance(self.while_, Bool):
-            whilefalse = self.while_[False,]
-            whilefalse.expr.render(codes)
-            self.loop.continue_ << whilefalse
-        else:
-            assert not self.while_
+        codes.append(self.loop.continue_)
+        whilefalse = self.while_[False,]
+        repeat << whilefalse
+        whilefalse.expr.render(codes)
         codes.append(self.loop.break_)
         return codes
 
@@ -1511,7 +1526,7 @@ class Semaphore(Mutex):
                     Do()[...].While(self(0) == 0),
                     If(Acc - 1 == 0)[self(1), Continue()],
                     self(Acc),
-                ].While(False),
+                ].Break(),
             ]
         else:
             return Block[
@@ -1520,7 +1535,7 @@ class Semaphore(Mutex):
                     Do()[...].While(self(0) == 0),
                     If(rest(Acc - 1 + rest) < 0)[self(1), Continue()],
                     self(rest + 1),
-                ].While(False),
+                ].Break(),
             ]
 
     def Release(self, count: int = 1) -> Block:
