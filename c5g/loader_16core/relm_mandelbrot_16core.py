@@ -137,18 +137,15 @@ with ReLMLoader(loader="loader_16core/output_files/relm_c5g_16core.svf"):
                                     y(y * x * 2.0 + cy),
                                     x2(x(x2 - y2 + cx) ** 2),
                                     If(pindex(pindex + 1) > 0)[
-                                        If(
-                                            abs(px - x) + abs(py - y) < 1.0e-5,
-                                            True,
-                                        )[
+                                        If((px - x) ** 2 + (py - y) ** 2 < 1.0e-10)[
                                             iter2 := UInt(0),
                                             Break(),
                                         ],
-                                        If(pindex == period, True)[
+                                        If(pindex == period)[
                                             pindex(-period(period * 2)),
                                             px(x),
                                             py(y),
-                                        ].Else[...],
+                                        ],
                                     ],
                                 ].While(
                                     (iter2(iter(iter + 1)) != 0xAAA)
