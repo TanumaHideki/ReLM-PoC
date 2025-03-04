@@ -27,7 +27,8 @@ endmodule
 module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 		hex3_out, hex2_out, hex1_out, hex0_out, ledr_out, ledg_out,
 		hdmi_r_out, hdmi_g_out, hdmi_b_out, hdmi_clk_out, hdmi_de_out, hdmi_hs_out, hdmi_vs_out,
-		hdmi_int_in, hdmi_scl_out, hdmi_sda_inout);
+		hdmi_int_in, hdmi_scl_out, hdmi_sda_inout,
+		usb_int_in, usb_ss_out, usb_mosi_out, usb_miso_in, usb_sck_out);
 	parameter WD = 32;
 	parameter WC = `WC;
 
@@ -217,6 +218,30 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 		end
 	end
 
+	(* chip_pin = "P8" *)
+	input usb_int_in;
+	(* chip_pin = "R8" *)
+	output reg usb_ss_out = 1;
+	(* chip_pin = "R9" *)
+	output reg usb_mosi_out = 0;
+	(* chip_pin = "R10" *)
+	input usb_miso_in;
+	(* chip_pin = "F26" *)
+	output reg usb_sck_out = 1;
+	reg [1:0] usb_int = 0;
+	reg [7:0] usb_miso = 0;
+	wire [WD:0] usb_d;
+	wire [WD:0] usb_q = {1'b0, usb_d[31:16], 7'd0, usb_int[1], usb_miso};
+	always @(posedge clk) begin
+		usb_int <= {usb_int[0], usb_int_in};
+		usb_sck_out <= usb_d[WD] ? usb_d[14] : 1'b1;
+		if (!usb_sck_out) usb_miso <= {usb_miso[6:0], usb_miso_in};
+		if (usb_d[WD]) begin
+			usb_ss_out <= usb_d[15];
+			usb_mosi_out <= usb_d[31];
+		end
+	end
+
 	parameter NFIFO = 3;
 
 	wire [(WD+1)*NFIFO-1:0] pushf_d, popf_d, popf_q;
@@ -242,14 +267,14 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 	parameter WOP = 5;
 
 	parameter NPUSH = 4 + NFIFO;
-	parameter NPOP = 3 + NFIFO;
+	parameter NPOP = 4 + NFIFO;
 
 	wire [NPUSH*(WD+1)-1:0] push_d;
 	assign {hdmipal_d, hdmi_d, led_d, hex_d, pushf_d} = push_d;
 	wire [NPUSH-1:0] push_retry = {hdmipal_retry, hdmi_retry, led_retry, hex_retry, pushf_retry};
 	wire [NPOP*(WD+1)-1:0] pop_d;
-	assign {uart_d, i2c_d, key_d, popf_d} = pop_d;
-	wire [NPOP*(WD+1)-1:0] pop_q = {uart_q, i2c_q, key_q, popf_q};
+	assign {usb_d, uart_d, i2c_d, key_d, popf_d} = pop_d;
+	wire [NPOP*(WD+1)-1:0] pop_q = {usb_q, uart_q, i2c_q, key_q, popf_q};
 
 `include "coverage.txt"
 	generate

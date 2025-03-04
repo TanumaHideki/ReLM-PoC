@@ -19,6 +19,7 @@ ReLM[:] = (
 )[::-1]
 ReLM[:] = (
     "JTAG",
+    "USB",
     "UART",
     "I2C",
     "KEY",
