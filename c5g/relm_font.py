@@ -1222,8 +1222,8 @@ class Console:
 
     def Decimal(self) -> Function:
         return Function(value := Int(), digit := Int(), zero := Int())[
-            v := Int(RegB(digit, value)),
-            If(v >= RegB * 6)[
+            v := Int(),
+            If(v(RegB(digit, value)) >= RegB * 6)[
                 v3 := Int(v - RegB * 6),
                 d3 := Int(6),
             ].Else[
@@ -1255,3 +1255,19 @@ class Console:
             ].Else[d(zero)],
             self.fifo_print.Push(d),
         ].Return(v1)
+
+    def Hex(self) -> Function:
+        return Function(value := UInt(), digit := UInt(), zero := Int())[
+            Do()[
+                d := Int(),
+                If(d(RegB(digit, value).opb("SHR") & 0xF) < 10)[
+                    If(d == 0)[self.fifo_print.Push(zero),].Else[
+                        self.fifo_print.Push(d + ord("0")),
+                        zero(ord("0")),
+                    ],
+                ].Else[
+                    self.fifo_print.Push(d + (ord("A") - 10)),
+                    zero(ord("0")),
+                ],
+            ].While(digit(digit >> 4) != 0),
+        ]
