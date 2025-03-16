@@ -160,6 +160,25 @@ class I2C(Block):
         ]
 
 
+class USB(Block):
+    def __init__(self):
+        super().__init__()
+        self.send = Function(regdata := Int())[
+            IO("USB", 0x0000C000),
+            Acc(10),
+            Do()[...].While(Acc - 1 != 0),
+            IO("USB", IO("USB", regdata)),
+            *[IO("USB", Acc << 1) for _ in range(15)],
+        ].Return(IO("USB", 0x0000C000))
+        self[self.send]
+
+    def write(self, reg, data):
+        return self.send((reg << 27) | (data << 16) | 0x02004000)
+
+    def read(self, reg):
+        return self.send((reg << 27) | 0x00004000)
+
+
 operand = Int()
 Loader[
     Do()[

@@ -227,15 +227,17 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 	(* chip_pin = "R10" *)
 	input usb_miso_in;
 	(* chip_pin = "F26" *)
-	output reg usb_sck_out = 1;
+	output usb_sck_out;
+	reg [1:0] usb_sck = 3;
+	assign usb_sck_out = usb_sck[0];
 	reg [1:0] usb_int = 0;
 	reg [7:0] usb_miso = 0;
 	wire [WD:0] usb_d;
 	wire [WD:0] usb_q = {1'b0, usb_d[31:16], 7'd0, usb_int[1], usb_miso};
 	always @(posedge clk) begin
 		usb_int <= {usb_int[0], usb_int_in};
-		usb_sck_out <= usb_d[WD] ? usb_d[14] : 1'b1;
-		if (!usb_sck_out) usb_miso <= {usb_miso[6:0], usb_miso_in};
+		usb_sck <= {usb_sck[0], usb_d[WD] ? usb_d[14] : 1'b1};
+		if (!usb_sck[1]) usb_miso <= {usb_miso[6:0], usb_miso_in};
 		if (usb_d[WD]) begin
 			usb_ss_out <= usb_d[15];
 			usb_mosi_out <= usb_d[31];
