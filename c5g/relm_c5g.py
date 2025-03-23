@@ -167,7 +167,42 @@ class USB(Block):
             IO("USB", IO("USB", regdata)),
             *[IO("USB", Acc << 1) for _ in range(15)],
         ].Return(IO("USB", (Acc << 1) | 0x0000C000))
-        self[self.send]
+        self.busprobe = Function()[
+            status := Int(),
+            If(status(self.read(31) & 0xC0) == 0x00)[
+                bus_state := Int(0xD1),  # MODE : DPPULLDN DMPULLDN SEPIRQ HOST
+            ].Else[
+                lowspeed := Int(self.read(27) & 0x02),  # MODE : LOWSPEED
+                If(status == 0x80)[bus_state(lowspeed ^ 0xC9),].Else[  # HRSL : JSTATUS
+                    If(status == 0x40)[  # HRSL : KSTATUS
+                        bus_state(lowspeed ^ 0xCB),
+                    ].Else[  # HRSL : JSTATUS KSTATUS
+                        Return(0),
+                    ],
+                ],  # MODE : DPPULLDN DMPULLDN SOFKAENAB (LOWSPEED) HOST
+            ],
+            self.send((bus_state << 16) | 0xDA000000),
+        ].Return(bus_state)
+        self.reset_count = Int()
+        self.init = Function()[
+            self.write(17, 0x18),  # PINCTL : FDUPSPI INTLEVEL
+            self.write(15, 0x20),  # USBCTL : CHIPRES
+            self.write(15, 0x00),  # USBCTL
+            self.reset_count(0),
+            Do()[
+                If((self.read(13) & 0x01) != 0)[  # USBIRQ : OSCOKIRQ
+                    self.write(27, 0xC1),  # MODE : DPPULLDN DMPULLDN HOST
+                    self.write(26, 0x60),  # HIEN : FRAMEIE CONNIE
+                    self.write(29, 0x04),  # HCTL : BUSSAMPLE
+                    Do()[...].While((self.read(29) & 0x04) == 0),  # HCTL : BUSSAMPLE
+                    bus_state := Int(self.busprobe()),
+                    self.write(25, 0x20),  # HIRQ : CONDETIRQ
+                    self.write(16, 0x01),  # CPUCTL : IE
+                    Return(bus_state),
+                ],
+            ].While(self.reset_count(self.reset_count + 1) != 65536),
+        ].Return(0)
+        self[self.send, self.busprobe, self.init]
 
     def write(self, reg, data):
         return self.send((reg << 27) | (data << 16) | 0x02004000)

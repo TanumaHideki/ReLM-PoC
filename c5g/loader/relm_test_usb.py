@@ -55,16 +55,21 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
             hex1=0b0101111,  # b
             hex0=0b0000000,
         ),
-        console.Print("USB Test", pos=0, color=0xF0),
-        usb.write(17, 0x18),  # PINCTL : FDUPSPI INTLEVEL
-        usb.write(15, 0x20),  # USBCTL : CHIPRES
-        usb.write(15, 0x00),  # USBCTL
-        i := Int(0),
-        Do()[If((usb.read(13) & 0x01) != 0)[Break(),],].While(  # USBIRQ : OSCOKIRQ
-            i(i + 1) != 10000000
-        ),
-        console.Print("", pos=800),
-        digits(i, 10000000),
-        console.Print("", pos=800 * 2),
-        hex(usb.read(18), 0x10000000),
+        console.Print("Reset Count:", pos=0, color=0xF0),
+        bus_state := Int(usb.init()),
+        digits(usb.reset_count, 10000),
+        console.Print("Revision: 0x", pos=800),
+        hex(usb.read(18), 0x100, 0),
+        pos := Int(800 * 2),
+        While(pos < 800 * 48)[
+            console.Print("Bus State: 0x", pos=pos),
+            hex(bus_state, 0x100, 0),
+            Do()[
+                If(IO("USB", 0x0000C001) != 0)[Continue(),],
+                If((usb.read(25) & 0x20) != 0)[Break(),],
+            ],
+            bus_state(usb.busprobe()),
+            usb.write(25, 0x20),
+            pos(pos + 800),
+        ],
     ]

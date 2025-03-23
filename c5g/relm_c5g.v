@@ -229,7 +229,7 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 	(* chip_pin = "F26" *)
 	output usb_sck_out;
 	reg usb_sck = 1;
-	assign usb_sck_out = usb_sck[0];
+	assign usb_sck_out = usb_sck;
 	reg [1:0] usb_int = 0;
 	wire [WD:0] usb_d;
 	wire [WD:0] usb_q = {1'b0, usb_d[31:16], 8'd0, usb_d[7:1], usb_d[0] ? usb_int[1] : usb_miso_in};
