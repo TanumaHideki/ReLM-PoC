@@ -8,14 +8,37 @@ module relm_dpmem(clk, we_in, wa_in, ra_in, d_in, q_out);
 	input [WAD-1:0] wa_in, ra_in;
 	input [WD-1:0] d_in;
 	output reg [WD-1:0] q_out = 0;
-	(* ramstyle = "M10K", max_depth = 2048 *) reg [WD-1:0] mem [0:2**WAD-1];
+	generate
+		if (WAD2) begin
+			reg [WD-1:0] q1 = 0;
+			reg [WD-1:0] q2 = 0;
+			reg q_sel = 0;
+			always @* q_out <= q_sel ? q2 : q1;
+			(* ramstyle = "M10K", max_depth = 2048 *) reg [WD-1:0] mem [0:2**(WAD-1)-1];
+			(* ramstyle = "M10K", max_depth = 2048 *) reg [WD-1:0] mem2 [0:2**WAD2-1];
+			always @(posedge clk)
+			begin
+				if (we_in && !wa_in[WAD-1]) mem[wa_in[0+:WAD-1]] <= d_in;
+				if (we_in && wa_in[WAD-1]) mem2[wa_in[0+:WAD2]] <= d_in;
+				q1 <= mem[ra_in[0+:WAD-1]];
+				q2 <= mem2[ra_in[0+:WAD2]];
+				q_sel <= ra_in[WAD-1];
+			end
+		end
+		else begin
+			(* ramstyle = "M10K", max_depth = 2048 *) reg [WD-1:0] mem [0:2**WAD-1];
+			always @(posedge clk)
+			begin
+				if (we_in) mem[wa_in] <= d_in;
+				q_out <= mem[ra_in];
+			end
+		end
+	endgenerate
 	initial if (FILEH) $readmemh(FILEH, mem);
 	initial if (FILEB) $readmemb(FILEB, mem);
-	always @(posedge clk)
-	begin
-		if (we_in) mem[wa_in] <= d_in;
-		q_out <= mem[ra_in];
-	end
+
+
+
 endmodule
 
 module relm_unused(d_in, q_out);
@@ -28,6 +51,7 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 		hex3_out, hex2_out, hex1_out, hex0_out, ledr_out, ledg_out,
 		hdmi_r_out, hdmi_g_out, hdmi_b_out, hdmi_clk_out, hdmi_de_out, hdmi_hs_out, hdmi_vs_out,
 		hdmi_int_in, hdmi_scl_out, hdmi_sda_inout,
+		aud_xck_out, aud_bclk, aud_dacdat_out, aud_daclrck_in, aud_adcdat_in, aud_adclrck_in,
 		usb_int_in, usb_ss_out, usb_mosi_out, usb_miso_in, usb_sck_out);
 	parameter WD = 32;
 	parameter WC = `WC;
@@ -242,6 +266,185 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 		end
 	end
 
+	(* chip_pin = "D6" *)
+	output aud_xck_out;
+	reg aud_pll_rst = 1;
+	wire aud_pll_locked;
+	reg [1:0] aud_pll_ready = 0;
+	always @(posedge clk) aud_pll_ready <= {aud_pll_ready[0], aud_pll_locked & ~aud_pll_rst};
+	altera_pll #(
+		.fractional_vco_multiplier("true"),
+		.reference_clock_frequency("50.0 MHz"),
+		.operation_mode("direct"),
+		.number_of_clocks(1),
+		.output_clock_frequency0("18.432000 MHz"),
+		.phase_shift0("0 ps"),
+		.duty_cycle0(50),
+		.output_clock_frequency1("0 MHz"),
+		.phase_shift1("0 ps"),
+		.duty_cycle1(50),
+		.output_clock_frequency2("0 MHz"),
+		.phase_shift2("0 ps"),
+		.duty_cycle2(50),
+		.output_clock_frequency3("0 MHz"),
+		.phase_shift3("0 ps"),
+		.duty_cycle3(50),
+		.output_clock_frequency4("0 MHz"),
+		.phase_shift4("0 ps"),
+		.duty_cycle4(50),
+		.output_clock_frequency5("0 MHz"),
+		.phase_shift5("0 ps"),
+		.duty_cycle5(50),
+		.output_clock_frequency6("0 MHz"),
+		.phase_shift6("0 ps"),
+		.duty_cycle6(50),
+		.output_clock_frequency7("0 MHz"),
+		.phase_shift7("0 ps"),
+		.duty_cycle7(50),
+		.output_clock_frequency8("0 MHz"),
+		.phase_shift8("0 ps"),
+		.duty_cycle8(50),
+		.output_clock_frequency9("0 MHz"),
+		.phase_shift9("0 ps"),
+		.duty_cycle9(50),
+		.output_clock_frequency10("0 MHz"),
+		.phase_shift10("0 ps"),
+		.duty_cycle10(50),
+		.output_clock_frequency11("0 MHz"),
+		.phase_shift11("0 ps"),
+		.duty_cycle11(50),
+		.output_clock_frequency12("0 MHz"),
+		.phase_shift12("0 ps"),
+		.duty_cycle12(50),
+		.output_clock_frequency13("0 MHz"),
+		.phase_shift13("0 ps"),
+		.duty_cycle13(50),
+		.output_clock_frequency14("0 MHz"),
+		.phase_shift14("0 ps"),
+		.duty_cycle14(50),
+		.output_clock_frequency15("0 MHz"),
+		.phase_shift15("0 ps"),
+		.duty_cycle15(50),
+		.output_clock_frequency16("0 MHz"),
+		.phase_shift16("0 ps"),
+		.duty_cycle16(50),
+		.output_clock_frequency17("0 MHz"),
+		.phase_shift17("0 ps"),
+		.duty_cycle17(50),
+		.pll_type("General"),
+		.pll_subtype("General")
+	) audio_pll (
+		.rst(aud_pll_rst),
+		.outclk({aud_xck_out}),
+		.locked(aud_pll_locked),
+		.fboutclk(),
+		.fbclk(1'b0),
+		.refclk(clk)
+	);
+
+	(* chip_pin = "E6" *)
+	input aud_bclk;
+	(* chip_pin = "G10" *)
+	input aud_daclrck_in;
+	(* chip_pin = "H10" *)
+	output reg aud_dacdat_out = 0;
+	wire aud_dac_rdempty;
+	reg aud_dac_clk = 0;
+	wire [WD:0] aud_push_d;
+	always @(posedge clk) if (aud_push_d[WD]) aud_pll_rst <= 0;
+	wire aud_dac_wrfull;
+	wire aud_push_retry = aud_dac_wrfull | !aud_pll_ready[1];
+	always @(posedge aud_bclk) aud_dac_clk <= aud_daclrck_in;
+	wire [31:0] aud_dac_q;
+	reg [15:0] aud_dac_dl = 0;
+	reg [15:0] aud_dac_dr = 0;
+	always @(negedge aud_bclk) begin
+		if (aud_dac_clk) begin
+			aud_dac_dl <= aud_dac_q[31:16];
+			aud_dacdat_out <= aud_dac_dr[15];
+			aud_dac_dr <= {aud_dac_dr[14:0], 1'bx};
+		end
+		else begin
+			aud_dac_dr <= aud_dac_q[15:0];
+			aud_dacdat_out <= aud_dac_dl[15];
+			aud_dac_dl <= {aud_dac_dl[14:0], 1'bx};
+		end
+	end
+	dcfifo #(
+		.lpm_numwords(256),
+		.lpm_showahead("OFF"),
+		.lpm_type("dcfifo"),
+		.lpm_width(32),
+		.lpm_widthu(8),
+		.overflow_checking("ON"),
+		.rdsync_delaypipe(5),
+		.underflow_checking("ON"),
+		.use_eab("ON"),
+		.write_aclr_synch("ON"),
+		.wrsync_delaypipe(5)
+	) audio_dac (
+		.wrclk(clk),
+		.rdreq(!aud_dac_rdempty),
+		.aclr(1'b0),
+		.rdclk(aud_dac_clk),
+		.wrreq(!aud_push_retry && aud_push_d[WD]),
+		.data(aud_push_d[0+:WD]),
+		.rdempty(aud_dac_rdempty),
+		.wrfull(aud_dac_wrfull),
+		.q(aud_dac_q)
+	);
+	(* chip_pin = "C7" *)
+	input aud_adclrck_in;
+	(* chip_pin = "D7" *)
+	input aud_adcdat_in;
+	wire aud_adc_rdempty;
+	wire aud_adc_wrfull;
+	wire [WD-1:0] aud_adc_q;
+	wire [WD:0] aud_pop_d;
+	wire [WD:0] aud_pop_q = {aud_adc_rdempty, aud_adc_q};
+	reg [17:0] aud_adc_dl = 1;
+	reg [17:0] aud_adc_dr = 18'h20000;
+	wire aud_adc_wrreq = aud_adclrck_in & aud_adc_dl[17] & aud_adc_dr[17];
+	always @(posedge aud_bclk) begin
+		if (aud_adclrck_in) begin
+			if ({aud_adc_dl[17], aud_adc_dr[17]} == 2'b10) begin
+				aud_adc_dr <= {aud_adc_dr[16:0], aud_adcdat_in};
+			end
+			else begin
+				aud_adc_dl <= 1;
+				aud_adc_dr <= 1;
+			end
+		end
+		else begin
+			if ({aud_adc_dl[17], aud_adc_dr[17]} == 2'b00) begin
+				aud_adc_dl <= {aud_adc_dl[16:0], aud_adcdat_in};
+			end
+		end
+	end
+	dcfifo #(
+		.lpm_numwords(256),
+		.lpm_showahead("OFF"),
+		.lpm_type("dcfifo"),
+		.lpm_width(32),
+		.lpm_widthu(8),
+		.overflow_checking("ON"),
+		.rdsync_delaypipe(5),
+		.underflow_checking("ON"),
+		.use_eab("ON"),
+		.write_aclr_synch("ON"),
+		.wrsync_delaypipe(5)
+	) audio_adc (
+		.wrclk(aud_bclk),
+		.rdreq(!aud_adc_rdempty && aud_pop_d[WD]),
+		.aclr(1'b0),
+		.rdclk(clk),
+		.wrreq(!aud_adc_wrfull && aud_adc_wrreq),
+		.data({aud_adc_dl[15:0], aud_adc_dr[15:0]}),
+		.rdempty(aud_adc_rdempty),
+		.wrfull(aud_adc_wrfull),
+		.q(aud_adc_q)
+	);
+
 	parameter NFIFO = 3;
 
 	wire [(WD+1)*NFIFO-1:0] pushf_d, popf_d, popf_q;
@@ -263,18 +466,19 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 	endgenerate
 
 	parameter WID = 3;
-	parameter WAD = 13;
+	parameter WAD = 14;
+	parameter WAD2 = 12;
 	parameter WOP = 5;
 
-	parameter NPUSH = 4 + NFIFO;
-	parameter NPOP = 4 + NFIFO;
+	parameter NPUSH = 5 + NFIFO;
+	parameter NPOP = 5 + NFIFO;
 
 	wire [NPUSH*(WD+1)-1:0] push_d;
-	assign {hdmipal_d, hdmi_d, led_d, hex_d, pushf_d} = push_d;
-	wire [NPUSH-1:0] push_retry = {hdmipal_retry, hdmi_retry, led_retry, hex_retry, pushf_retry};
+	assign {hdmipal_d, hdmi_d, led_d, hex_d, aud_push_d, pushf_d} = push_d;
+	wire [NPUSH-1:0] push_retry = {hdmipal_retry, hdmi_retry, led_retry, hex_retry, aud_push_retry, pushf_retry};
 	wire [NPOP*(WD+1)-1:0] pop_d;
-	assign {usb_d, uart_d, i2c_d, key_d, popf_d} = pop_d;
-	wire [NPOP*(WD+1)-1:0] pop_q = {usb_q, uart_q, i2c_q, key_q, popf_q};
+	assign {usb_d, uart_d, i2c_d, key_d, aud_pop_d, popf_d} = pop_d;
+	wire [NPOP*(WD+1)-1:0] pop_q = {usb_q, uart_q, i2c_q, key_q, aud_pop_q, popf_q};
 
 `include "coverage.txt"
 	generate
@@ -282,6 +486,7 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 			relm #(
 				.WID(WID),
 				.WAD(WAD),
+				.WAD2(WAD2),
 				.NPUSH(NPUSH),
 				.NPOP(NPOP),
 				.WSHIFT(5),
@@ -311,6 +516,7 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 			relm #(
 				.WID(WID),
 				.WAD(WAD),
+				.WAD2(WAD2),
 				.NPUSH(NPUSH),
 				.MPUSH(USE_PUSH_PUTOP),
 				.NPOP(NPOP),

@@ -13,6 +13,7 @@ ReLM[:] = (
     "HDMI",
     "LED",
     "HEX",
+    "AUDIO",
     "FIFO1",
     "FIFO2",
     "FIFO3",
@@ -23,6 +24,7 @@ ReLM[:] = (
     "UART",
     "I2C",
     "KEY",
+    "AUDIO",
     "FIFO1",
     "FIFO2",
     "FIFO3",
@@ -160,6 +162,16 @@ class I2C(Block):
         ]
 
 
+class Audio(FIFO):
+    def __init__(self, i2c: I2C = None, port: str = "AUDIO"):
+        self.i2c_write = i2c
+        self.port = port
+        self.locked = True
+
+    def i2c(self, address, data, device=0x34):
+        return self.i2c_write.write(device, address << 1, data)
+
+
 class USB(Block):
     def __init__(self):
         super().__init__()
@@ -266,14 +278,17 @@ class ReLMLoader(ReLM):
         loader: str | bool = False,
         release_loader: bool = False,
         WID: int = 3,
-        WAD: int = 13,
+        WAD: int = 14,
+        WAD2: int = 12,
         IDCODE: int = 0x2B020DD,
     ):
         super().__init__(1 << WID, loader or release_loader)
         self.release = release
         self.dump = dump
         self.loader = loader
-        self.size = 1 << (WID + WAD)
+        self.size = (
+            ((1 << (WAD - 1)) + (1 << WAD2)) << WID if WAD2 else 1 << (WID + WAD)
+        )
         self.IDCODE = IDCODE
 
     def send(self, jtag, start, stop=None) -> None:
