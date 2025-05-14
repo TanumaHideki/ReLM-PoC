@@ -40,18 +40,25 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
         fifo1 := FIFO.Alloc(2000),
         Do()[
             Acc(fifo1.port),
-            a := Array(*([0] * 2000)),
-            i := Int(1000),
-            Do()[fifo1.Push((audio.Pop() >> 16) + (audio.Pop() >> 16)),].While(
-                i(i - 1) != 0
-            ),
+            a := Array(*([0] * 1000)),
+            i := Int(750),
+            Do()[
+                y := Int(),
+                fifo1.Push((audio.Pop() >> 16) + y(audio.Pop() >> 16)),
+                fifo1.Push(y + (audio.Pop() >> 16)),
+            ].While(i(i - 1) != 0),
             i := Int(0),
             Do()[
-                x := Int(),
-                fifo1.Push(x((audio.Pop() >> 16) + (audio.Pop() >> 16))),
-                a[999 - i](x),
-                a[1000 + i](x),
-            ].While(i(i + 1) != 1000),
+                xy := Int(),
+                y := Int(),
+                fifo1.Push(xy((audio.Pop() >> 16) + y(audio.Pop() >> 16))),
+                a[499 - i * 2](xy),
+                a[500 + i * 2](xy),
+                yz := Int(),
+                fifo1.Push(yz(y + (audio.Pop() >> 16))),
+                a[498 - i * 2](yz),
+                a[501 + i * 2](yz),
+            ].While(i(i + 1) != 250),
         ],
     ]
     Thread[Do()[audio.Push(((fifo1.Pop() >> 1) & 0xFFFF) * 0x10001),],]

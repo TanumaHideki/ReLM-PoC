@@ -445,7 +445,7 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 		.q(aud_adc_q)
 	);
 
-	parameter NFIFO = 3;
+	parameter NFIFO = 6;
 
 	wire [(WD+1)*NFIFO-1:0] pushf_d, popf_d, popf_q;
 	wire [NFIFO-1:0] pushf_retry;

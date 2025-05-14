@@ -9,6 +9,7 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
     Define[
         i2c := I2C(),
         audio := Audio(i2c),
+        array_ma := Array(*([0] * 24)),
     ]
     Thread[
         audio.Push(0),  # wait for PLL lock
@@ -37,21 +38,28 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
             hex1=0b0011111,  # d
             hex0=0b0001111,  # o
         ),
-        fifo1 := FIFO.Alloc(2000),
+        sum1 := Int(),
+        i := Int(0),
         Do()[
-            Acc(fifo1.port),
-            a := Array(*([0] * 2000)),
-            i := Int(1000),
-            Do()[fifo1.Push((audio.Pop() >> 16) + (audio.Pop() >> 16)),].While(
-                i(i - 1) != 0
-            ),
-            i := Int(0),
-            Do()[
-                x := Int(),
-                fifo1.Push(x((audio.Pop() >> 16) + (audio.Pop() >> 16))),
-                a[999 - i](x),
-                a[1000 + i](x),
-            ].While(i(i + 1) != 1000),
+            x := Int(),
+            sum1(sum1 + x(audio.Pop() >> 16)),
+            array_ma[i](x),
+        ].While(i(i + 1) != 24),
+        center0 := Int(array_ma[11]),
+        center1 := Int(array_ma[12]),
+        center_i := Int(13),
+        sum_ma := Int(sum1),
+        sum_i := Int(0),
+        fifo1 := FIFO.Alloc(),
+        Do()[
+            fifo1.Push((center0 + center1) * 12 - sum_ma),
+            x := Int(),
+            sum_ma(sum_ma + x(audio.Pop() >> 16) - array_ma[sum_i]),
+            array_ma[sum_i](x),
+            If(sum_i == 23)[sum_i(0),].Else[sum_i(sum_i + 1),],
+            center0(center1),
+            center1(array_ma[center_i]),
+            If(center_i == 23)[center_i(0),].Else[center_i(center_i + 1),],
         ],
     ]
-    Thread[Do()[audio.Push(((fifo1.Pop() >> 1) & 0xFFFF) * 0x10001),],]
+    Thread[Do()[audio.Push((((fifo1.Pop() + 16) >> 5) & 0xFFFF) * 0x10001),],]

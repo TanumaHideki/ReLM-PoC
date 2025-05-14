@@ -17,6 +17,9 @@ ReLM[:] = (
     "FIFO1",
     "FIFO2",
     "FIFO3",
+    "FIFO4",
+    "FIFO5",
+    "FIFO6",
 )[::-1]
 ReLM[:] = (
     "JTAG",
@@ -28,6 +31,9 @@ ReLM[:] = (
     "FIFO1",
     "FIFO2",
     "FIFO3",
+    "FIFO4",
+    "FIFO5",
+    "FIFO6",
 )[::-1]
 ReLM[0x18] = "FADD"
 ReLM[0x19] = "FMUL"
@@ -40,6 +46,9 @@ ReLM[0x1E] = "FCOMP"
 FIFO("FIFO1", 2048)
 FIFO("FIFO2", 2048)
 FIFO("FIFO3", 2048)
+FIFO("FIFO4", 2048)
+FIFO("FIFO5", 2048)
+FIFO("FIFO6", 2048)
 
 
 def LED(hex3=None, hex2=None, hex1=None, hex0=None, led=None):
