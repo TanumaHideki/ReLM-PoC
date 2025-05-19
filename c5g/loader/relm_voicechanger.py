@@ -69,6 +69,11 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
         Do()[
             Acc(fifo_pitch2.port),
             a := Array(*([0] * 2000)),
+            While(In("KEY") & 2 != 0)[
+                led1 := Int(0b1100),
+                fifo_pitch2.Push(fifo_pitch.Pop() * 2),
+            ],
+            led1(0),
             i := Int(1000),
             Do()[fifo_pitch2.Push(fifo_pitch.Pop() + fifo_pitch.Pop())].While(
                 i(i - 1) != 0
@@ -87,6 +92,11 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
         Do()[
             Acc(fifo_formant2.port),
             a := Array(*([0] * 1000)),
+            While(In("KEY") & 1 != 0)[
+                led2 := Int(0b11),
+                fifo_formant2.Push(fifo_formant.Pop() * 2),
+            ],
+            led2(0),
             i := Int(750),
             Do()[
                 y := Int(),
@@ -107,4 +117,12 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
             ].While(i(i + 1) != 250),
         ],
     ]
-    Thread[Do()[audio.Push((((fifo_pitch2.Pop() + fifo_formant2.Pop() + 64) >> 7) & 0xFFFF) * 0x10001),],]
+    Thread[Do()[Out("LED", led1 | led2),],]
+    Thread[
+        Do()[
+            audio.Push(
+                (((fifo_pitch2.Pop() + fifo_formant2.Pop() + 64) >> 7) & 0xFFFF)
+                * 0x10001
+            ),
+        ],
+    ]
