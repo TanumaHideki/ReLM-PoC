@@ -50,9 +50,11 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
         center_i := Int(13),
         sum_ma := Int(sum1),
         sum_i := Int(0),
-        fifo1 := FIFO.Alloc(),
+        fifo_pitch := FIFO.Alloc(),
+        fifo_formant := FIFO.Alloc(),
         Do()[
-            fifo1.Push((center0 + center1) * 12 - sum_ma),
+            fifo_pitch.Push(sum_ma),
+            fifo_formant.Push((center0 + center1) * 12 - sum_ma),
             x := Int(),
             sum_ma(sum_ma + x(audio.Pop() >> 16) - array_ma[sum_i]),
             array_ma[sum_i](x),
@@ -62,4 +64,47 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
             If(center_i == 23)[center_i(0),].Else[center_i(center_i + 1),],
         ],
     ]
-    Thread[Do()[audio.Push((((fifo1.Pop() + 16) >> 5) & 0xFFFF) * 0x10001),],]
+    Thread[
+        fifo_pitch2 := FIFO.Alloc(),
+        Do()[
+            Acc(fifo_pitch2.port),
+            a := Array(*([0] * 2000)),
+            i := Int(1000),
+            Do()[fifo_pitch2.Push(fifo_pitch.Pop() + fifo_pitch.Pop())].While(
+                i(i - 1) != 0
+            ),
+            i := Int(0),
+            Do()[
+                x := Int(),
+                fifo_pitch2.Push(x(fifo_pitch.Pop() + fifo_pitch.Pop())),
+                a[999 - i](x),
+                a[1000 + i](x),
+            ].While(i(i + 1) != 1000),
+        ],
+    ]
+    Thread[
+        fifo_formant2 := FIFO.Alloc(),
+        Do()[
+            Acc(fifo_formant2.port),
+            a := Array(*([0] * 1000)),
+            i := Int(750),
+            Do()[
+                y := Int(),
+                fifo_formant2.Push(fifo_formant.Pop() + y(fifo_formant.Pop())),
+                fifo_formant2.Push(y + fifo_formant.Pop()),
+            ].While(i(i - 1) != 0),
+            i := Int(0),
+            Do()[
+                xy := Int(),
+                y := Int(),
+                fifo_formant2.Push(xy(fifo_formant.Pop() + y(fifo_formant.Pop()))),
+                a[499 - i * 2](xy),
+                a[500 + i * 2](xy),
+                yz := Int(),
+                fifo_formant2.Push(yz(y + fifo_formant.Pop())),
+                a[498 - i * 2](yz),
+                a[501 + i * 2](yz),
+            ].While(i(i + 1) != 250),
+        ],
+    ]
+    Thread[Do()[audio.Push((((fifo_pitch2.Pop() + fifo_formant2.Pop() + 64) >> 7) & 0xFFFF) * 0x10001),],]
