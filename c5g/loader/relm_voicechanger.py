@@ -9,7 +9,7 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
     Define[
         i2c := I2C(),
         audio := Audio(i2c),
-        array_ma := Array(*([0] * 24)),
+        array_ma := Array(*([0] * 16)),
     ]
     Thread[
         audio.Push(0),  # wait for PLL lock
@@ -44,24 +44,24 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
             x := Int(),
             sum1(sum1 + x(audio.Pop() >> 16)),
             array_ma[i](x),
-        ].While(i(i + 1) != 24),
-        center0 := Int(array_ma[11]),
-        center1 := Int(array_ma[12]),
-        center_i := Int(13),
+        ].While(i(i + 1) != 16),
+        center0 := Int(array_ma[7]),
+        center1 := Int(array_ma[8]),
+        center_i := Int(9),
         sum_ma := Int(sum1),
         sum_i := Int(0),
         fifo_pitch := FIFO.Alloc(),
         fifo_formant := FIFO.Alloc(),
         Do()[
             fifo_pitch.Push(sum_ma),
-            fifo_formant.Push((center0 + center1) * 12 - sum_ma),
+            fifo_formant.Push((center0 + center1) * 8 - sum_ma),
             x := Int(),
             sum_ma(sum_ma + x(audio.Pop() >> 16) - array_ma[sum_i]),
             array_ma[sum_i](x),
-            If(sum_i == 23)[sum_i(0),].Else[sum_i(sum_i + 1),],
+            If(sum_i == 15)[sum_i(0),].Else[sum_i(sum_i + 1),],
             center0(center1),
             center1(array_ma[center_i]),
-            If(center_i == 23)[center_i(0),].Else[center_i(center_i + 1),],
+            If(center_i == 15)[center_i(0),].Else[center_i(center_i + 1),],
         ],
     ]
     Thread[
@@ -117,12 +117,19 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
             ].While(i(i + 1) != 250),
         ],
     ]
-    Thread[Do()[Out("LED", led1 | led2),],]
+    Define[array_echo := Array(*([0] * 4800)),]
     Thread[
+        echo_i := Int(0),
+        s := Int(0),
         Do()[
-            audio.Push(
-                (((fifo_pitch2.Pop() + fifo_formant2.Pop() + 64) >> 7) & 0xFFFF)
-                * 0x10001
+            x := Int(),
+            array_echo[echo_i](
+                x(array_echo[echo_i] + fifo_pitch2.Pop() + fifo_formant2.Pop()) >> 1
             ),
+            If(echo_i == 4799)[echo_i(0),].Else[echo_i(echo_i + 1),],
+            xs := Int(),
+            audio.Push((xs(x >> s) & 0xFFFF) * 0x10001),
+            If((xs + 0x10000) & 0xFFFE0000 != 0)[s(s + 1),],
         ],
     ]
+    Thread[Do()[Out("LED", led1 | led2),],]

@@ -467,7 +467,7 @@ class Int(BinaryOp):
         return code
 
     def puts(self) -> Code:
-        self.ref.append(code := Code("PUTS", debug="->      "), offset=0x80000000)
+        self.ref.append(code := Code("PUTS", debug="->      ", offset=0x80000000))
         return code
 
     def binary(lhs: Int, rhs: int | str | BinaryOp, *op: str) -> ExprB:
