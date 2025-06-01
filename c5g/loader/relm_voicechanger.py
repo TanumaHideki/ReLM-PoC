@@ -67,54 +67,157 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
     Thread[
         fifo_pitch2 := FIFO.Alloc(),
         Do()[
-            Acc(fifo_pitch2.port),
-            a := Array(*([0] * 2000)),
-            While(In("KEY") & 2 != 0)[
-                led1 := Int(0b1100),
-                fifo_pitch2.Push(fifo_pitch.Pop() * 2),
+            If(In("KEY") & 0b11000_00000_0000 != 0)[
+                Acc(fifo_pitch2.port),
+                a := Array(*([0] * 2000)),
+                If(In("KEY") & 0b10000_00000_0000 != 0)[
+                    led1 := Int(0b10000_00000_00000000),
+                    i := Int(1000),
+                    Do()[fifo_pitch2.Push(fifo_pitch.Pop() + fifo_pitch.Pop())].While(
+                        i(i - 1) != 0
+                    ),
+                    i := Int(0),
+                    Do()[
+                        x := Int(),
+                        fifo_pitch2.Push(x(fifo_pitch.Pop() + fifo_pitch.Pop())),
+                        a[999 - i](x),
+                        a[1000 + i](x),
+                    ].While(i(i + 1) != 1000),
+                    Continue(),
+                ],
+                led1(0b01000_00000_00000000),
+                i := Int(1500),
+                Do()[
+                    y := Int(),
+                    fifo_pitch2.Push(fifo_pitch.Pop() + y(fifo_pitch.Pop())),
+                    fifo_pitch2.Push(y + fifo_pitch.Pop()),
+                ].While(i(i - 1) != 0),
+                i := Int(0),
+                Do()[
+                    xy := Int(),
+                    y := Int(),
+                    fifo_pitch2.Push(xy(fifo_pitch.Pop() + y(fifo_pitch.Pop()))),
+                    a[999 - i * 2](xy),
+                    a[1000 + i * 2](xy),
+                    yz := Int(),
+                    fifo_pitch2.Push(yz(y + fifo_pitch.Pop())),
+                    a[998 - i * 2](yz),
+                    a[1001 + i * 2](yz),
+                ].While(i(i + 1) != 500),
+                Continue(),
             ],
-            led1(0),
-            i := Int(1000),
-            Do()[fifo_pitch2.Push(fifo_pitch.Pop() + fifo_pitch.Pop())].While(
-                i(i - 1) != 0
-            ),
-            i := Int(0),
-            Do()[
-                x := Int(),
-                fifo_pitch2.Push(x(fifo_pitch.Pop() + fifo_pitch.Pop())),
-                a[999 - i](x),
-                a[1000 + i](x),
-            ].While(i(i + 1) != 1000),
+            If(In("KEY") & 0b00100_00000_0000 != 0)[
+                led1(0b00100_00000_00000000),
+                fifo_pitch2.Push(fifo_pitch.Pop() * 2),
+                Continue(),
+            ],
+            If(In("KEY") & 0b00010_00000_0000 != 0)[
+                led1(0b00010_00000_00000000),
+                i := Int(1000),
+                Do()[
+                    x := Int(),
+                    fifo_pitch2.Push(x(fifo_pitch.Pop()) * 2),
+                    y := Int(),
+                    fifo_pitch2.Push(x + y(fifo_pitch.Pop())),
+                    fifo_pitch2.Push(y * 2),
+                ].While(i(i - 1) != 0),
+                i := Int(1000),
+                Do()[fifo_pitch.Pop(),].While(i(i - 1) != 0),
+                Continue(),
+            ],
+            If(In("KEY") & 0b00001_00000_0000 != 0)[
+                led1(0b00001_00000_00000000),
+                i := Int(2000),
+                Do()[
+                    x := Int(),
+                    fifo_pitch2.Push(x(fifo_pitch.Pop() * 2)),
+                    fifo_pitch2.Push(x),
+                ].While(i(i - 1) != 0),
+                i := Int(2000),
+                Do()[fifo_pitch.Pop(),].While(i(i - 1) != 0),
+                Continue(),
+            ],
+            led1(0b00000_00000_00000000),
+            fifo_pitch2.Push(0),
+            fifo_pitch.Pop(),
         ],
     ]
     Thread[
         fifo_formant2 := FIFO.Alloc(),
         Do()[
-            Acc(fifo_formant2.port),
-            a := Array(*([0] * 1000)),
-            While(In("KEY") & 1 != 0)[
-                led2 := Int(0b11),
-                fifo_formant2.Push(fifo_formant.Pop() * 2),
+            If(In("KEY") & 0b00000_11000_0000 != 0)[
+                Acc(fifo_formant2.port),
+                a := Array(*([0] * 2000)),
+                If(In("KEY") & 0b00000_10000_0000 != 0)[
+                    led2 := Int(0b00000_10000_00000000),
+                    i := Int(1000),
+                    Do()[
+                        fifo_formant2.Push(fifo_formant.Pop() + fifo_formant.Pop())
+                    ].While(i(i - 1) != 0),
+                    i := Int(0),
+                    Do()[
+                        x := Int(),
+                        fifo_formant2.Push(x(fifo_formant.Pop() + fifo_formant.Pop())),
+                        a[999 - i](x),
+                        a[1000 + i](x),
+                    ].While(i(i + 1) != 1000),
+                    Continue(),
+                ],
+                led2(0b00000_01000_00000000),
+                i := Int(1500),
+                Do()[
+                    y := Int(),
+                    fifo_formant2.Push(fifo_formant.Pop() + y(fifo_formant.Pop())),
+                    fifo_formant2.Push(y + fifo_formant.Pop()),
+                ].While(i(i - 1) != 0),
+                i := Int(0),
+                Do()[
+                    xy := Int(),
+                    y := Int(),
+                    fifo_formant2.Push(xy(fifo_formant.Pop() + y(fifo_formant.Pop()))),
+                    a[999 - i * 2](xy),
+                    a[1000 + i * 2](xy),
+                    yz := Int(),
+                    fifo_formant2.Push(yz(y + fifo_formant.Pop())),
+                    a[998 - i * 2](yz),
+                    a[1001 + i * 2](yz),
+                ].While(i(i + 1) != 500),
+                Continue(),
             ],
-            led2(0),
-            i := Int(750),
-            Do()[
-                y := Int(),
-                fifo_formant2.Push(fifo_formant.Pop() + y(fifo_formant.Pop())),
-                fifo_formant2.Push(y + fifo_formant.Pop()),
-            ].While(i(i - 1) != 0),
-            i := Int(0),
-            Do()[
-                xy := Int(),
-                y := Int(),
-                fifo_formant2.Push(xy(fifo_formant.Pop() + y(fifo_formant.Pop()))),
-                a[499 - i * 2](xy),
-                a[500 + i * 2](xy),
-                yz := Int(),
-                fifo_formant2.Push(yz(y + fifo_formant.Pop())),
-                a[498 - i * 2](yz),
-                a[501 + i * 2](yz),
-            ].While(i(i + 1) != 250),
+            If(In("KEY") & 0b00000_00100_0000 != 0)[
+                led2(0b00000_00100_00000000),
+                fifo_formant2.Push(fifo_formant.Pop() * 2),
+                Continue(),
+            ],
+            If(In("KEY") & 0b00000_00010_0000 != 0)[
+                led2(0b00000_00010_00000000),
+                i := Int(1000),
+                Do()[
+                    x := Int(),
+                    fifo_formant2.Push(x(fifo_formant.Pop()) * 2),
+                    y := Int(),
+                    fifo_formant2.Push(x + y(fifo_formant.Pop())),
+                    fifo_formant2.Push(y * 2),
+                ].While(i(i - 1) != 0),
+                i := Int(1000),
+                Do()[fifo_formant.Pop(),].While(i(i - 1) != 0),
+                Continue(),
+            ],
+            If(In("KEY") & 0b00000_00001_0000 != 0)[
+                led2(0b00000_00001_00000000),
+                i := Int(2000),
+                Do()[
+                    x := Int(),
+                    fifo_formant2.Push(x(fifo_formant.Pop() * 2)),
+                    fifo_formant2.Push(x),
+                ].While(i(i - 1) != 0),
+                i := Int(2000),
+                Do()[fifo_formant.Pop(),].While(i(i - 1) != 0),
+                Continue(),
+            ],
+            led2(0b00000_00000_00000000),
+            fifo_formant2.Push(0),
+            fifo_formant.Pop(),
         ],
     ]
     Define[array_echo := Array(*([0] * 4800)),]
@@ -128,8 +231,8 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
             ),
             If(echo_i == 4799)[echo_i(0),].Else[echo_i(echo_i + 1),],
             xs := Int(),
-            audio.Push((xs(x >> s) & 0xFFFF) * 0x10001),
-            If((xs + 0x10000) & 0xFFFE0000 != 0)[s(s + 1),],
+            While((xs(x >> s) + 0x10000) & 0xFFFE0000 != 0)[s(s + 1),],
+            audio.Push((xs & 0xFFFF) * 0x10001),
         ],
     ]
     Thread[Do()[Out("LED", led1 | led2),],]
