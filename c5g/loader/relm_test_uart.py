@@ -4,8 +4,10 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
 from relm_c5g import *
+from relm_serial import Serial
 
 with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
+    Thread[Do()[serial := Serial(0, 0),],]
     Thread[
         LED(
             hex3=0b0110111,  # U
@@ -13,11 +15,21 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
             hex1=0b0001100,  # r
             hex0=0b0101101,  # t
         ),
+        serial.Handshake().Println("Serial terminal: Press ESC to exit"),
+        timer := Time.After(1),
+        count := Int(),
         Do()[
-            Do()[uin := Int(IO("UART", 0x40000000) & 0x400000FF),].While(uin == 0),
-            Out("LED", uin),
-            uout := Int((uin & 0xFF) | 0x80000000),
-            Do()[IO("UART", uout) & 0x80000000].While(Acc == 0),
-            Do()[IO("UART", uout) & 0x80000000].While(Acc == 0),
+            If(serial.fifo_recv.IsEmpty())[
+                If(timer.IsTimeout())[
+                    serial.Print("Count: ").Dec(count(count + 1)).Println(),
+                    timer(timer + Time.Clocks(1)),
+                ],
+                Continue(),
+            ],
+            x := Int(),
+            Out("LED", x(serial.fifo_recv.Pop())),
+            serial.fifo_send.Push(x),
         ],
     ]
+
+serial.console()

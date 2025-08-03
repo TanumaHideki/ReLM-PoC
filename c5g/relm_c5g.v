@@ -59,12 +59,18 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 	(* chip_pin = "R20" *)
 	input clk;
 
+	wire [WD:0] timer_d;
+	relm_unused unused_timer(timer_d);
+	reg [WD-1:0] timer = 0;
+	always @(posedge clk) timer <= timer + 1;
+	wire [WD:0] timer_q = {1'b0, timer};
+
 	(* chip_pin = "AE19, Y11, AC10, V10, AB10, W11, AC8, AD13, AE10, AC9" *)
 	input [9:0] sw_in;
 	(* chip_pin = "AB24, Y16, Y15, P12, P11" *)
 	input [4:0] key_in;
 	wire [WD:0] key_d;
-	relm_unused unused(key_d);
+	relm_unused unused_key(key_d);
 	reg [14:0] key;
 	always @(posedge clk) key <= {~key_in[4], sw_in, ~key_in[3:0]};
 	wire [WD:0] key_q = {{WD-14{1'b0}}, key};
@@ -134,7 +140,7 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 			if (uart_d[WD-2]) uart_rdata <= 0;
 		end
 		if (uart_rnext[8] && uart_tnext[2]) begin
-			if (uart_t[8:1]) begin
+			if (uart_t) begin
 				uart_out <= uart_t[0];
 				uart_t <= {1'b0, uart_t[8:1]};
 			end
@@ -471,14 +477,14 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 	parameter WOP = 5;
 
 	parameter NPUSH = 5 + NFIFO;
-	parameter NPOP = 5 + NFIFO;
+	parameter NPOP = 6 + NFIFO;
 
 	wire [NPUSH*(WD+1)-1:0] push_d;
 	assign {hdmipal_d, hdmi_d, led_d, hex_d, aud_push_d, pushf_d} = push_d;
 	wire [NPUSH-1:0] push_retry = {hdmipal_retry, hdmi_retry, led_retry, hex_retry, aud_push_retry, pushf_retry};
 	wire [NPOP*(WD+1)-1:0] pop_d;
-	assign {usb_d, uart_d, i2c_d, key_d, aud_pop_d, popf_d} = pop_d;
-	wire [NPOP*(WD+1)-1:0] pop_q = {usb_q, uart_q, i2c_q, key_q, aud_pop_q, popf_q};
+	assign {usb_d, uart_d, i2c_d, key_d, timer_d, aud_pop_d, popf_d} = pop_d;
+	wire [NPOP*(WD+1)-1:0] pop_q = {usb_q, uart_q, i2c_q, key_q, timer_q, aud_pop_q, popf_q};
 
 `include "coverage.txt"
 	generate

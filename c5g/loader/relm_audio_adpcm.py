@@ -11,9 +11,8 @@ import tqdm
 from relm_c5g import *
 
 
-def compress(frames, la=6):
+def compress(frames, output, la=6):
     history = np.array([[0] * la + [1, 0]], dtype=np.int32)
-    output = []
     code = 0
     shift = 0
     for i, sample in tqdm.tqdm(enumerate(frames), total=len(frames)):
@@ -43,9 +42,10 @@ def compress(frames, la=6):
         h = history.copy()
         h[:, la] *= 3
         history = np.vstack([history, h])
-        history[:, la - 1] += history[:, la]
+        history[:, la - 1] += (history[:, la] + 0x8000)
+        history[:, la - 1] &= 0xFFFF
+        history[:, la - 1] -= 0x8000
         history[:, -1] += np.abs(history[:, la - 1] - sample)
-    return output
 
 
 initialdir = Path(__file__).parent
@@ -60,20 +60,36 @@ filename = askopenfilename(
         ("All files", "*.*"),
     ],
 )
+sr_table = {
+    8000: 0b001110,
+    12000: 0b010010,
+    16000: 0b010110,
+    24000: 0b111010,
+    32000: 0b011010,
+    48000: 0b000010,
+    96000: 0b011110,
+}
 if filename:
     print(filename)
     if filename[-4:] == ".npy":
         adpcm = [int(x) for x in np.load(filename)]
-        if len(adpcm) > 90000:
-            adpcm = adpcm[:90000]
+        print(f"Sampling rate: {adpcm[0]} Hz")
+        if len(adpcm) > 90001:
+            adpcm = adpcm[:90001]
     else:
         audio_data = AudioSegment.from_file(filename, format=filename[-3:])
         audio_data = audio_data.set_channels(1)  # Convert to mono if not already
-        audio_data = audio_data.set_frame_rate(32000)  # Set to 32kHz
+        for f in sorted(sr_table.keys(), reverse=True):
+            if f == 8000 or audio_data.set_frame_rate(f).frame_count() <= 90000 * 16:
+                rate = f
+                break
+        audio_data = audio_data.set_frame_rate(rate)
         samples = audio_data.get_array_of_samples()
         if len(samples) > 90000 * 16:
             samples = samples[: 90000 * 16]
-        adpcm = compress(samples)
+        print(f"Sampling rate: {rate} Hz")
+        adpcm = [rate]
+        compress(samples, adpcm)
         np.save(filename + ".npy", np.array(adpcm, dtype=np.uint32))
 
     with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
@@ -97,7 +113,7 @@ if filename:
                 6, 0x61
             ),  # POWER MANAGEMENT: PWROFF=0, CLKOUT=1, OSC=1, Out=0, DAC=0, ADC=0, MIC=0
             audio.i2c(7, 0x42),  # DIGITAL AUDIO I/F: MS=1, WL=00
-            audio.i2c(8, 0x1A),  # SAMPLING RATE: SR=0110, BOSR=1 (32kHz)
+            audio.i2c(8, sr_table[adpcm[0]]),  # SAMPLING RATE: SR=0110, BOSR=1 (32kHz)
             audio.i2c(16, 0x1FB),  # ALC CONTROL 1: ALCSEL=11
             audio.i2c(17, 0x32),  # ALC CONTROL 2
             audio.i2c(18, 0x00),  # NOISE GATE
@@ -158,6 +174,6 @@ if filename:
                 reset(1),
                 Do()[...].While(reset != 0),
                 Acc(fifo1.port),
-                Array(*adpcm),
+                Array(*adpcm[1:]),
             ],
         ]

@@ -1413,23 +1413,55 @@ class ArrayElement(ExprB):
                 raise TypeError(f"{type(value)} is not supported")
 
 
-def Wait(align: int, loop: int = 0) -> Block:
-    assert align >= 0 and loop >= 0, "align and loop must be positive"
-    src = Label(align)
-    b = Block[src]
-    dest = Label()
-    if loop == 0:
-        if align:
-            b[dest << "JUMP", Align(src), dest]
-        return b
-    if align < 2:
-        loop -= 1
-        if loop == 0:
-            if align:
-                b[Wait(1)]
-            return b[dest << "JUMP", Align(src), dest]
-    wait = Label()
-    return b[Acc(loop), wait, dest << "JEQ", Acc - 1, wait << "JUMP", Align(src), dest]
+class Time(Int):
+    def __init__(self, value: int | BinaryOp | None = None):
+        super().__init__(value)
+
+    @staticmethod
+    def Now(offset: int | BinaryOp | None = None) -> Time:
+        return Time(In("TIMER") + offset if offset else In("TIMER"))
+
+    @staticmethod
+    def Clocks(
+        sec: int | float = 0,
+        ms: int | float = 0,
+        us: int | float = 0,
+        ns: int | float = 0,
+        clock_ns: int = 20,
+    ) -> int:
+        ms += sec * 1000
+        us += ms * 1000
+        ns += us * 1000
+        return int(-(-ns // clock_ns))
+
+    @staticmethod
+    def After(
+        sec: int | float = 0,
+        ms: int | float = 0,
+        us: int | float = 0,
+        ns: int | float = 0,
+        clock_ns: int = 20,
+    ) -> Time:
+        return Time.Now(Time.Clocks(sec, ms, us, ns, clock_ns))
+
+    def IsTimeout(self) -> Bool:
+        return In("TIMER") - self >= 0
+
+    def IsWaiting(self) -> Bool:
+        return In("TIMER") - self < 0
+
+    def Wait(self) -> Block:
+        return Block[Do()[...].While(self.IsWaiting()),]
+
+
+def Wait(
+    sec: int | float = 0,
+    ms: int | float = 0,
+    us: int | float = 0,
+    ns: int | float = 0,
+    clock_ns: int = 20,
+) -> Block:
+    return Time.After(sec, ms, us, ns, clock_ns).Wait()
 
 
 class Atomic(Statement):
