@@ -182,57 +182,6 @@ class Audio(FIFO):
         return self.i2c_write.write(device, address << 1, data)
 
 
-class USB(Block):
-    def __init__(self):
-        super().__init__()
-        self.Send = Function(regdata := Int())[
-            IO("USB", IO("USB", regdata)),
-            *[IO("USB", Acc << 1) for _ in range(15)],
-        ].Return(IO("USB", (Acc << 1) | 0x0000C000))
-        self.Busprobe = Function()[
-            status := Int(),
-            If(status(self.Read(31) & 0xC0) == 0x00)[
-                bus_state := Int(0xD1),  # MODE : DPPULLDN DMPULLDN SEPIRQ HOST
-            ].Else[
-                lowspeed := Int(self.Read(27) & 0x02),  # MODE : LOWSPEED
-                If(status == 0x80)[bus_state(lowspeed ^ 0xC9),].Else[  # HRSL : JSTATUS
-                    If(status == 0x40)[  # HRSL : KSTATUS
-                        bus_state(lowspeed ^ 0xCB),
-                    ].Else[  # HRSL : JSTATUS KSTATUS
-                        Return(0),
-                    ],
-                ],  # MODE : DPPULLDN DMPULLDN SOFKAENAB (LOWSPEED) HOST
-            ],
-            self.Send((bus_state << 16) | 0xDA000000),
-        ].Return(bus_state)
-        self.reset_count = Int()
-        self.Init = Function()[
-            self.Write(17, 0x18),  # PINCTL : FDUPSPI INTLEVEL
-            self.Write(15, 0x20),  # USBCTL : CHIPRES
-            self.Write(15, 0x00),  # USBCTL
-            self.reset_count(0),
-            Do()[
-                If((self.Read(13) & 0x01) != 0)[  # USBIRQ : OSCOKIRQ
-                    self.Write(27, 0xC1),  # MODE : DPPULLDN DMPULLDN HOST
-                    self.Write(26, 0x60),  # HIEN : FRAMEIE CONNIE
-                    self.Write(29, 0x04),  # HCTL : BUSSAMPLE
-                    Do()[...].While((self.Read(29) & 0x04) == 0),  # HCTL : BUSSAMPLE
-                    bus_state := Int(self.Busprobe()),
-                    self.Write(25, 0x20),  # HIRQ : CONDETIRQ
-                    self.Write(16, 0x01),  # CPUCTL : IE
-                    Return(bus_state),
-                ],
-            ].While(self.reset_count(self.reset_count + 1) != 65536),
-        ].Return(0)
-        self[self.Send, self.Busprobe, self.Init]
-
-    def Write(self, reg, data) -> ExprB:
-        return self.Send((reg << 27) | (data << 16) | 0x02004000)
-
-    def Read(self, reg) -> ExprB:
-        return self.Send((reg << 27) | 0x00004000)
-
-
 operand = Int()
 Loader[
     Do()[

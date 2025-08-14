@@ -434,13 +434,13 @@ AccU = AccExpr(True)
 
 class Int(BinaryOp):
     def __init__(
-        self, value: int | str | BinaryOp | None = None, unsigned: bool = False
+        self, value: int | str | BinaryOp | Label | None = None, unsigned: bool = False
     ):
         super().__init__(unsigned)
         match value:
             case int() | str():
                 self.expr = self["LOAD":value]
-            case BinaryOp():
+            case BinaryOp() | Label():
                 self.expr = +value
             case None:
                 self.expr = None
@@ -704,6 +704,9 @@ class Label(Code):
                 self.ref.extend(rhs)
                 return self
 
+    def __pos__(self) -> Expr:
+        return Expr(self << "LOAD")
+
     def deploy(self, memory: list[Code], ncpu: int) -> bool:
         address = len(memory) + self.offset
         for c in self.ref:
@@ -794,6 +797,19 @@ class Block(Statement):
                 self.block.append(s)
                 self._terminal |= s.terminal()
         return self
+
+    def __call__(self, value: int | str | BinaryOp | None = None) -> ExprB:
+        match value:
+            case int() | str():
+                expr = Acc(value)
+                self[expr]
+            case BinaryOp():
+                expr = +value
+                self[expr]
+            case _:
+                expr = Acc
+        codes = self.render([])
+        return ExprB(*codes, unsigned=expr.unsigned)
 
     @classmethod
     def __class_getitem__(cls, item: Any) -> Block:
@@ -1071,12 +1087,14 @@ def In(port: int | str, unsigned: bool = False, op: str = "IN") -> Expr:
 
 
 def IO(
-    port: int | str,
+    port: int | str | Int,
     expr: int | str | BinaryOp,
     unsigned: bool = False,
     load: str = "LOAD",
     op: str = "IO",
 ) -> ExprB:
+    if isinstance(port, Int):
+        port = port.put()
     t = Expr(unsigned=unsigned)
     match expr:
         case int() | str():
@@ -1088,8 +1106,13 @@ def IO(
 
 
 def Out(
-    port: int | str, *expr: int | str | BinaryOp, load: str = "LOAD", op: str = "OUT"
+    port: int | str | Int,
+    *expr: int | str | BinaryOp,
+    load: str = "LOAD",
+    op: str = "OUT",
 ) -> Block:
+    if isinstance(port, Int):
+        port = port.put()
     init: list[Int] = []
     burst: list[Code] = []
     opb = -1
@@ -1142,8 +1165,16 @@ class FIFO:
         assert not self.locked, "FIFO is locked"
         return IO(self.port, 0x0, load=load, op="POP") == 0
 
+    @staticmethod
+    def IsEmptyPort(port: Int, load: str = "LOAD") -> Bool:
+        return IO(port, 0x0, load=load, op="POP") == 0
+
     def Clear(self, load: str = "LOAD") -> Expr:
         return IO(self.port, 0x80000001, load=load, op="POP")
+
+    @staticmethod
+    def ClearPort(port: Int, load: str = "LOAD") -> Bool:
+        return IO(port, 0x80000001, load=load, op="POP")
 
     def Pop(self, unsigned: bool = False, load: str = "LOAD") -> Expr:
         if self.locked:
@@ -1151,8 +1182,16 @@ class FIFO:
         else:
             return IO(self.port, 0x1, unsigned=unsigned, load=load, op="POP")
 
+    @staticmethod
+    def PopPort(port: Int, unsigned: bool = False, load: str = "LOAD") -> Expr:
+        return IO(port, 0x1, unsigned=unsigned, load=load, op="POP")
+
     def Push(self, *value: int | str | BinaryOp, load: str = "LOAD") -> Block:
         return Out(self.port, *value, load=load, op="PUSH")
+
+    @staticmethod
+    def PushPort(port: Int, *value: int | str | BinaryOp, load: str = "LOAD") -> Block:
+        return Out(port, *value, load=load, op="PUSH")
 
 
 class SRAM:
@@ -1418,11 +1457,11 @@ class Time(Int):
         super().__init__(value)
 
     @staticmethod
-    def Now(offset: int | BinaryOp | None = None) -> Time:
-        return Time(In("TIMER") + offset if offset else In("TIMER"))
+    def Now(offset: int | BinaryOp | None = None) -> Expr:
+        return In("TIMER") + offset if offset else In("TIMER")
 
     @staticmethod
-    def Clocks(
+    def Offset(
         sec: int | float = 0,
         ms: int | float = 0,
         us: int | float = 0,
@@ -1442,13 +1481,13 @@ class Time(Int):
         ns: int | float = 0,
         clock_ns: int = 20,
     ) -> Time:
-        return Time.Now(Time.Clocks(sec, ms, us, ns, clock_ns))
+        return Time(Time.Now(Time.Offset(sec, ms, us, ns, clock_ns)))
 
     def IsTimeout(self) -> Bool:
-        return In("TIMER") - self >= 0
+        return Time.Now() - self >= 0
 
     def IsWaiting(self) -> Bool:
-        return In("TIMER") - self < 0
+        return Time.Now() - self < 0
 
     def Wait(self) -> Block:
         return Block[Do()[...].While(self.IsWaiting()),]
@@ -1461,7 +1500,7 @@ def Wait(
     ns: int | float = 0,
     clock_ns: int = 20,
 ) -> Block:
-    return Time.After(sec, ms, us, ns, clock_ns).Wait()
+    return Block[timer := Time.After(sec, ms, us, ns, clock_ns), timer.Wait()]
 
 
 class Atomic(Statement):

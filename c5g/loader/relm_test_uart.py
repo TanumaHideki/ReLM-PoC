@@ -22,7 +22,7 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
             If(serial.fifo_recv.IsEmpty())[
                 If(timer.IsTimeout())[
                     serial.Print("Count: ").Dec(count(count + 1)).Println(),
-                    timer(timer + Time.Clocks(1)),
+                    timer(timer + Time.Offset(1)),
                 ],
                 Continue(),
             ],
