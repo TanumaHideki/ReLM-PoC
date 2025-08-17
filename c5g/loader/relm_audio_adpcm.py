@@ -11,7 +11,7 @@ import tqdm
 from relm_c5g import *
 
 
-def compress(frames, output, la=6):
+def compress(frames, output, la=7):
     history = np.array([[0] * la + [1, 0]], dtype=np.int32)
     code = 0
     shift = 0
@@ -42,7 +42,7 @@ def compress(frames, output, la=6):
         h = history.copy()
         h[:, la] *= 3
         history = np.vstack([history, h])
-        history[:, la - 1] += (history[:, la] + 0x8000)
+        history[:, la - 1] += history[:, la] + 0x8000
         history[:, la - 1] &= 0xFFFF
         history[:, la - 1] -= 0x8000
         history[:, -1] += np.abs(history[:, la - 1] - sample)
@@ -67,7 +67,7 @@ sr_table = {
     24000: 0b111010,
     32000: 0b011010,
     48000: 0b000010,
-    96000: 0b011110,
+    # 96000: 0b011110,
 }
 if filename:
     print(filename)
@@ -90,7 +90,7 @@ if filename:
         print(f"Sampling rate: {rate} Hz")
         adpcm = [rate]
         compress(samples, adpcm)
-        np.save(filename + ".npy", np.array(adpcm, dtype=np.uint32))
+        np.save(filename[:-4] + ".npy", np.array(adpcm, dtype=np.uint32))
 
     with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
         Define[
@@ -113,7 +113,7 @@ if filename:
                 6, 0x61
             ),  # POWER MANAGEMENT: PWROFF=0, CLKOUT=1, OSC=1, Out=0, DAC=0, ADC=0, MIC=0
             audio.i2c(7, 0x42),  # DIGITAL AUDIO I/F: MS=1, WL=00
-            audio.i2c(8, sr_table[adpcm[0]]),  # SAMPLING RATE: SR=0110, BOSR=1 (32kHz)
+            audio.i2c(8, sr_table[adpcm[0]]),  # SAMPLING RATE: SR=xxxx, BOSR=1
             audio.i2c(16, 0x1FB),  # ALC CONTROL 1: ALCSEL=11
             audio.i2c(17, 0x32),  # ALC CONTROL 2
             audio.i2c(18, 0x00),  # NOISE GATE

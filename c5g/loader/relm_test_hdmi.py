@@ -6,9 +6,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 from relm_c5g import *
 
 
-Define[
-    i2c := I2C(),
-]
+Define[i2c := I2C(),]
 
 with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
     Thread[

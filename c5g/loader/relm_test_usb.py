@@ -26,23 +26,16 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
             Do()[
                 usb.Task(fifo.port),
                 Continue(),
-                usb.USB_ATTACHED_SUBSTATE_GET_DEVICE_DESCRIPTOR_SIZE_ERROR,
-                serial.Println(
-                    "USB_ATTACHED_SUBSTATE_GET_DEVICE_DESCRIPTOR_SIZE_ERROR"
-                ),
+                usb.USB_STATE_ERROR,
                 serial.Print("rcode: 0x").Hex(usb.rcode).Println(),
-                Break(),
-                usb.USB_STATE_ADDRESSING_ERROR,
-                serial.Println("USB_STATE_ADDRESSING_ERROR"),
-                serial.Print("rcode: 0x").Hex(usb.rcode).Println(),
+                serial.Println("USB_STATE_ERROR"),
                 Break(),
                 usb.USB_STATE_CONFIGURING,
                 serial.Println("USB_STATE_CONFIGURING"),
                 serial.Println("Device descriptor:"),
-                rcode := Int(),
-                If(rcode(usb.GetDevDescr(1, 0, 0x12, fifo.port)) != 0)[
-                    serial.Print("rcode: 0x").Hex(rcode).Println(),
-                    Break(),
+                If(usb.rcode(usb.GetDevDescr(1, 0, 0x12, fifo.port)) != 0)[
+                    usb.usb_task_state(usb.USB_STATE_ERROR),
+                    Continue(),
                 ],
                 serial.Print("\tDescriptor length: 0x").Hex(fifo.Pop()).Println(),
                 serial.Print("\tDescriptor type: 0x").Hex(fifo.Pop()).Println(),
@@ -66,31 +59,29 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
                 .Hex(fifo.Pop() + fifo.Pop() * 0x100)
                 .Println(),
                 serial.Print("\tManufacturer: "),
-                rcode := Int(),
-                If(rcode(usb.GetString(1, fifo.Pop(), 0x0409, fifo_str.port)) != 0)[
-                    serial.Print("rcode: 0x").Hex(rcode).Println(),
-                    Break(),
+                If(usb.rcode(usb.GetString(1, fifo.Pop(), 0x0409, fifo_str.port)) != 0)[
+                    usb.usb_task_state(usb.USB_STATE_ERROR),
+                    Continue(),
                 ],
                 While(~fifo_str.IsEmpty())[serial.fifo_send.Push(fifo_str.Pop()),],
                 serial.Println(),
                 serial.Print("\tProduct: "),
-                rcode := Int(),
-                If(rcode(usb.GetString(1, fifo.Pop(), 0x0409, fifo_str.port)) != 0)[
-                    serial.Print("rcode: 0x").Hex(rcode).Println(),
-                    Break(),
+                If(usb.rcode(usb.GetString(1, fifo.Pop(), 0x0409, fifo_str.port)) != 0)[
+                    usb.usb_task_state(usb.USB_STATE_ERROR),
+                    Continue(),
                 ],
                 While(~fifo_str.IsEmpty())[serial.fifo_send.Push(fifo_str.Pop()),],
                 serial.Println(),
                 serial.Print("\tSerial number: "),
-                rcode := Int(),
-                If(rcode(usb.GetString(1, fifo.Pop(), 0x0409, fifo_str.port)) != 0)[
-                    serial.Print("rcode: 0x").Hex(rcode).Println(),
-                    Break(),
+                If(usb.rcode(usb.GetString(1, fifo.Pop(), 0x0409, fifo_str.port)) != 0)[
+                    usb.usb_task_state(usb.USB_STATE_ERROR),
+                    Continue(),
                 ],
                 While(~fifo_str.IsEmpty())[serial.fifo_send.Push(fifo_str.Pop()),],
                 serial.Println(),
                 serial.Print("\tNumber of configurations: ").Dec(fifo.Pop()).Println(),
-                Break(),
+                usb.usb_task_state(usb.USB_STATE_RUNNING),
+                Continue(),
                 usb.USB_STATE_RUNNING,
                 serial.Println("USB_STATE_RUNNING"),
             ].Break(),

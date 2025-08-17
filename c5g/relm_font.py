@@ -1,3 +1,4 @@
+from __future__ import annotations
 from relm import *
 
 
@@ -1146,7 +1147,70 @@ Define[
 ]
 
 
-class Console:
+class ConsolePrint(Block):
+    def __init__(self, parent: Console):
+        super().__init__()
+        self.parent = parent
+
+    def print(self) -> ConsolePrint:
+        return self
+
+    def Print(
+        self,
+        text: str,
+        pos: int | BinaryOp | None = None,
+        color: int | BinaryOp | None = None,
+    ) -> ConsolePrint:
+        p = []
+        if pos is not None:
+            p.append(pos | 0x80000000)
+        if color is not None:
+            p.append(color | 0xC0000000)
+        while text:
+            p.append(sum(ord(ch) << (i * 8) for i, ch in enumerate(text[:4])))
+            text = text[4:]
+        return self.print()[self.parent.fifo_print.Push(*p)]
+
+    def PrintInt(self, value: int | str | BinaryOp, format: str) -> ConsolePrint:
+        find = format.find("-")
+        if find != -1:
+            value = self.parent.PrintSign(value, format[:find])
+            format = format[find + 1 :]
+        base = format[-1]
+        fill = 0 if format[0] == base else ord(format[0])
+        if base in "Dd":
+            return self.print()[
+                self.parent.Decimal(value, fill, 10 ** (len(format) - 1))
+            ]
+        else:
+            assert base in "Xx"
+            case = ord(base) - ord("X") + ord("A") - 10
+            return self.print()[
+                self.parent.Hexadecimal(value, fill, 16 ** (len(format) - 1), case)
+            ]
+
+    def Dec(
+        self, value: int | str | BinaryOp, format: str = "-dddddddddd"
+    ) -> ConsolePrint:
+        return self.PrintInt(value, format)
+
+    def UDec(
+        self, value: int | str | BinaryOp, format: str = "dddddddddd"
+    ) -> ConsolePrint:
+        return self.PrintInt(value, format)
+
+    def Hex(
+        self, value: int | str | BinaryOp, format: str = "-XXXXXXXX"
+    ) -> ConsolePrint:
+        return self.PrintInt(value, format)
+
+    def UHex(
+        self, value: int | str | BinaryOp, format: str = "XXXXXXXX"
+    ) -> ConsolePrint:
+        return self.PrintInt(value, format)
+
+
+class Console(ConsolePrint):
     def __init__(
         self,
         vram: Array,
@@ -1155,11 +1219,85 @@ class Console:
         fifo_print: FIFO,
         font: Table = font8x8,
     ):
+        super().__init__(self)
         self.vram = vram
         self.width = width
         self.fifo_font = fifo_font
         self.fifo_print = fifo_print
         self.font = font
+        self.Sign = Function(_value := Int(), _plus := Int())[
+            sign := UInt(),
+            If(sign(_value >> 31) != 0)[self.fifo_print.Push(ord("-")),].Else[
+                If(_plus != 0)[self.fifo_print.Push(_plus),],
+            ],
+        ].Return((sign | 1) * _value)
+        self.Decimal = Function(_value := UInt(), _fill := Int(), _digit := UInt())[
+            v := UInt(_value),
+            f := Int(_fill),
+            d := UInt(_digit),
+            Do()[
+                q := UInt(),
+                If(q(v // d) == 0)[
+                    If(d == 1)[f(ord("0"))],
+                    If(f != 0)[self.fifo_print.Push(f),],
+                ].Else[
+                    f(ord("0")),
+                    If(q < 10)[self.fifo_print.Push(q + ord("0")),],
+                ],
+                v(v - q * d),
+            ].While(d(d // 10) != 0),
+        ]
+        self.Hexadecimal = Function(
+            value := UInt(), fill := Int(), digit := UInt(), case := Int()
+        )[
+            v := UInt(value),
+            f := Int(fill),
+            d := UInt(digit),
+            Do()[
+                q := UInt(),
+                If(q(RegB(d, v).opb("SHR") & 0xF) == 0)[
+                    If(d == 1)[f(ord("0"))],
+                    If(f != 0)[self.fifo_print.Push(f),],
+                ].Else[
+                    f(ord("0")),
+                    If(q < 10)[self.fifo_print.Push(q + ord("0")),].Else[
+                        self.fifo_print.Push(q + case),
+                    ],
+                ],
+                v(v - q * d),
+            ].While(d(d >> 4) != 0),
+        ]
+        pos = Int()
+        color_fg = Int()
+        color_bg = Int()
+        self[
+            fifo_font.Lock(),
+            fifo_print.Lock(),
+            Do()[
+                If(RegB(fifo_print.Pop(), 0x80000000).opb("AND") == 0)[
+                    text := Int(RegB),
+                    While(text != 0)[
+                        self.PutChar(pos, text & 0x7F, color_fg, color_bg),
+                        pos(pos + 1),
+                        text(text >> 8),
+                    ],
+                    Continue(),
+                ],
+                If(RegB & 0x40000000 == 0)[pos(RegB & 0x3FFFFFFF), Continue()],
+                bg := Int(RegB & 0xF),
+                color_bg(Acc * 0x11111111),
+                color_fg(((RegB & 0xF0) >> 4) - bg),
+            ],
+            self.Sign,
+            self.Decimal,
+            self.Hexadecimal,
+        ]
+
+    def print(self) -> ConsolePrint:
+        return ConsolePrint(self)
+
+    def PrintSign(self, value: int | str | BinaryOp, plus: str) -> ExprB:
+        return self.Sign(value, ord(plus) if plus else 0)
 
     def PutChar(
         self,
@@ -1178,96 +1316,4 @@ class Console:
             RegB(RegB + self.width, self.fifo_font.Pop() * fg + bg).opb("PUT"),
             RegB(RegB + self.width, self.fifo_font.Pop() * fg + bg).opb("PUT"),
             RegB(RegB + self.width, self.fifo_font.Pop() * fg + bg).opb("PUT"),
-        ]
-
-    def Service(self) -> Block:
-        return Block[
-            pos := Int(),
-            color_fg := Int(),
-            color_bg := Int(),
-            self.fifo_font.Lock(),
-            self.fifo_print.Lock(),
-            Do()[
-                If(RegB(self.fifo_print.Pop(), 0x80000000).opb("AND") == 0)[
-                    text := Int(RegB),
-                    While(text != 0)[
-                        self.PutChar(pos, text & 0x7F, color_fg, color_bg),
-                        pos(pos + 1),
-                        text(text >> 8),
-                    ],
-                    Continue(),
-                ],
-                If(RegB & 0x40000000 == 0)[pos(RegB & 0x3FFFFFFF), Continue()],
-                bg := Int(RegB & 0xF),
-                color_bg(Acc * 0x11111111),
-                color_fg(((RegB & 0xF0) >> 4) - bg),
-            ],
-        ]
-
-    def Print(
-        self,
-        text: str,
-        pos: int | BinaryOp | None = None,
-        color: int | BinaryOp | None = None,
-    ) -> Block:
-        p = []
-        if pos is not None:
-            p.append(pos | 0x80000000)
-        if color is not None:
-            p.append(color | 0xC0000000)
-        while text:
-            p.append(sum(ord(ch) << (i * 8) for i, ch in enumerate(text[:4])))
-            text = text[4:]
-        return Block[self.fifo_print.Push(*p)]
-
-    def Decimal(self) -> Function:
-        return Function(value := Int(), digit := Int(), zero := Int())[
-            v := Int(),
-            If(v(RegB(digit, value)) >= RegB * 6)[
-                v3 := Int(v - RegB * 6),
-                d3 := Int(6),
-            ].Else[
-                If(v >= RegB * 3)[
-                    v3(v - RegB * 3),
-                    d3(3),
-                ].Else[
-                    v3(v),
-                    d3(0),
-                ]
-            ],
-            If(v3 >= RegB * 2)[
-                v2 := Int(v3 - RegB * 2),
-                d2 := Int(d3 + 2),
-            ].Else[
-                v2(v3),
-                d2(d3),
-            ],
-            If(v2 >= RegB)[
-                v1 := Int(v2 - RegB),
-                d1 := Int(d2 + 1),
-            ].Else[
-                v1(v2),
-                d1(d2),
-            ],
-            If(d1 != 0)[
-                d := Int(d1 + ord("0")),
-                zero(ord("0")),
-            ].Else[d(zero)],
-            self.fifo_print.Push(d),
-        ].Return(v1)
-
-    def Hex(self) -> Function:
-        return Function(value := UInt(), digit := UInt(), zero := Int())[
-            Do()[
-                d := Int(),
-                If(d(RegB(digit, value).opb("SHR") & 0xF) < 10)[
-                    If(d == 0)[self.fifo_print.Push(zero),].Else[
-                        self.fifo_print.Push(d + ord("0")),
-                        zero(ord("0")),
-                    ],
-                ].Else[
-                    self.fifo_print.Push(d + (ord("A") - 10)),
-                    zero(ord("0")),
-                ],
-            ].While(digit(digit >> 4) != 0),
         ]

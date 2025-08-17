@@ -16,13 +16,13 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
             hex0=0b0101101,  # t
         ),
         serial.Handshake().Println("Serial terminal: Press ESC to exit"),
-        timer := Time.After(1),
+        timer := Timer(1),
         count := Int(),
         Do()[
             If(serial.fifo_recv.IsEmpty())[
                 If(timer.IsTimeout())[
                     serial.Print("Count: ").Dec(count(count + 1)).Println(),
-                    timer(timer + Time.Offset(1)),
+                    timer.After(1),
                 ],
                 Continue(),
             ],

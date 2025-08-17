@@ -147,9 +147,9 @@ class USB(Debug):
         ].Return(0)
         self[self.Reset]
         usb_task_state = Int()
+        self.usb_task_state = usb_task_state
         usb_attached = Int()
         self.bus_state = Int()
-        delay = Time()
         self.Busprobe = Function()[
             status := Int(),
             If(status(self.RegRd(self.HRSL) & self.SE1) == self.SE1)[
@@ -169,7 +169,7 @@ class USB(Debug):
                         ^ self.MODE_FS_HOST
                     ),
                     If(usb_attached == 0)[
-                        delay := Time.After(ms=200),
+                        delay_attach := Timer(ms=200),
                         usb_attached(1),
                         usb_task_state(USB_ATTACHED_SUBSTATE_SETTLE := Label()),
                     ],
@@ -212,14 +212,16 @@ class USB(Debug):
         self.RcvToggle = Array(*([0] * 16))
         self[self.MaxPktSize, self.SndToggle, self.RcvToggle]
         self.DispatchPkt = Function(token := Int(), ep := Int())[
-            timeout := Time.After(ms=5000),
+            timeout := Timer(ms=5000),
             retry_count := Int(0),
             Do()[
                 self.RegWr(self.HXFR, token | ep),
-                Do()[If(timeout.IsTimeout())[Return(0xFF),],].While(
-                    self.RegRd(self.HIRQ) & self.HXFRDNIRQ == 0
-                ),
-                self.RegWr(self.HIRQ, self.HXFRDNIRQ),
+                Do()[
+                    If(self.RegRd(self.HIRQ) & self.HXFRDNIRQ != 0)[
+                        self.RegWr(self.HIRQ, self.HXFRDNIRQ),
+                        Break(),
+                    ],
+                ].While(timeout.IsWaiting()),
                 rcode := Int(),
                 If(rcode(self.RegRd(self.HRSL) & 0x0F) == 0x04)[Continue(),],  # NAK
                 If(rcode == 0x0E)[  # TIMEOUT
@@ -267,7 +269,7 @@ class USB(Debug):
             fifo_port := Int(),
         )[
             bytes_left := Int(nbytes),
-            timeout := Time.After(ms=5000),
+            timeout := Timer(ms=5000),
             maxpktsize := Int(),
             If(maxpktsize(self.MaxPktSize[ep]) == 0)[Return(0xFE),],
             self.RegWr(self.HCTL, self.SndToggle[ep]),
@@ -278,16 +280,16 @@ class USB(Debug):
                 ],
                 self.BytesWr(self.SNDFIFO),
                 data_p := Int(),
-                self.SendByte(data_p(FIFO.PopPort(fifo_port)) << 24),
+                self.SendByte(data_p(FIFO.PopPort(fifo_port))),
                 i := Int(),
                 If(i(bytes_tosend - 1) != 0)[
                     Do()[
-                        x := Int(FIFO.PopPort(fifo_port) << 24),
+                        x := Int(FIFO.PopPort(fifo_port)),
                         If(i == 1)[
                             self.SendByte(x),
                             Break(),
                         ],
-                        self.SendWord((FIFO.PopPort(fifo_port) << 16) | x),
+                        self.SendWord((FIFO.PopPort(fifo_port) << 8) | x),
                     ].While(i(i - 2) != 0),
                 ],
                 self.BytesEnd(),
@@ -428,8 +430,7 @@ class USB(Debug):
         )
         self[self.GetString]
         self.rcode = Int()
-        self.USB_ATTACHED_SUBSTATE_GET_DEVICE_DESCRIPTOR_SIZE_ERROR = Label()
-        self.USB_STATE_ADDRESSING_ERROR = Label()
+        self.USB_STATE_ERROR = Label()
         self.USB_STATE_CONFIGURING = Label()
         self.USB_STATE_RUNNING = Label()
         self.Task = Function(fifo_port := Int())[
@@ -449,7 +450,7 @@ class USB(Debug):
             Return(),
             USB_ATTACHED_SUBSTATE_SETTLE,
             self.Println("USB_ATTACHED_SUBSTATE_SETTLE"),
-            If(delay.IsTimeout())[
+            If(delay_attach.IsTimeout())[
                 usb_task_state(USB_ATTACHED_SUBSTATE_RESET_DEVICE := Label()),
             ],
             Return(),
@@ -463,12 +464,12 @@ class USB(Debug):
             If(self.RegRd(self.HCTL) & self.BUSRST == 0)[
                 self.RegWr(self.MODE, self.RegRd(self.MODE) | self.SOFKAENAB),
                 usb_task_state(USB_ATTACHED_SUBSTATE_WAIT_SOF := Label()),
-                delay(Time.Now(Time.Offset(ms=20))),
+                delay_sof := Timer(ms=20),
             ],
             Return(),
             USB_ATTACHED_SUBSTATE_WAIT_SOF,
             self.Println("USB_ATTACHED_SUBSTATE_WAIT_SOF"),
-            If(delay.IsTimeout())[
+            If(delay_sof.IsTimeout())[
                 If(self.RegRd(self.HIRQ) & self.FRAMEIRQ != 0)[
                     usb_task_state(
                         USB_ATTACHED_SUBSTATE_GET_DEVICE_DESCRIPTOR_SIZE := Label()
@@ -491,9 +492,7 @@ class USB(Debug):
                 usb_task_state(USB_STATE_ADDRESSING := Label()),
             ].Else[
                 FIFO.ClearPort(fifo_port),
-                usb_task_state(
-                    self.USB_ATTACHED_SUBSTATE_GET_DEVICE_DESCRIPTOR_SIZE_ERROR
-                ),
+                usb_task_state(self.USB_STATE_ERROR),
             ],
             Return(),
             USB_STATE_ADDRESSING,
@@ -501,7 +500,7 @@ class USB(Debug):
             If(self.rcode(self.SetAddr(0, 0, 1)) == 0)[
                 usb_task_state(self.USB_STATE_CONFIGURING),
             ].Else[
-                usb_task_state(self.USB_STATE_ADDRESSING_ERROR),
+                usb_task_state(self.USB_STATE_ERROR),
             ],
         ]
         self[self.Task]

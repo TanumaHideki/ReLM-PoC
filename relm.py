@@ -10,12 +10,12 @@ class Statement:
     def render(self, codes: list[Code]) -> list[Code]:
         raise SyntaxError("broken statement")
 
-    def terminal(self) -> bool:
+    def terminal(self) -> bool | None:
         return False
 
 
 class ErrorStatement(Statement):
-    def terminal(self) -> bool:
+    def terminal(self) -> bool | None:
         raise SyntaxError("broken statement")
 
 
@@ -690,6 +690,9 @@ class Label(Code):
     def __init__(self, offset: int = 0):
         super().__init__("", "", offset=offset)
 
+    def terminal(self) -> bool | None:
+        return False if self.offset else None
+
     def __lshift__(self, rhs: str | Bool | Iterable[Code]) -> Code:
         match rhs:
             case str():
@@ -777,7 +780,7 @@ class Block(Statement):
         self.block = []
         self._terminal = terminal
 
-    def terminal(self) -> bool:
+    def terminal(self) -> bool | None:
         return self._terminal
 
     def render(self, codes: list[Code]) -> list[Code]:
@@ -795,7 +798,10 @@ class Block(Statement):
         for s in item:
             if isinstance(s, Statement):
                 self.block.append(s)
-                self._terminal |= s.terminal()
+                if s.terminal() is None:
+                    self._terminal = False
+                else:
+                    self._terminal |= s.terminal()
         return self
 
     def __call__(self, value: int | str | BinaryOp | None = None) -> ExprB:
@@ -851,7 +857,7 @@ class IfThenElse(Statement):
         self.if_ = ifthen.if_
         self.else_ = ifthen.else_
 
-    def terminal(self) -> bool:
+    def terminal(self) -> bool | None:
         return self.if_.then.terminal() and self.else_.terminal()
 
     def render(self, codes: list[Code]) -> list[Code]:
@@ -935,7 +941,7 @@ class DoLoop(Statement):
         codes.append(self.loop.break_)
         return codes
 
-    def terminal(self) -> bool:
+    def terminal(self) -> bool | None:
         return not self.loop.break_.ref
 
     def Break(self) -> DoBreak:
@@ -1452,16 +1458,9 @@ class ArrayElement(ExprB):
                 raise TypeError(f"{type(value)} is not supported")
 
 
-class Time(Int):
-    def __init__(self, value: int | BinaryOp | None = None):
-        super().__init__(value)
-
+class Timer(Int):
     @staticmethod
-    def Now(offset: int | BinaryOp | None = None) -> Expr:
-        return In("TIMER") + offset if offset else In("TIMER")
-
-    @staticmethod
-    def Offset(
+    def clocks(
         sec: int | float = 0,
         ms: int | float = 0,
         us: int | float = 0,
@@ -1473,21 +1472,42 @@ class Time(Int):
         ns += us * 1000
         return int(-(-ns // clock_ns))
 
-    @staticmethod
-    def After(
+    def __init__(
+        self,
         sec: int | float = 0,
         ms: int | float = 0,
         us: int | float = 0,
         ns: int | float = 0,
         clock_ns: int = 20,
-    ) -> Time:
-        return Time(Time.Now(Time.Offset(sec, ms, us, ns, clock_ns)))
+    ):
+        offset = Timer.clocks(sec, ms, us, ns, clock_ns)
+        super().__init__(In("TIMER") + offset if offset else In("TIMER"))
+
+    def After(
+        self,
+        sec: int | float = 0,
+        ms: int | float = 0,
+        us: int | float = 0,
+        ns: int | float = 0,
+        clock_ns: int = 20,
+    ) -> Expr:
+        return self(self + Timer.clocks(sec, ms, us, ns, clock_ns))
+
+    def AfterNow(
+        self,
+        sec: int | float = 0,
+        ms: int | float = 0,
+        us: int | float = 0,
+        ns: int | float = 0,
+        clock_ns: int = 20,
+    ) -> Expr:
+        return self(In("TIMER") + Timer.clocks(sec, ms, us, ns, clock_ns))
 
     def IsTimeout(self) -> Bool:
-        return Time.Now() - self >= 0
+        return In("TIMER") - self >= 0
 
     def IsWaiting(self) -> Bool:
-        return Time.Now() - self < 0
+        return In("TIMER") - self < 0
 
     def Wait(self) -> Block:
         return Block[Do()[...].While(self.IsWaiting()),]
@@ -1500,7 +1520,7 @@ def Wait(
     ns: int | float = 0,
     clock_ns: int = 20,
 ) -> Block:
-    return Block[timer := Time.After(sec, ms, us, ns, clock_ns), timer.Wait()]
+    return Block[timer := Timer(sec, ms, us, ns, clock_ns), timer.Wait()]
 
 
 class Atomic(Statement):

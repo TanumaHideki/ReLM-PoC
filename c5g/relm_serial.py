@@ -30,19 +30,19 @@ class SerialPrint(Block):
     def PrintInt(self, value: int | str | BinaryOp, format: str) -> SerialPrint:
         find = format.find("-")
         if find != -1:
-            value = self.parent.Sign(value, format[:find])
+            value = self.parent.PrintSign(value, format[:find])
             format = format[find + 1 :]
         base = format[-1]
         fill = 0 if format[0] == base else ord(format[0])
         if base in "Dd":
             return self.print()[
-                self.parent.Decimal()(value, fill, 10 ** (len(format) - 1))
+                self.parent.Decimal(value, fill, 10 ** (len(format) - 1))
             ]
         else:
             assert base in "Xx"
             case = ord(base) - ord("X") + ord("A") - 10
             return self.print()[
-                self.parent.Hexadecimal()(value, fill, 16 ** (len(format) - 1), case)
+                self.parent.Hexadecimal(value, fill, 16 ** (len(format) - 1), case)
             ]
 
     def Dec(
@@ -110,69 +110,59 @@ class Serial(SerialPrint):
                     ],
                 ],
             ]
-        self.sign = None
-        self.decimal = None
-        self.hexadecimal = None
+        self.Sign = Function(_value := Int(), _plus := Int())[
+            sign := UInt(),
+            If(sign(_value >> 31) != 0)[self.fifo_send.Push(ord("-")),].Else[
+                If(_plus != 0)[self.fifo_send.Push(_plus),],
+            ],
+        ].Return((sign | 1) * _value)
+        self.Decimal = Function(_value := UInt(), _fill := Int(), _digit := UInt())[
+            v := UInt(_value),
+            f := Int(_fill),
+            d := UInt(_digit),
+            Do()[
+                q := UInt(),
+                If(q(v // d) == 0)[
+                    If(d == 1)[f(ord("0"))],
+                    If(f != 0)[self.fifo_send.Push(f),],
+                ].Else[
+                    f(ord("0")),
+                    If(q < 10)[self.fifo_send.Push(q + ord("0")),],
+                ],
+                v(v - q * d),
+            ].While(d(d // 10) != 0),
+        ]
+        self.Hexadecimal = Function(
+            value := UInt(), fill := Int(), digit := UInt(), case := Int()
+        )[
+            v := UInt(value),
+            f := Int(fill),
+            d := UInt(digit),
+            Do()[
+                q := UInt(),
+                If(q(RegB(d, v).opb("SHR") & 0xF) == 0)[
+                    If(d == 1)[f(ord("0"))],
+                    If(f != 0)[self.fifo_send.Push(f),],
+                ].Else[
+                    f(ord("0")),
+                    If(q < 10)[self.fifo_send.Push(q + ord("0")),].Else[
+                        self.fifo_send.Push(q + case),
+                    ],
+                ],
+                v(v - q * d),
+            ].While(d(d >> 4) != 0),
+        ]
+        Define[
+            self.Sign,
+            self.Decimal,
+            self.Hexadecimal,
+        ]
 
     def print(self) -> SerialPrint:
         return SerialPrint(self)
 
-    def Sign(self, value: int | str | BinaryOp, plus: str) -> ExprB:
-        if self.sign is None:
-            self.sign = Function(_value := Int(), _plus := Int())[
-                sign := UInt(),
-                If(sign(_value >> 31) != 0)[self.fifo_send.Push(ord("-")),].Else[
-                    If(_plus != 0)[self.fifo_send.Push(_plus),],
-                ],
-            ].Return((sign | 1) * _value)
-            Define[self.sign]
-        return self.sign(value, ord(plus) if plus else 0)
-
-    def Decimal(self) -> Function:
-        if self.decimal is None:
-            self.decimal = Function(_value := UInt(), _fill := Int(), _digit := UInt())[
-                v := UInt(_value),
-                f := Int(_fill),
-                d := UInt(_digit),
-                Do()[
-                    q := UInt(),
-                    If(q(v // d) == 0)[
-                        If(d == 1)[f(ord("0"))],
-                        If(f != 0)[self.fifo_send.Push(f),],
-                    ].Else[
-                        f(ord("0")),
-                        If(q < 10)[self.fifo_send.Push(q + ord("0")),],
-                    ],
-                    v(v - q * d),
-                ].While(d(d // 10) != 0),
-            ]
-            Define[self.decimal]
-        return self.decimal
-
-    def Hexadecimal(self) -> Function:
-        if self.hexadecimal is None:
-            self.hexadecimal = Function(
-                value := UInt(), fill := Int(), digit := UInt(), case := Int()
-            )[
-                v := UInt(value),
-                f := Int(fill),
-                d := UInt(digit),
-                Do()[
-                    q := UInt(),
-                    If(q(RegB(d, v).opb("SHR") & 0xF) == 0)[
-                        If(d == 1)[f(ord("0"))],
-                        If(f != 0)[self.fifo_send.Push(f),],
-                    ].Else[
-                        f(ord("0")),
-                        If(q < 10)[self.fifo_send.Push(q + ord("0")),].Else[
-                            self.fifo_send.Push(q + case),
-                        ],
-                    ],
-                    v(v - q * d),
-                ].While(d(d >> 4) != 0),
-            ]
-            Define[self.hexadecimal]
-        return self.hexadecimal
+    def PrintSign(self, value: int | str | BinaryOp, plus: str) -> ExprB:
+        return self.Sign(value, ord(plus) if plus else 0)
 
     @staticmethod
     def handshake(ser: serial.Serial):
