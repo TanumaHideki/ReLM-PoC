@@ -559,7 +559,9 @@ with ReLMLoader(__file__, loader=loader):
     ],
     Thread[
         scan_sw(0, 0),
-        If(usb.PowerOn() == 0)[Do()[scan_sw(0),],].Else[
+        If((usb.PowerOn() == 0) | (usb.RegRd(usb.REVISION) != 0x13))[
+            Do()[scan_sw(0x55),],
+        ].Else[
             Do()[
                 Do()[
                     scan_sw(0),
