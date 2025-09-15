@@ -25,6 +25,8 @@ ReLM[:] = (
     "JTAG",
     "USB",
     "UART",
+    "SRAM",
+    "VRAM",
     "I2C",
     "KEY",
     "TIMER",

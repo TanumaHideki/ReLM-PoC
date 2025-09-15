@@ -4,7 +4,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
 from relm_c5g import *
-from relm_font import Console
+from relm_font import ConsoleArray
 
 with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
     Define[i2c := I2C(),]
@@ -31,8 +31,8 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
             ].While(RegB & 0x6000 == 0x6000),
         ],
     ]
-    console = Console(vram, 80, FIFO.Alloc(), FIFO.Alloc())
-    Thread[console.Service()]
+
+    Thread[console := ConsoleArray(vram, 80, FIFO.Alloc(), FIFO.Alloc())]
     Define[
         sem_start := Semaphore(),
         sem_work := Semaphore(),

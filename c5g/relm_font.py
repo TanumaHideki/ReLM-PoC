@@ -1211,20 +1211,9 @@ class ConsolePrint(Block):
 
 
 class Console(ConsolePrint):
-    def __init__(
-        self,
-        vram: Array,
-        width: int,
-        fifo_font: FIFO,
-        fifo_print: FIFO,
-        font: Table = font8x8,
-    ):
+    def __init__(self, fifo_print: FIFO):
         super().__init__(self)
-        self.vram = vram
-        self.width = width
-        self.fifo_font = fifo_font
         self.fifo_print = fifo_print
-        self.font = font
         self.Sign = Function(_value := Int(), _plus := Int())[
             sign := UInt(),
             If(sign(_value >> 31) != 0)[self.fifo_print.Push(ord("-")),].Else[
@@ -1242,9 +1231,14 @@ class Console(ConsolePrint):
                     If(f != 0)[self.fifo_print.Push(f),],
                 ].Else[
                     f(ord("0")),
-                    If(q < 10)[self.fifo_print.Push(q + ord("0")),],
+                    If(q < 10)[
+                        self.fifo_print.Push(q + ord("0")),
+                        v(v - d * q),
+                    ].Else[
+                        self.fifo_print.Push(ord("9")),
+                        v(v - d * 9),
+                    ],
                 ],
-                v(v - q * d),
             ].While(d(d // 10) != 0),
         ]
         self.Hexadecimal = Function(
@@ -1267,6 +1261,28 @@ class Console(ConsolePrint):
                 v(v - q * d),
             ].While(d(d >> 4) != 0),
         ]
+
+    def print(self) -> ConsolePrint:
+        return ConsolePrint(self)
+
+    def PrintSign(self, value: int | str | BinaryOp, plus: str) -> ExprB:
+        return self.Sign(value, ord(plus) if plus else 0)
+
+
+class ConsoleArray(Console):
+    def __init__(
+        self,
+        vram: Array,
+        width: int,
+        fifo_font: FIFO,
+        fifo_print: FIFO,
+        font: Table = font8x8,
+    ):
+        super().__init__(fifo_print)
+        self.vram = vram
+        self.width = width
+        self.fifo_font = fifo_font
+        self.font = font
         pos = Int()
         color_fg = Int()
         color_bg = Int()
@@ -1292,12 +1308,6 @@ class Console(ConsolePrint):
             self.Decimal,
             self.Hexadecimal,
         ]
-
-    def print(self) -> ConsolePrint:
-        return ConsolePrint(self)
-
-    def PrintSign(self, value: int | str | BinaryOp, plus: str) -> ExprB:
-        return self.Sign(value, ord(plus) if plus else 0)
 
     def PutChar(
         self,

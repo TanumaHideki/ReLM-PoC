@@ -16,8 +16,7 @@ module relm_dpmem(clk, we_in, wa_in, ra_in, d_in, q_out);
 			always @* q_out <= q_sel ? q2 : q1;
 			(* ramstyle = "M10K", max_depth = 2048 *) reg [WD-1:0] mem [0:2**(WAD-1)-1];
 			(* ramstyle = "M10K", max_depth = 2048 *) reg [WD-1:0] mem2 [0:2**WAD2-1];
-			always @(posedge clk)
-			begin
+			always @(posedge clk) begin
 				if (we_in && !wa_in[WAD-1]) mem[wa_in[0+:WAD-1]] <= d_in;
 				if (we_in && wa_in[WAD-1]) mem2[wa_in[0+:WAD2]] <= d_in;
 				q1 <= mem[ra_in[0+:WAD-1]];
@@ -27,8 +26,7 @@ module relm_dpmem(clk, we_in, wa_in, ra_in, d_in, q_out);
 		end
 		else begin
 			(* ramstyle = "M10K", max_depth = 2048 *) reg [WD-1:0] mem [0:2**WAD-1];
-			always @(posedge clk)
-			begin
+			always @(posedge clk) begin
 				if (we_in) mem[wa_in] <= d_in;
 				q_out <= mem[ra_in];
 			end
@@ -36,9 +34,6 @@ module relm_dpmem(clk, we_in, wa_in, ra_in, d_in, q_out);
 	endgenerate
 	initial if (FILEH) $readmemh(FILEH, mem);
 	initial if (FILEB) $readmemb(FILEB, mem);
-
-
-
 endmodule
 
 module relm_unused(d_in, q_out);
@@ -51,6 +46,7 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 		hex3_out, hex2_out, hex1_out, hex0_out, ledr_out, ledg_out,
 		hdmi_r_out, hdmi_g_out, hdmi_b_out, hdmi_clk_out, hdmi_de_out, hdmi_hs_out, hdmi_vs_out,
 		hdmi_int_in, hdmi_scl_out, hdmi_sda_inout,
+		sram_a_out, sram_d_inout, sram_ce_n_out, sram_oe_n_out, sram_we_n_out, sram_lb_n_out, sram_ub_n_out,
 		aud_xck_out, aud_bclk, aud_dacdat_out, aud_daclrck_in, aud_adcdat_in, aud_adclrck_in,
 		usb_int_in, usb_ss_out, usb_mosi_out, usb_miso_in, usb_sck_out);
 	parameter WD = 32;
@@ -152,6 +148,87 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 			else uart_out <= 1;
 		end
 		if (!uart_tdata[8] && uart_d[WD-1]) uart_tdata <= {1'b1, uart_d[7:0]};
+	end
+
+	(* chip_pin = "M24, N24, J26, J25, F22, E21, F21, G20, E23, D22, J21, J20, C25, D25, H20, H19, B26, B25" *)
+	output reg [17:0] sram_a_out;
+	(* chip_pin = "K21, L22, G22, F23, J23, H22, H24, H23, L24, L23, G24, F24, K23, K24, E25, E24" *)
+	inout [15:0] sram_d_inout;
+	(* chip_pin = "N23" *)
+	output reg sram_ce_n_out;
+	(* chip_pin = "M22" *)
+	output reg sram_oe_n_out;
+	(* chip_pin = "G25" *)
+	output reg sram_we_n_out;
+	(* chip_pin = "H25" *)
+	output reg sram_lb_n_out;
+	(* chip_pin = "M25" *)
+	output reg sram_ub_n_out;
+	wire [WD:0] vram_d;
+	reg [17:0] vram_a_reg = 0;
+	reg [17:0] vram_a;
+	reg [WD:0] vram_q;
+	wire [WD:0] sram_d;
+	reg [17:0] sram_a_reg = 0;
+	reg [17:0] sram_a;
+	reg [16:0] sram_wd = 0;
+	reg [WD:0] sram_q;
+	assign sram_d_inout = sram_wd[16] ? sram_wd[0+:16] : 16'hzzzz;
+	always @* begin
+		if (vram_d[WD-1]) begin
+			vram_a <= vram_d[0+:18];
+			vram_q <= {2'b00, vram_d[14:0], sram_d_inout};
+		end
+		else begin
+			vram_a <= vram_a_reg;
+			vram_q <= {1'b0, vram_d[15:0], sram_d_inout};
+		end
+		if (sram_d[WD-1]) begin
+			sram_a <= sram_d[0+:18];
+			sram_q <= {sram_d[WD-2] & vram_d[WD], 2'b01, sram_d[13:0], sram_d_inout};
+		end
+		else begin
+			sram_a <= sram_a_reg;
+			sram_q <= {vram_d[WD], sram_d[15:0], sram_d_inout};
+		end
+		if (!clk) begin
+			sram_wd <= {!vram_d[WD] && sram_d[WD:WD-2] == 3'b100, sram_d[0+:16]};
+		end
+		if (vram_d[WD]) begin
+			sram_ce_n_out <= 1'b0;
+			sram_lb_n_out <= 1'b0;
+			sram_ub_n_out <= 1'b0;
+			sram_oe_n_out <= clk;
+			sram_we_n_out <= 1'b1;
+			sram_a_out <= vram_a;
+		end
+		else if (sram_d[WD] && sram_d[WD-1:WD-2] != 2'b10) begin
+			sram_ce_n_out <= 1'b0;
+			sram_lb_n_out <= 1'b0;
+			sram_ub_n_out <= 1'b0;
+			sram_oe_n_out <= sram_d[WD-2] ? clk : 1'b1;
+			sram_we_n_out <= sram_d[WD-2] ? 1'b1 : clk;
+			sram_a_out <= sram_a;
+		end
+		else begin
+			sram_ce_n_out <= 1'b1;
+			sram_lb_n_out <= 1'b1;
+			sram_ub_n_out <= 1'b1;
+			sram_oe_n_out <= 1'b1;
+			sram_we_n_out <= 1'b1;
+			sram_a_out <= 18'bxx_xxxxxxxx_xxxxxxxx;
+		end
+	end
+	always @(posedge clk) begin
+		if (vram_d[WD]) begin
+			vram_a_reg <= vram_a + 18'd1;
+		end
+		if (sram_d[WD-1:WD-2] == 2'b10) begin
+			sram_a_reg <= sram_d[0+:18];
+		end
+		else if (sram_d[WD] && !vram_d[WD]) begin
+			sram_a_reg <= sram_a + 18'd1;
+		end
 	end
 
 	(* chip_pin = "AD25, AC25, AB25, AA24, AB26, R26, R24, P21" *)
@@ -477,14 +554,14 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 	parameter WOP = 5;
 
 	parameter NPUSH = 5 + NFIFO;
-	parameter NPOP = 6 + NFIFO;
+	parameter NPOP = 8 + NFIFO;
 
 	wire [NPUSH*(WD+1)-1:0] push_d;
 	assign {hdmipal_d, hdmi_d, led_d, hex_d, aud_push_d, pushf_d} = push_d;
 	wire [NPUSH-1:0] push_retry = {hdmipal_retry, hdmi_retry, led_retry, hex_retry, aud_push_retry, pushf_retry};
 	wire [NPOP*(WD+1)-1:0] pop_d;
-	assign {usb_d, uart_d, i2c_d, key_d, timer_d, aud_pop_d, popf_d} = pop_d;
-	wire [NPOP*(WD+1)-1:0] pop_q = {usb_q, uart_q, i2c_q, key_q, timer_q, aud_pop_q, popf_q};
+	assign {usb_d, uart_d, sram_d, vram_d, i2c_d, key_d, timer_d, aud_pop_d, popf_d} = pop_d;
+	wire [NPOP*(WD+1)-1:0] pop_q = {usb_q, uart_q, sram_q, vram_q, i2c_q, key_q, timer_q, aud_pop_q, popf_q};
 
 `include "coverage.txt"
 	generate

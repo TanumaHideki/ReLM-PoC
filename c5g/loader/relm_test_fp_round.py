@@ -5,7 +5,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
 from relm_c5g import *
-from relm_font import Console
+from relm_font import ConsoleArray
 
 with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
     Define[i2c := I2C(),]
@@ -32,28 +32,17 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
             ].While(RegB & 0x6000 == 0x6000),
         ],
     ]
-    console = Console(vram, 80, FIFO.Alloc(), FIFO.Alloc())
-    Thread[console.Service()]
+    Thread[console := ConsoleArray(vram, 80, FIFO.Alloc(), FIFO.Alloc())]
     Define[
-        digit := console.Decimal(),
-        digit999999 := Function(value := Int(), fill := Int())[
-            digit(
-                digit(
-                    digit(digit(digit(digit(value, 100000, fill), 10000), 1000), 100),
-                    10,
-                ),
-                1,
-                ord("0"),
-            )
-        ],
-        digit_fp := Function(value := Float())[
-            If(value & 0x80000000 == 0)[va := Float(value + 0.0000005)].Else[
-                va(-value + 0.0000005), console.Print("-")
+        digit_fp := Function(value := Float(), plus := Int())[
+            If(value & 0x80000000 == 0)[If(plus != 0)[console.Print("+"),],].Else[
+                console.Print("-"),
             ],
+            va := Float(abs(value) + 0.0000005),
             vt := Float(math.trunc(va)),
-            digit999999(ToInt(vt), 0),
+            console.PrintInt(ToInt(vt), "dddddd"),
             console.Print("."),
-            digit999999(ToInt((va - vt) * 1000000.0), ord("0")),
+            console.PrintInt(ToInt((va - vt) * 1000000.0), "00000d"),
         ],
     ]
     Thread[

@@ -115,7 +115,10 @@ while True:
     initialdir = Path(filename).parent
     filename = askopenfilename(
         initialdir=initialdir,
-        filetypes=[("Image files", ["*.jpg", "*.png", "*.gif", "*.bmp", "*.tiff"]), ("All files", "*.*")],
+        filetypes=[
+            ("Image files", ["*.jpg", "*.png", "*.gif", "*.bmp", "*.tiff"]),
+            ("All files", "*.*"),
+        ],
     )
     if not filename:
         break

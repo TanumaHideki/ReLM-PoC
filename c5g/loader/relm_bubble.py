@@ -4,7 +4,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
 from relm_c5g import *
-from relm_font import font8x8, Console
+from relm_font import font8x8, ConsoleArray
 from relm_usb import USB
 import numpy as np
 
@@ -190,7 +190,7 @@ with ReLMLoader(__file__, loader=loader):
             NO_SOUND,
         ],
     ]
-    Thread[console := Console(vram, 80, FIFO.Alloc(), FIFO.Alloc()),]
+    Thread[console := ConsoleArray(vram, 80, FIFO.Alloc(), FIFO.Alloc()),]
     Define[
         font8x8.Case(ord("\x01")),
         Array(
