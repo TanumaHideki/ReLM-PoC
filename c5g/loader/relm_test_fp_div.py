@@ -5,7 +5,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
 from relm_c5g import *
-from relm_font import ConsoleArray
+from relm_font import ConsoleSRAM
 
 with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
     Define[i2c := I2C(),]
@@ -26,13 +26,16 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
             i2c.write(0x72, 0xE0, 0xD0),
             Out("HDMIPAL", 0x40),
             Do()[
-                Acc("HDMI"),
-                vram := Array(*([0] * (80 * 480))),
+                Out(
+                    "VRAM",
+                    159 << 19,
+                    *([(159 << 19) + (1 << 18) + 256] * 479),
+                ),
                 i2c.read(0x72, 0x42),
             ].While(RegB & 0x6000 == 0x6000),
         ],
     ]
-    Thread[console := ConsoleArray(vram, 80, FIFO.Alloc(), FIFO.Alloc())]
+    Thread[console := ConsoleSRAM(256, FIFO.Alloc(), FIFO.Alloc())]
     Define[
         digit_fp := Function(value := Float(), plus := Int())[
             If(value & 0x80000000 == 0)[If(plus != 0)[console.Print("+"),],].Else[
@@ -50,10 +53,11 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
     table += [((1 << (i + 1)) - 1) / (1 << i) for i in range(1, 24)]
     Define[denom := ArrayF(*table)]
     Thread[
+        console.Clear(),
         i := Int(0),
         While(i < len(table))[
             x := Float(denom[i]),
-            console.Print("x = ", pos=i * 800, color=0xF0),
+            console.Print("x = ", pos=i * 2560, color=0xF0),
             digit_fp(x, 0),
             y := Float(1.0 / x),
             console.Print("  y = "),

@@ -5,7 +5,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
 from relm_c5g import *
-from relm_font import ConsoleArray
+from relm_font import ConsoleSRAM
 
 with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
     Define[i2c := I2C(),]
@@ -26,13 +26,16 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
             i2c.write(0x72, 0xE0, 0xD0),
             Out("HDMIPAL", 0x40),
             Do()[
-                Acc("HDMI"),
-                vram := Array(*([0] * (80 * 480))),
+                Out(
+                    "VRAM",
+                    159 << 19,
+                    *([(159 << 19) + (1 << 18) + 256] * 479),
+                ),
                 i2c.read(0x72, 0x42),
             ].While(RegB & 0x6000 == 0x6000),
         ],
     ]
-    Thread[console := ConsoleArray(vram, 80, FIFO.Alloc(), FIFO.Alloc())]
+    Thread[console := ConsoleSRAM(256, FIFO.Alloc(), FIFO.Alloc())]
     Define[
         digit_fp := Function(value := Float(), plus := Int())[
             If(value & 0x80000000 == 0)[If(plus != 0)[console.Print("+"),],].Else[
@@ -46,26 +49,27 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
         ],
     ]
     Thread[
+        console.Clear(),
         x := Float(123456.789),
         i := Int(0),
         While(i < 9)[
-            console.Print("        x = ", pos=i * (800 * 5), color=0x0F),
+            console.Print("        x = ", pos=i * (2560 * 5), color=0x0F),
             digit_fp(x),
             console.Print(",        -x = "),
             digit_fp(-x),
-            console.Print(" trunc(x) = ", pos=i * (800 * 5) + 800, color=0xF0),
+            console.Print(" trunc(x) = ", pos=i * (2560 * 5) + 2560, color=0xF0),
             digit_fp(math.trunc(x)),
             console.Print(", trunc(-x) = "),
             digit_fp(math.trunc(-x)),
-            console.Print("  ceil(x) = ", pos=i * (800 * 5) + 800 * 2),
+            console.Print("  ceil(x) = ", pos=i * (2560 * 5) + 2560 * 2),
             digit_fp(math.ceil(x)),
             console.Print(",  ceil(-x) = "),
             digit_fp(math.ceil(-x)),
-            console.Print(" round(x) = ", pos=i * (800 * 5) + 800 * 3),
+            console.Print(" round(x) = ", pos=i * (2560 * 5) + 2560 * 3),
             digit_fp(round(x)),
             console.Print(", round(-x) = "),
             digit_fp(round(-x)),
-            console.Print(" floor(x) = ", pos=i * (800 * 5) + 800 * 4),
+            console.Print(" floor(x) = ", pos=i * (2560 * 5) + 2560 * 4),
             digit_fp(math.floor(x)),
             console.Print(", floor(-x) = "),
             digit_fp(math.floor(-x)),

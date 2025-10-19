@@ -29,7 +29,19 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
             Out("HDMIPAL", 0x40),  # reset counter
             Do()[
                 Acc("HDMI"),
-                vram := Array(*([0xFEDCBA98, 0x01234567] * (40 * 480))),
+                Array(*([0xFEDCBA98, 0x01234567] * (40 * 120))),
+                Acc("VRAM"),
+                Array(
+                    159 << 19,
+                    *([(159 << 19) + (1 << 18) + 256] * 119),
+                ),
+                Acc("HDMI"),
+                Array(*([0xFEDCBA98, 0x01234567] * (40 * 120))),
+                Acc("VRAM"),
+                Array(
+                    159 << 19,
+                    *([(159 << 19) + (1 << 18) + 256] * 119),
+                ),
                 i2c.read(0x72, 0x42),  # HPD State, Monitor Sense State
             ].While(
                 RegB & 0x6000 == 0x6000  # detect unplug

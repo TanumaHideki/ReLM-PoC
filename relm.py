@@ -1652,7 +1652,10 @@ class Mnemonic(type):
         match key:
             case str():
                 assert isinstance(value, int), "value must be integer"
-                cls.mnemonic[key] = value
+                if key in cls.mnemonic:
+                    assert cls.mnemonic[key] == value, f"conflicted {key}={cls.mnemonic[key]}!={value}"
+                else:
+                    cls.mnemonic[key] = value
             case int():
                 if isinstance(value, str):
                     cls.mnemonic[value] = key

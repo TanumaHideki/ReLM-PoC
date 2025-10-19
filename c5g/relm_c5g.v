@@ -155,79 +155,69 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 	(* chip_pin = "K21, L22, G22, F23, J23, H22, H24, H23, L24, L23, G24, F24, K23, K24, E25, E24" *)
 	inout [15:0] sram_d_inout;
 	(* chip_pin = "N23" *)
-	output reg sram_ce_n_out;
+	output sram_ce_n_out;
 	(* chip_pin = "M22" *)
-	output reg sram_oe_n_out;
+	output sram_oe_n_out;
 	(* chip_pin = "G25" *)
-	output reg sram_we_n_out;
+	output sram_we_n_out;
 	(* chip_pin = "H25" *)
-	output reg sram_lb_n_out;
+	output sram_lb_n_out;
 	(* chip_pin = "M25" *)
-	output reg sram_ub_n_out;
+	output sram_ub_n_out;
+	assign sram_ce_n_out = 0;
+	reg sram_oe = 0;
+	assign sram_oe_n_out = !sram_oe;
+	reg sram_we = 0;
+	assign sram_we_n_out = !sram_we;
+	assign sram_lb_n_out = 0;
+	assign sram_ub_n_out = 0;
+	wire [WD:0] sram_d;
+	wire [WD:0] sram_q = {2'b00, sram_d[16+:15] + 15'd1, 16'd0};
+	reg [17:0] sram_a_reg = 0;
 	wire [WD:0] vram_d;
 	reg [17:0] vram_a_reg = 0;
-	reg [17:0] vram_a;
-	reg [WD:0] vram_q;
-	wire [WD:0] sram_d;
-	reg [17:0] sram_a_reg = 0;
-	reg [17:0] sram_a;
+	reg [16:0] vram_d_reg = 0;
+	reg vram_busy = 0;
+	reg [12:0] vram_count = 0;
+	reg [12:0] vram_width = 0;
+	wire vram_retry = vram_busy;
+	wire vram_full;
+	wire [WD:0] vram_send = (sram_oe && vram_d_reg[16]) ? {1'b1, vram_d_reg[15:0], sram_d_inout} : 0;
 	reg [16:0] sram_wd = 0;
-	reg [WD:0] sram_q;
 	assign sram_d_inout = sram_wd[16] ? sram_wd[0+:16] : 16'hzzzz;
-	always @* begin
-		if (vram_d[WD-1]) begin
-			vram_a <= vram_d[0+:18];
-			vram_q <= {2'b00, vram_d[14:0], sram_d_inout};
-		end
-		else begin
-			vram_a <= vram_a_reg;
-			vram_q <= {1'b0, vram_d[15:0], sram_d_inout};
-		end
-		if (sram_d[WD-1]) begin
-			sram_a <= sram_d[0+:18];
-			sram_q <= {sram_d[WD-2] & vram_d[WD], 2'b01, sram_d[13:0], sram_d_inout};
-		end
-		else begin
-			sram_a <= sram_a_reg;
-			sram_q <= {vram_d[WD], sram_d[15:0], sram_d_inout};
-		end
-		if (!clk) begin
-			sram_wd <= {!vram_d[WD] && sram_d[WD:WD-2] == 3'b100, sram_d[0+:16]};
-		end
-		if (vram_d[WD]) begin
-			sram_ce_n_out <= 1'b0;
-			sram_lb_n_out <= 1'b0;
-			sram_ub_n_out <= 1'b0;
-			sram_oe_n_out <= clk;
-			sram_we_n_out <= 1'b1;
-			sram_a_out <= vram_a;
-		end
-		else if (sram_d[WD] && sram_d[WD-1:WD-2] != 2'b10) begin
-			sram_ce_n_out <= 1'b0;
-			sram_lb_n_out <= 1'b0;
-			sram_ub_n_out <= 1'b0;
-			sram_oe_n_out <= sram_d[WD-2] ? clk : 1'b1;
-			sram_we_n_out <= sram_d[WD-2] ? 1'b1 : clk;
-			sram_a_out <= sram_a;
-		end
-		else begin
-			sram_ce_n_out <= 1'b1;
-			sram_lb_n_out <= 1'b1;
-			sram_ub_n_out <= 1'b1;
-			sram_oe_n_out <= 1'b1;
-			sram_we_n_out <= 1'b1;
-			sram_a_out <= 18'bxx_xxxxxxxx_xxxxxxxx;
-		end
-	end
 	always @(posedge clk) begin
-		if (vram_d[WD]) begin
-			vram_a_reg <= vram_a + 18'd1;
-		end
-		if (sram_d[WD-1:WD-2] == 2'b10) begin
+		if (sram_d[WD-1]) begin
 			sram_a_reg <= sram_d[0+:18];
 		end
-		else if (sram_d[WD] && !vram_d[WD]) begin
-			sram_a_reg <= sram_a + 18'd1;
+		if (sram_d[WD:WD-1] == 2'b10) begin
+			sram_a_out <= sram_a_reg + {3'd0, sram_d[16+:15]};
+			sram_oe <= 0;
+			sram_we <= 1;
+			sram_wd <= {1'b1, sram_d[0+:16]};
+		end
+		else begin
+			sram_a_out <= vram_a_reg + {5'd0, vram_count};
+			if (vram_busy && !vram_full) begin
+				sram_oe <= 1;
+				if (vram_count == vram_width) begin
+					vram_busy <= 0;
+				end
+				vram_count <= vram_count + 1;
+			end
+			else begin
+				sram_oe <= 0;
+			end
+			sram_we <= 0;
+			sram_wd <= {1'b0, 16'hxxxx};
+		end
+		if (sram_oe) begin
+			vram_d_reg <= {!vram_d_reg[16], sram_d_inout};
+		end
+		if (!vram_busy && vram_d[WD]) begin
+			vram_count <= 0;
+			vram_busy <= 1;
+			vram_width <= vram_d[19+:13];
+			vram_a_reg <= vram_d[0+:18] + (vram_d[18] ? vram_a_reg : 18'd0);
 		end
 	end
 
@@ -291,7 +281,7 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 		endcase
 	end
 	wire [WD:0] hdmi_d;
-	wire hdmi_retry;
+	wire hdmi_retry = vram_full | vram_busy;
 	relm_fifo #(
 		.WAD(8),
 		.WD(WD)
@@ -299,10 +289,10 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 		.clk(clk),
 		.clear_in(hdmipal_d[6]),
 		.re_in(hdmi_x[3:0] == 4'b1110 && &hdmi_en),
-		.we_in(hdmi_d[WD]),
-		.d_in(hdmi_d[0+:WD]),
+		.we_in((!vram_busy && hdmi_d[WD]) | vram_send[WD]),
+		.d_in(hdmi_d[0+:WD] | vram_send[0+:WD]),
 		.empty_out(hdmi_empty),
-		.full_out(hdmi_retry),
+		.full_out(vram_full),
 		.q_out(hdmi_q)
 	);
 
@@ -553,15 +543,15 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 	parameter WAD2 = 12;
 	parameter WOP = 5;
 
-	parameter NPUSH = 5 + NFIFO;
-	parameter NPOP = 8 + NFIFO;
+	parameter NPUSH = 6 + NFIFO;
+	parameter NPOP = 7 + NFIFO;
 
 	wire [NPUSH*(WD+1)-1:0] push_d;
-	assign {hdmipal_d, hdmi_d, led_d, hex_d, aud_push_d, pushf_d} = push_d;
-	wire [NPUSH-1:0] push_retry = {hdmipal_retry, hdmi_retry, led_retry, hex_retry, aud_push_retry, pushf_retry};
+	assign {hex_d, led_d, hdmipal_d, hdmi_d, vram_d, aud_push_d, pushf_d} = push_d;
+	wire [NPUSH-1:0] push_retry = {hex_retry, led_retry, hdmipal_retry, hdmi_retry, vram_retry, aud_push_retry, pushf_retry};
 	wire [NPOP*(WD+1)-1:0] pop_d;
-	assign {usb_d, uart_d, sram_d, vram_d, i2c_d, key_d, timer_d, aud_pop_d, popf_d} = pop_d;
-	wire [NPOP*(WD+1)-1:0] pop_q = {usb_q, uart_q, sram_q, vram_q, i2c_q, key_q, timer_q, aud_pop_q, popf_q};
+	assign {usb_d, uart_d, key_d, timer_d, i2c_d, sram_d, aud_pop_d, popf_d} = pop_d;
+	wire [NPOP*(WD+1)-1:0] pop_q = {usb_q, uart_q, key_q, timer_q, i2c_q, sram_q, aud_pop_q, popf_q};
 
 `include "coverage.txt"
 	generate

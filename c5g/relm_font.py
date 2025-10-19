@@ -1327,3 +1327,92 @@ class ConsoleArray(Console):
             RegB(RegB + self.width, self.fifo_font.Pop() * fg + bg).opb("PUT"),
             RegB(RegB + self.width, self.fifo_font.Pop() * fg + bg).opb("PUT"),
         ]
+
+
+class ConsoleSRAM(Console):
+    def __init__(
+        self,
+        width: int,
+        fifo_font: FIFO,
+        fifo_print: FIFO,
+        font: Table = font8x8,
+        sram_port: str = "SRAM",
+    ):
+        super().__init__(fifo_print)
+        self.width = width
+        self.fifo_font = fifo_font
+        self.font = font
+        self.sram_port = sram_port
+        pos = UInt()
+        color_fg = UInt()
+        color_bg = UInt()
+        self[
+            fifo_font.Lock(),
+            fifo_print.Lock(),
+            Do()[
+                If(RegB(fifo_print.Pop(), 0x80000000).opb("AND") == 0)[
+                    text := Int(RegB),
+                    While(text != 0)[
+                        self.PutChar(pos, text & 0x7F, color_fg, color_bg),
+                        pos(pos + 2),
+                        text(text >> 8),
+                    ],
+                    Continue(),
+                ],
+                If(RegB & 0x40000000 == 0)[pos(RegB), Continue()],
+                If(RegB & 0x20000000 == 0)[
+                    bg := Int(RegB & 0xF),
+                    color_bg(Acc * 0x11111111),
+                    color_fg(((RegB & 0xF0) >> 4) - bg),
+                    Continue(),
+                ],
+                i := Int(0),
+                Do()[
+                    IO(self.sram_port, Acc | 0x80000000),
+                    Acc(0),
+                    Do()[...].While(
+                        IO(
+                            self.sram_port,
+                            IO(
+                                self.sram_port,
+                                IO(self.sram_port, IO(self.sram_port, Acc)),
+                            ),
+                        )
+                        != 0
+                    ),
+                ].While(i((i + 0x8000) & 0x3FFFF) != 0),
+            ],
+            self.Sign,
+            self.Decimal,
+            self.Hexadecimal,
+        ]
+
+    def PutChar(
+        self,
+        pos: int | BinaryOp,
+        ch: int | BinaryOp,
+        fg: int | BinaryOp,
+        bg: int | BinaryOp,
+    ) -> Block:
+        b = Block[
+            self.font.Switch(ch, acc=self.fifo_font.port),
+            IO(self.sram_port, pos),
+            IO(
+                self.sram_port,
+                ((self.fifo_font.Pop(unsigned=True) * fg + bg).opb("BLOADX") >> 16),
+            ),
+            IO(self.sram_port, (Acc.swapAB() & 0xFFFF) | RegB),
+        ]
+        for i in range(1, 8):
+            b[
+                IO(
+                    self.sram_port,
+                    ((self.fifo_font.Pop(unsigned=True) * fg + bg).opb("BLOADX") >> 16)
+                    | ((i << 16) * self.width),
+                ),
+                IO(self.sram_port, (Acc.swapAB() & 0xFFFF) | RegB),
+            ]
+        return b
+
+    def Clear(self) -> ConsolePrint:
+        return self.print()[self.parent.fifo_print.Push(0xE0000000)]
