@@ -15,6 +15,8 @@ ReLM[:] = (
     "HDMI",
     "VRAM",
     "AUDIO",
+    "FIFO8",
+    "FIFO7",
     "FIFO6",
     "FIFO5",
     "FIFO4",
@@ -31,6 +33,8 @@ ReLM[:] = (
     "I2C",
     "SRAM",
     "AUDIO",
+    "FIFO8",
+    "FIFO7",
     "FIFO6",
     "FIFO5",
     "FIFO4",
@@ -52,6 +56,8 @@ FIFO("FIFO3", 2048)
 FIFO("FIFO4", 2048)
 FIFO("FIFO5", 2048)
 FIFO("FIFO6", 2048)
+FIFO("FIFO7", 2048)
+FIFO("FIFO8", 2048)
 
 
 def LED(hex3=None, hex2=None, hex1=None, hex0=None, led=None):

@@ -4,11 +4,33 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
 from relm_c5g import *
-from relm_font import font8x8, ConsoleArray
+from relm_font import font8x8, ConsoleSRAM, ConsoleArray
 from relm_usb import USB
 import numpy as np
+from relm_bubble_map1 import (
+    map_owner,
+    map_dir,
+    map_pawn,
+    map_money,
+    map_goal,
+    map_price,
+    map_bonus,
+)
 
 loader = "loader/output_files/relm_c5g.svf" if __name__ == "__main__" else False
+
+
+def Play(freq: Array, fifo: FIFO, file: str) -> Block:
+    data = np.load(file)
+    b = Block()
+    f = 96000 // int(data[0])
+    for i in range(1, 12):
+        b[freq[i - 1]("PUSH" if i < f else "LOAD"),]
+    return b[
+        Acc(fifo.port),
+        Array(*[int(x) for x in data[1:]]),
+    ]
+
 
 with ReLMLoader(__file__, loader=loader):
     Define[
@@ -40,7 +62,7 @@ with ReLMLoader(__file__, loader=loader):
             6, 0x61
         ),  # POWER MANAGEMENT: PWROFF=0, CLKOUT=1, OSC=1, Out=0, DAC=0, ADC=0, MIC=0
         audio.i2c(7, 0x42),  # DIGITAL AUDIO I/F: MS=1, WL=00
-        audio.i2c(8, sr_table[48000]),  # SAMPLING RATE: SR=xxxx, BOSR=1 (48kHz)
+        audio.i2c(8, sr_table[96000]),  # SAMPLING RATE: SR=xxxx, BOSR=1 (96kHz)
         audio.i2c(16, 0x1FB),  # ALC CONTROL 1: ALCSEL=11
         audio.i2c(17, 0x32),  # ALC CONTROL 2
         audio.i2c(18, 0x00),  # NOISE GATE
@@ -74,8 +96,22 @@ with ReLMLoader(__file__, loader=loader):
             i2c.write(0x72, 0xE0, 0xD0),
             Out("HDMIPAL", 0x40),
             Do()[
+                Acc("VRAM"),
+                vaddr := Array(
+                    *(
+                        sum(
+                            [
+                                [(67 << 19) + i * 256, (91 << 19) + i * 256 + 68]
+                                for i in range(40)
+                            ],
+                            start=[],
+                        )
+                    ),
+                    (159 << 19) + (1 << 18) + 188,
+                    *([(159 << 19) + (1 << 18) + 256] * (439 - 80)),
+                ),
                 Acc("HDMI"),
-                vram := Array(*([0] * (80 * 480))),
+                vram := Array(*([0] * (80 * 80))),
                 vsync := Int(Acc),
                 If(blink_state((blink_state + 1) & 0x1F) == 0)[
                     b := Int(),
@@ -88,6 +124,42 @@ with ReLMLoader(__file__, loader=loader):
         ],
     ]
     fifo_audio = FIFO.Alloc()
+    scrollX = Int()
+    scrollY = Int()
+    MAPW = 23
+    MAPH = 23
+    Define[
+        scroll := Function()[
+            If(scrollX < 0)[scrollX(0)].Else[
+                If(scrollX > 256 - 160)[scrollX(256 - 160)],
+            ],
+            If(scrollY < 0)[scrollY(0)].Else[
+                If(scrollY > 1024 - 400)[scrollY(1024 - 400)],
+            ],
+            vsync(0),
+            Do()[...].While(vsync == 0),
+            addr := Int(),
+            vaddr[1](addr((scrollY << 8) + scrollX + ((91 << 19) + 68))),
+            *([vaddr[1 + i * 2](addr + i * 256) for i in range(1, 40)]),
+        ],
+        focus := Function(index := Int())[
+            y := Int(),
+            goalX := Int((index - y(index // MAPW) * MAPW) * 12 - 83),
+            If(goalX < 0)[goalX(0)].Else[If(goalX > 256 - 160)[goalX(256 - 160)],],
+            goalY := Int(y * 48 - 208),
+            If(goalY < 0)[goalY(0)].Else[If(goalY > 1024 - 400)[goalY(1024 - 400)],],
+            Do()[
+                If(scrollX < goalX - 2)[scrollX(scrollX + 2)].Else[
+                    If(scrollX > goalX + 2)[scrollX(scrollX - 2)].Else[scrollX(goalX)],
+                ],
+                If(scrollY < goalY - 8)[scrollY(scrollY + 8)].Else[
+                    If(scrollY > goalY + 8)[scrollY(scrollY - 8)].Else[scrollY(goalY)],
+                ],
+                scroll(),
+            ].While((scrollX != goalX) | (scrollY != goalY)),
+        ],
+    ]
+    audio_shift = Array(*([0] * 11), op="OPB")
     Thread[
         audio_ready := Int(0),
         Do()[
@@ -122,6 +194,7 @@ with ReLMLoader(__file__, loader=loader):
                     )
                     * 0x10001
                 ),
+                audio_shift,
                 code(code >> 2),
                 pred0(pred1),
                 pred1(pred2),
@@ -139,58 +212,51 @@ with ReLMLoader(__file__, loader=loader):
             Code("JUMP", audio_state.put()),
             CAST_DICE := Label(),
             audio_state(NO_SOUND),
-            Acc(fifo_audio.port),
-            Array(*[int(x) for x in np.load("c5g/loader/cast_dice.npy")[1:]]),
+            Play(audio_shift, fifo_audio, "c5g/loader/cast_dice.npy"),
             Continue(),
             BONUS := Label(),
             audio_state(NO_SOUND),
-            Acc(fifo_audio.port),
-            Array(*[int(x) for x in np.load("c5g/loader/bonus.npy")[1:]]),
+            Play(audio_shift, fifo_audio, "c5g/loader/bonus.npy"),
             Continue(),
             WALK := Label(),
             audio_state(NO_SOUND),
-            Acc(fifo_audio.port),
-            Array(*[int(x) for x in np.load("c5g/loader/walk.npy")[1:]]),
-            Continue(),
-            CANCEL := Label(),
-            audio_state(NO_SOUND),
-            Acc(fifo_audio.port),
-            Array(*[int(x) for x in np.load("c5g/loader/cancel.npy")[1:]]),
+            Play(audio_shift, fifo_audio, "c5g/loader/walk.npy"),
             Continue(),
             BUY := Label(),
             audio_state(NO_SOUND),
-            Acc(fifo_audio.port),
-            Array(*[int(x) for x in np.load("c5g/loader/buy.npy")[1:]]),
+            Play(audio_shift, fifo_audio, "c5g/loader/buy.npy"),
             Continue(),
             PURCHASE := Label(),
             audio_state(NO_SOUND),
-            Acc(fifo_audio.port),
-            Array(*[int(x) for x in np.load("c5g/loader/purchase.npy")[1:]]),
+            Play(audio_shift, fifo_audio, "c5g/loader/purchase.npy"),
             Continue(),
             CRISIS := Label(),
             audio_state(NO_SOUND),
-            Acc(fifo_audio.port),
-            Array(*[int(x) for x in np.load("c5g/loader/crisis.npy")[1:]]),
+            Play(audio_shift, fifo_audio, "c5g/loader/crisis.npy"),
             Continue(),
             SELL := Label(),
             audio_state(NO_SOUND),
-            Acc(fifo_audio.port),
-            Array(*[int(x) for x in np.load("c5g/loader/sell.npy")[1:]]),
+            Play(audio_shift, fifo_audio, "c5g/loader/sell.npy"),
             Continue(),
             WIN := Label(),
             audio_state(NO_SOUND),
-            Acc(fifo_audio.port),
-            Array(*[int(x) for x in np.load("c5g/loader/win.npy")[1:]]),
+            Play(audio_shift, fifo_audio, "c5g/loader/win.npy"),
             Continue(),
             LOSE := Label(),
             audio_state(NO_SOUND),
-            Acc(fifo_audio.port),
-            Array(*[int(x) for x in np.load("c5g/loader/lose.npy")[1:]]),
+            Play(audio_shift, fifo_audio, "c5g/loader/lose.npy"),
             Continue(),
             NO_SOUND,
         ],
     ]
-    Thread[console := ConsoleArray(vram, 80, FIFO.Alloc(), FIFO.Alloc()),]
+    V1 = 256 * 1
+    V2 = 256 * 2
+    V4 = 256 * 4
+    V6 = 256 * 6
+    V8 = 256 * 8
+    H6 = 2 * 6
+    Thread[console := ConsoleSRAM(V1, FIFO.Alloc(), FIFO.Alloc()),]
+    Thread[consoleStatus := ConsoleArray(vram, 80, FIFO.Alloc(), FIFO.Alloc()),]
     Define[
         font8x8.Case(ord("\x01")),
         Array(
@@ -326,114 +392,29 @@ with ReLMLoader(__file__, loader=loader):
         font8x8.Return(),
     ]
     Define[
-        owner := Array(
-            *(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-            *(0, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 0),
-            *(0, 1, 0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 1, 0),
-            *(0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0),
-            *(0, 1, 2, 1, 0, 0, 0, 2, 0, 0, 0, 1, 2, 1, 0),
-            *(0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0),
-            *(0, 1, 0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 1, 0),
-            *(0, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 0),
-            *(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-        ),
-        dir := Array(
-            *(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-            *(0, 2, 2, 2, 6, 2, 2, 2, 2, 2, 2, 2, 2, 4, 0),
-            *(0, 1, 0, 0, 4, 0, 0, 0, 0, 0, 1, 0, 0, 4, 0),
-            *(0, 1, 0, 2, 2, 2, 2, 2, 2, 2, 3, 4, 0, 4, 0),
-            *(0, 1, 8, 9, 0, 0, 0, 0, 0, 0, 0, 4, 8, 12, 0),
-            *(0, 1, 0, 1, 8, 8, 8, 8, 8, 8, 12, 8, 0, 4, 0),
-            *(0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 4, 0, 0, 4, 0),
-            *(0, 1, 8, 8, 9, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0),
-            *(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-        ),
-        pawn := Array(
-            *(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-            *(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-            *(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-            *(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-            *(0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0),
-            *(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-            *(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-            *(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-            *(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-        ),
-        money := Array(*(2000, 2000, 2000)),
-        goal := 100000,
-        price := Array(*([0] * (15 * 9))),
-        total := Array(*([0] * (15 * 9))),
-        total2 := Array(*([0] * (15 * 9))),
-        dispMap := Function(bonus := Int())[
-            y := Int(0),
-            While(y < 7)[
-                cy := Int(y * (6 * 640) + 640 * 3),
-                x := Int(0),
-                While(x < 13)[
-                    i := Int(y * 15 + x + 16),
-                    o := Int(owner[i]),
-                    If(o != 0)[
-                        pos := Int(cy + x * 6 + (1 + 640)),
-                        rgb := Int(pawn[i]),
-                        console.Print("", color=0x90 + o),
-                        If(rgb & 1 != 0)[
-                            console.Print(" \x05\x06  ", pos),
-                            console.Print(" \x07\x08  ", pos + 640),
-                            console.Print(" \x09\x0a  ", pos + 640 * 2),
-                        ].Else[
-                            console.Print("     ", pos),
-                            console.Print("     ", pos + 640),
-                            console.Print("     ", pos + 640 * 2),
-                        ],
-                        console.Print("", color=0x80 + o),
-                        If(rgb & 2 != 0)[
-                            console.Print("\x05\x06", pos + 2),
-                            console.Print("\x07\x08", pos + (2 + 640)),
-                            console.Print("\x09\x0a", pos + (2 + 640 * 2)),
-                        ],
-                        console.Print("", color=0x70 + o),
-                        If(rgb & 4 != 0)[
-                            console.Print("\x05\x06", pos + 3),
-                            console.Print("\x07\x08", pos + (3 + 640)),
-                            console.Print("\x09\x0a", pos + (3 + 640 * 2)),
-                        ],
-                        p := Int(price[i]),
-                        If(p != 0)[
-                            If(o == 2)[
-                                console.Print("BONUS", pos + 640 * 3, bonus),
-                                If(bonus == 0x22)[console.Print("", color=0x02)],
-                            ].Else[
-                                If(o == 0xF)[c := Int(0x0F)].Else[c(0xF0 + o)],
-                                console.Print("", pos + 640 * 3, c).Dec(
-                                    total[i], "    d"
-                                ),
-                            ],
-                            console.Print("", pos + 640 * 4).Dec(p, "    d"),
-                        ],
-                    ],
-                    x(x + 1),
-                ],
-                y(y + 1),
-            ],
+        clear := Function()[
+            i := Int(80 * 80),
+            Do()[vram[i(i - 1)](0),].While(i != 0),
+            vsync(0),
+            Do()[...].While(vsync == 0),
+            console.Clear(),
         ],
-    ]
-    random = UInt()
-    Thread[Do()[RegB(AccU + 1, 2), AccU * RegB, random((AccU + 3) * RegB)]]
-    Define[
-        nrand := Function(n := UInt())[
-            r := UInt(random),
+        nrand := Function(n := UInt(), random := UInt())[
+            RegB(random + 1, 2),
+            AccU * RegB,
+            r := UInt(random((AccU + 3) * RegB)),
             x := UInt((r >> 16) * n + (((r & 0xFFFF) * n) >> 16)),
         ].Return(x >> 16),
-        pos := (3 * 6 + 5) * 640 + 7 * 6 + 2 + 0x80000000,
+        pos := V8 + 30 * 2 + 0x80000000,
         dispDice := Table(7),
-        dispDice.Case(0),
+        dispDice.Default(),
         confirm := Array(
             0xC0000084,
             pos,
             0x202020,
-            pos + 640,
+            pos + V8,
             0x203F20,
-            pos + 640 * 2,
+            pos + V8 * 2,
             0x202020,
         ),
         dispDice.Return(),
@@ -442,9 +423,9 @@ with ReLMLoader(__file__, loader=loader):
             0xC000003F,
             pos,
             0x202020,
-            pos + 640,
+            pos + V8,
             0x200B20,
-            pos + 640 * 2,
+            pos + V8 * 2,
             0x202020,
         ),
         dispDice.Return(),
@@ -453,9 +434,9 @@ with ReLMLoader(__file__, loader=loader):
             0xC000000F,
             pos,
             0x20200B,
-            pos + 640,
+            pos + V8,
             0x202020,
-            pos + 640 * 2,
+            pos + V8 * 2,
             0x0B2020,
         ),
         dispDice.Return(),
@@ -464,9 +445,9 @@ with ReLMLoader(__file__, loader=loader):
             0xC000000F,
             pos,
             0x0B2020,
-            pos + 640,
+            pos + V8,
             0x200B20,
-            pos + 640 * 2,
+            pos + V8 * 2,
             0x20200B,
         ),
         dispDice.Return(),
@@ -475,9 +456,9 @@ with ReLMLoader(__file__, loader=loader):
             0xC000000F,
             pos,
             0x0B200B,
-            pos + 640,
+            pos + V8,
             0x202020,
-            pos + 640 * 2,
+            pos + V8 * 2,
             0x0B200B,
         ),
         dispDice.Return(),
@@ -486,9 +467,9 @@ with ReLMLoader(__file__, loader=loader):
             0xC000000F,
             pos,
             0x0B200B,
-            pos + 640,
+            pos + V8,
             0x200B20,
-            pos + 640 * 2,
+            pos + V8 * 2,
             0x0B200B,
         ),
         dispDice.Return(),
@@ -497,12 +478,140 @@ with ReLMLoader(__file__, loader=loader):
             0xC000000F,
             pos,
             0x0B200B,
-            pos + 640,
+            pos + V8,
             0x0B200B,
-            pos + 640 * 2,
+            pos + V8 * 2,
             0x0B200B,
         ),
         dispDice.Return(),
+    ]
+    Define[
+        owner := Array(*map_owner),
+        dir := Array(*map_dir),
+        pawn := Array(*map_pawn),
+        money := Array(*map_money),
+        goal := map_goal,
+        price := Array(*([0] * (MAPW * MAPH))),
+        total := Array(*([0] * (MAPW * MAPH))),
+        total2 := Array(*([0] * (MAPW * MAPH))),
+        distance := Array(*([0] * (MAPW * MAPH))),
+        initMap := Function()[
+            consoleStatus.Print(
+                "                                                                                ",
+                640 * 0,
+                0xFE,
+            ),
+            consoleStatus.Print(
+                "                                                                                ",
+                640 * 1,
+            ),
+            consoleStatus.Print(
+                "         RealEstate + Money = TotalAssets (Goal: %d)" % goal,
+                640 * 0 + 320,
+            ),
+            consoleStatus.Print(
+                " You   ",
+                640 * 2 + 320,
+                0x84,
+            ),
+            consoleStatus.Print(
+                " Alice ",
+                640 * 5,
+                0x73,
+            ),
+            consoleStatus.Print(
+                " Bob   ",
+                640 * 7 + 320,
+                0x95,
+            ),
+            y := Int(0),
+            Do()[
+                cy := Int(y * (6 * V8) + (V8 + 2)),
+                x := Int(0),
+                Do()[
+                    i := Int(),
+                    o := Int(),
+                    If(o(owner[i(y * MAPW + x + (MAPW + 1))]) != 0)[
+                        pos := Int(cy + x * H6),
+                        If(o == 1)[
+                            price[i](map_price),
+                            total[i](map_price),
+                        ].Else[
+                            price[i](map_bonus),
+                        ],
+                        d := Int(),
+                        If((d(dir[i]) & 1 != 0) & (dir[i - MAPW] & 4 == 0))[
+                            console.Print("\x01", pos + 3 * 2, 0xF0),
+                        ],
+                        If((owner[i + 1] != 0) & (dir[i + 1] & 8 == 0))[
+                            If(d & 2 != 0)[c := Int(0xF0)].Else[c(0xFF)],
+                            console.Print("\x02", pos + (6 * 2 + V8 * 3), c),
+                        ],
+                        If((owner[i + MAPW] != 0) & (dir[i + MAPW] & 1 == 0))[
+                            If(d & 4 != 0)[c := Int(0xF0)].Else[c(0xFF)],
+                            console.Print("\x03", pos + (3 * 2 + V8 * 6), c),
+                        ],
+                        If((d & 8 != 0) & (dir[i - 1] & 2 == 0))[
+                            console.Print("\x04", pos + (V8 * 3), 0xF0),
+                        ],
+                    ],
+                ].While(x(x + 1) < MAPW - 2),
+            ].While(y(y + 1) < MAPH - 2),
+        ],
+        dispMap := Function(bonus := Int())[
+            y := Int(0),
+            Do()[
+                cy := Int(y * (6 * V8) + (V8 + 2)),
+                x := Int(0),
+                Do()[
+                    i := Int(),
+                    o := Int(),
+                    If(o(owner[i(y * MAPW + x + (MAPW + 1))]) != 0)[
+                        pos := Int(cy + x * H6 + (2 + V8)),
+                        rgb := Int(),
+                        console.Print("", color=0x90 + o),
+                        If(rgb(pawn[i]) & 1 != 0)[
+                            console.Print(" \x05\x06  ", pos),
+                            console.Print(" \x07\x08  ", pos + V8),
+                            console.Print(" \x09\x0a  ", pos + V8 * 2),
+                        ].Else[
+                            console.Print("     ", pos),
+                            console.Print("     ", pos + V8),
+                            console.Print("     ", pos + V8 * 2),
+                        ],
+                        console.Print("", color=0x80 + o),
+                        If(rgb & 2 != 0)[
+                            console.Print("\x05\x06", pos + 4),
+                            console.Print("\x07\x08", pos + (4 + V8)),
+                            console.Print("\x09\x0a", pos + (4 + V8 * 2)),
+                        ],
+                        console.Print("", color=0x70 + o),
+                        If(rgb & 4 != 0)[
+                            console.Print("\x05\x06", pos + 6),
+                            console.Print("\x07\x08", pos + (6 + V8)),
+                            console.Print("\x09\x0a", pos + (6 + V8 * 2)),
+                        ],
+                        p := Int(),
+                        If(p(price[i]) != 0)[
+                            If(o == 2)[
+                                console.Print("BONUS", pos + V8 * 3, bonus),
+                                If(bonus == 0x22)[console.Print("", color=0x02)],
+                            ].Else[
+                                If(o == 0xF)[c := Int(0x0F)].Else[c(0xF0 + o)],
+                                console.Print("", pos + V8 * 3, c).Dec(
+                                    total[i], "    d"
+                                ),
+                            ],
+                            console.Print("", pos + V8 * 4).Dec(p, "    d"),
+                        ],
+                        If(distance[i] & 1 != 0)[
+                            console.fifo_print.Push(confirm[0]),
+                            console.Print("?", pos),
+                        ],
+                    ],
+                ].While(x(x + 1) < MAPW - 2),
+            ].While(y(y + 1) < MAPH - 2),
+        ],
     ]
     keyboard = FIFO.Alloc()
     LEFT = 0x5C
@@ -627,10 +736,9 @@ with ReLMLoader(__file__, loader=loader):
         ],
     ],
     Define[
-        distance := Array(*([0] * (15 * 9))),
-        group := Array(*([0] * (15 * 9))),
+        group := Array(*([0] * (MAPW * MAPH))),
         estate := Array(*([0] * 3)),
-        eval := Array(*([0] * (15 * 9))),
+        eval := Array(*([0] * (MAPW * MAPH))),
         eval_money := Array(*([0] * 3)),
         eval_estate := Array(*([0] * 3)),
         dice_pos := Array(*([0] * 7)),
@@ -654,47 +762,39 @@ with ReLMLoader(__file__, loader=loader):
             ec := Int(e * 80 // scale),
             mc := Int((e + m) * 80 // scale),
             i := Int(0),
-            While(i < ec)[console.Print(" "), i(i + 1)],
-            While(i < mc)[console.Print("$"), i(i + 1)],
-            console.Print("", color=0x00),
-            While(i < 80)[console.Print(" "), i(i + 1)],
+            While(i < ec)[consoleStatus.Print(" "), i(i + 1)],
+            While(i < mc)[consoleStatus.Print("$"), i(i + 1)],
+            consoleStatus.Print("", color=0x00),
+            While(i < 80)[consoleStatus.Print(" "), i(i + 1)],
         ],
         fillMessage := Function(color := Int())[
-            console.Print("                             ", 640 * 10 + 25, color),
-            console.Print("                             ", 640 * 11 + 25),
-            console.Print("                             ", 640 * 12 + 25),
-            console.Print("                             ", 640 * 13 + 25),
-            console.Print("                             ", 640 * 14 + 25),
+            console.Print("                             ", V8 * 0, color),
+            console.Print("                             ", V8 * 1),
+            console.Print("                             ", V8 * 2),
+            console.Print("                             ", V8 * 3),
+            console.Print("                             ", V8 * 4),
         ],
-        dispColor := Function(value := Int())[
-            If(value < 0)[console.Print("-", color=0xF3).Dec(-value, "    d")].Else[
-                console.Print("", color=0xF0).Dec(value, "     d")
+        dispMoney := Function(value := Int(), pos := Int())[
+            If(value < 0)[consoleStatus.Print("", pos, 0xF3)].Else[
+                consoleStatus.Print(" ", pos, 0xF0)
             ],
-        ].Return(value),
+            consoleStatus.Dec(value, "-     d"),
+        ],
         dispStatus := Function()[
-            console.Print("", 640 * 49 + 10),
-            dispColor(estate[1]),
-            console.Print("", 640 * 49 + 21),
-            dispColor(money[1]),
-            console.Print("", 640 * 49 + 32),
-            dispColor(estate[1] + money[1]),
-            console.Print("", 640 * 50, 0x84),
+            dispMoney(estate[1], 640 * 2 + 320 + 9),
+            dispMoney(money[1], 640 * 2 + 320 + 20),
+            dispMoney(estate[1] + money[1], 640 * 2 + 320 + 31),
+            consoleStatus.Print("", 640 * 3 + 320, 0x84),
             dispBar(1),
-            console.Print("", 640 * 51 + 320 + 10),
-            dispColor(estate[0]),
-            console.Print("", 640 * 51 + 320 + 21),
-            dispColor(money[0]),
-            console.Print("", 640 * 51 + 320 + 32),
-            dispColor(estate[0] + money[0]),
-            console.Print("", 640 * 52 + 320, 0x73),
+            dispMoney(estate[0], 640 * 5 + 9),
+            dispMoney(money[0], 640 * 5 + 20),
+            dispMoney(estate[0] + money[0], 640 * 5 + 31),
+            consoleStatus.Print("", 640 * 6, 0x73),
             dispBar(0),
-            console.Print("", 640 * 54 + 10),
-            dispColor(estate[2]),
-            console.Print("", 640 * 54 + 21),
-            dispColor(money[2]),
-            console.Print("", 640 * 54 + 32),
-            dispColor(estate[2] + money[2]),
-            console.Print("", 640 * 55, 0x95),
+            dispMoney(estate[2], 640 * 7 + 320 + 9),
+            dispMoney(money[2], 640 * 7 + 320 + 20),
+            dispMoney(estate[2] + money[2], 640 * 7 + 320 + 31),
+            consoleStatus.Print("", 640 * 8 + 320, 0x95),
             dispBar(2),
         ],
         playTurn := Function(
@@ -712,14 +812,21 @@ with ReLMLoader(__file__, loader=loader):
             If(min_asset == money[index] + estate[index])[bonus := Int(0x62)].Else[
                 bonus(0x22)
             ],
-            dispMap(bonus),
+            i := Int(MAPW + 1),
+            Do()[distance[i](0),].While(i(i + 1) < MAPW * (MAPH - 1) - 1),
             blink(color),
             own := Int((color & 0xF) - 4),
             confirm[0](own * 0x11 + 0xC0000040),
+            dispMap(bonus),
+            i := Int(MAPW),
+            Do()[...].While(pawn[i(i + 1)] & pawn_bit == 0),
+            pawn_i := Int(i),
+            focus(pawn_i),
             Do()[...].While(audio_ready == 0),
+            fillMessage((color & 0xF) * 16 + 0x0E),
             If(human != 0)[
-                fillMessage((color & 0xF) * 16 + 0x0E),
-                console.Print("Enter key:  Roll the dice", 640 * 12 + 27),
+                console.Print("Cursor keys:  Explore map", V8 * 1 + 2 * 2),
+                console.Print("Enter key:  Roll the dice", V8 * 3 + 2 * 2),
                 timer := Timer(),
                 dice := Int(1),
                 keyboard.Clear(),
@@ -729,7 +836,25 @@ with ReLMLoader(__file__, loader=loader):
                         If(dice == 6)[dice(1)].Else[dice(dice + 1)],
                         timer.After(ms=250),
                     ],
-                ].While(keyboard.IsEmpty() | (keyboard.Pop() != ENTER)),
+                    If(keyboard.IsEmpty())[
+                        k := Int(0),
+                        Continue(),
+                    ],
+                    If(k(keyboard.Pop()) == UP)[scrollY(scrollY - 8 * 6), scroll()],
+                    If(k == DOWN)[scrollY(scrollY + 8 * 6), scroll()],
+                    If(k == LEFT)[scrollX(scrollX - 2 * 6), scroll()],
+                    If(k == RIGHT)[scrollX(scrollX + 2 * 6), scroll()],
+                ].While(k != ENTER),
+            ].Else[
+                If(index == 0)[
+                    console.Print("Auto play:  Alice's turn", V8 * 2 + 3 * 2),
+                ].Else[
+                    If(index == 1)[
+                        console.Print("Auto play:   Your turn", V8 * 2 + 3 * 2),
+                    ].Else[
+                        console.Print("Auto play:   Bob's turn", V8 * 2 + 3 * 2),
+                    ],
+                ],
             ],
             audio_state(CAST_DICE),
             Do()[...].While(audio_ready != 0),
@@ -741,164 +866,167 @@ with ReLMLoader(__file__, loader=loader):
             ].While(audio_ready == 0),
             dice := Int(nrand(6) + 1),
             dispDice.Switch(dice, console.fifo_print.port),
-            i := Int(16),
-            Do()[
-                distance[i](0),
-                i(i + 1),
-            ].While(i < 15 * 7 + 14),
-            i := Int(15),
-            Do()[i(i + 1),].While(pawn[i] & pawn_bit == 0),
-            pawn_i := Int(i),
-            distance[pawn_i](dice + 1),
+            distance[pawn_i](1 << dice),
             flag := Int(),
             Do()[
                 flag(0),
-                i := Int(16),
+                i := Int(MAPW + 1),
                 Do()[
-                    dist := Int(distance[i] - 1),
-                    If(dist != -1)[
-                        dir_i := Int(dir[i]),
-                        If(dir_i & 1 == 0)[
-                            j := Int(i - 15),
-                            If(owner[j] != 0)[
-                                If(distance[j] < dist)[
-                                    distance[j](dist),
+                    dist_i := Int(),
+                    If(dist_i(distance[i] >> 1) != 0)[
+                        dir_i := Int(),
+                        If(dir_i(dir[i]) & 1 == 0)[
+                            j := Int(),
+                            If(owner[j(i - MAPW)] != 0)[
+                                dist_j := Int(distance[j]),
+                                dist_ij := Int(),
+                                If(dist_ij(dist_j | dist_i) != dist_j)[
+                                    distance[j](dist_ij),
                                     flag(1),
                                 ],
                             ],
                         ],
                         If(dir_i & 2 == 0)[
-                            j := Int(i + 1),
-                            If(owner[j] != 0)[
-                                If(distance[j] < dist)[
-                                    distance[j](dist),
+                            j := Int(),
+                            If(owner[j(i + 1)] != 0)[
+                                dist_j := Int(distance[j]),
+                                dist_ij := Int(),
+                                If(dist_ij(dist_j | dist_i) != dist_j)[
+                                    distance[j](dist_ij),
                                     flag(1),
                                 ],
                             ],
                         ],
                         If(dir_i & 4 == 0)[
-                            j := Int(i + 15),
-                            If(owner[j] != 0)[
-                                If(distance[j] < dist)[
-                                    distance[j](dist),
+                            j := Int(),
+                            If(owner[j(i + MAPW)] != 0)[
+                                dist_j := Int(distance[j]),
+                                dist_ij := Int(),
+                                If(dist_ij(dist_j | dist_i) != dist_j)[
+                                    distance[j](dist_ij),
                                     flag(1),
                                 ],
                             ],
                         ],
                         If(dir_i & 8 == 0)[
-                            j := Int(i - 1),
-                            If(owner[j] != 0)[
-                                If(distance[j] < dist)[
-                                    distance[j](dist),
+                            j := Int(),
+                            If(owner[j(i - 1)] != 0)[
+                                dist_j := Int(distance[j]),
+                                dist_ij := Int(),
+                                If(dist_ij(dist_j | dist_i) != dist_j)[
+                                    distance[j](dist_ij),
                                     flag(1),
                                 ],
                             ],
                         ],
                     ],
                     i(i + 1),
-                ].While(i < 15 * 7 + 14),
+                ].While(i < MAPW * (MAPH - 1) - 1),
             ].While(flag != 0),
+            dispMap(bonus),
             If(human != 0)[
                 Do()[
                     fillMessage(0xFE),
-                    If(distance[pawn_i] != 1)[
-                        console.Print("Cursor keys:", 640 * 10 + 160 + 26),
-                        console.Print("Step ahead or back", 640 * 11 + 160 + 35),
-                        console.Print("Enter key:", 640 * 12 + 480 + 26),
-                        console.Print("Fix your position", 640 * 13 + 480 + 35),
+                    If(distance[pawn_i] & 1 == 0)[
+                        console.Print("Cursor keys:", V8 * 0 + V2 + 1 * 2),
+                        console.Print("Step ahead or back", V8 * 1 + V2 + 10 * 2),
+                        console.Print("Enter key:", V8 * 2 + V6 + 1 * 2),
+                        console.Print("Fix your position", V8 * 3 + V6 + 10 * 2),
                     ].Else[
                         o := Int(owner[pawn_i]),
                         If(o == 1)[
                             If(price[pawn_i] <= money[index])[
                                 console.Print(
-                                    "Buy the vacant lot.", 640 * 10 + 320 + 26
+                                    "Buy the vacant lot.", V8 * 0 + V4 + 1 * 2
                                 ),
                                 console.Print(
-                                    "The price of the lot will", 640 * 12 + 320 + 26
+                                    "The price of the lot will", V8 * 2 + V4 + 1 * 2
                                 ),
-                                console.Print("increase by 50%.", 640 * 13 + 320 + 26),
+                                console.Print("increase by 50%.", V8 * 3 + V4 + 1 * 2),
                             ].Else[
-                                console.Print("Nothing occurs.", 640 * 10 + 320 + 26),
+                                console.Print("Nothing occurs.", V8 * 0 + V4 + 1 * 2),
                                 console.Print(
-                                    "Unable to buy the vacant", 640 * 12 + 320 + 26
+                                    "Unable to buy the vacant", V8 * 2 + V4 + 1 * 2
                                 ),
                                 console.Print(
-                                    "lot due to lack of money.", 640 * 13 + 320 + 26
+                                    "lot due to lack of money.", V8 * 3 + V4 + 1 * 2
                                 ),
                             ],
                         ].Else[
                             If(o == 2)[
                                 If(bonus == 0x62)[
                                     console.Print(
-                                        "Get the bonus for the", 640 * 11 + 26
+                                        "Get the bonus for the", V8 * 1 + 1 * 2
                                     ),
                                     console.Print(
-                                        "player with the smallest", 640 * 12 + 26
+                                        "player with the smallest", V8 * 2 + 1 * 2
                                     ),
-                                    console.Print("assets.", 640 * 13 + 26),
+                                    console.Print("assets.", V8 * 3 + 1 * 2),
                                 ].Else[
                                     console.Print(
-                                        "Nothing occurs.", 640 * 10 + 320 + 26
+                                        "Nothing occurs.", V8 * 0 + V4 + 1 * 2
                                     ),
                                     console.Print(
                                         "Unable to get the bonus for",
-                                        640 * 11 + 320 + 26,
+                                        V8 * 1 + V4 + 1 * 2,
                                     ),
                                     console.Print(
                                         "the player with the",
-                                        640 * 12 + 320 + 26,
+                                        V8 * 2 + V4 + 1 * 2,
                                     ),
                                     console.Print(
-                                        "smallest assets.", 640 * 13 + 320 + 26
+                                        "smallest assets.", V8 * 3 + V4 + 1 * 2
                                     ),
                                 ],
                             ].Else[
                                 If(o == own)[
-                                    console.Print("Nothing occurs.", 640 * 11 + 26),
-                                    console.Print("It's your own land.", 640 * 13 + 26),
+                                    console.Print("Nothing occurs.", V8 * 1 + 1 * 2),
+                                    console.Print(
+                                        "It's your own land.", V8 * 3 + 1 * 2
+                                    ),
                                 ].Else[
                                     If(total[pawn_i] <= money[index])[
                                         console.Print(
                                             "Buy all adjoining lots of",
-                                            640 * 10 + 26,
+                                            V8 * 0 + 1 * 2,
                                         ),
                                         console.Print(
                                             "the same player.",
-                                            640 * 11 + 26,
+                                            V8 * 1 + 1 * 2,
                                         ),
                                         console.Print(
                                             "The above value in the cell",
-                                            640 * 12 + 26,
+                                            V8 * 2 + 1 * 2,
                                         ),
                                         console.Print(
                                             "is total price of the",
-                                            640 * 13 + 26,
+                                            V8 * 3 + 1 * 2,
                                         ),
                                         console.Print(
                                             "adjoining lots.",
-                                            640 * 14 + 26,
+                                            V8 * 4 + 1 * 2,
                                         ),
                                     ].Else[
                                         fillMessage((color & 0xF) * 16 + 0x0E),
                                         console.Print(
                                             "Buy all adjoining lots of",
-                                            640 * 10 + 26,
+                                            V8 * 0 + 1 * 2,
                                         ),
                                         console.Print(
                                             "the same player.",
-                                            640 * 11 + 26,
+                                            V8 * 1 + 1 * 2,
                                         ),
                                         console.Print(
                                             "Must sell some of your lots",
-                                            640 * 12 + 26,
+                                            V8 * 2 + 1 * 2,
                                         ),
                                         console.Print(
                                             "at 50% discount to redeem",
-                                            640 * 13 + 26,
+                                            V8 * 3 + 1 * 2,
                                         ),
                                         console.Print(
                                             "your debt.",
-                                            640 * 14 + 26,
+                                            V8 * 4 + 1 * 2,
                                         ),
                                     ]
                                 ]
@@ -906,35 +1034,39 @@ with ReLMLoader(__file__, loader=loader):
                         ],
                     ],
                     k := Int(keyboard.Pop()),
-                    If(k == UP)[pawn_j := Int(pawn_i - 15),].Else[
+                    If(k == UP)[pawn_j := Int(pawn_i - MAPW),].Else[
                         If(k == RIGHT)[pawn_j(pawn_i + 1),].Else[
-                            If(k == DOWN)[pawn_j(pawn_i + 15),].Else[
+                            If(k == DOWN)[pawn_j(pawn_i + MAPW),].Else[
                                 If(k == LEFT)[pawn_j(pawn_i - 1),].Else[
-                                    If((k == ENTER) & (distance[pawn_i] == 1))[Break()],
+                                    If((k == ENTER) & (distance[pawn_i] & 1 != 0))[
+                                        Break()
+                                    ],
                                     Continue(),
                                 ],
                             ],
                         ],
                     ],
-                    If(distance[pawn_j] == 0)[Continue()],
+                    dist_j := Int(),
+                    If(dist_j(distance[pawn_j]) == 0)[Continue()],
                     pawn[pawn_i](pawn[pawn_i] & (pawn_bit ^ 7)),
                     pawn[pawn_j](pawn[pawn_j] | pawn_bit),
-                    If(distance[pawn_j] < distance[pawn_i])[audio_state(WALK),].Else[
-                        audio_state(CANCEL),
-                    ],
+                    audio_state(WALK),
                     dispMap(bonus),
-                    dispDice.Switch(distance[pawn_j] - 1, console.fifo_print.port),
-                    pawn_i(pawn_j),
+                    If(dist_j & 1 != 0)[
+                        dispDice.Switch(0, console.fifo_print.port),
+                    ].Else[
+                        dispDice.Switch(dice, console.fifo_print.port),
+                    ],
+                    focus(pawn_i(pawn_j)),
                 ],
-                fillMessage(0x00),
                 dest := Int(pawn_i),
             ].Else[  # human == 0
                 If(index == 0)[index0 := Int(1)].Else[index0(0)],
                 If(index == 2)[index2 := Int(1)].Else[index2(2)],
                 max_eval := Int(0x80000000),
-                d := Int(16),
+                d := Int(MAPW + 1),
                 Do()[
-                    If(distance[d] == 1)[
+                    If(distance[d] & 1 != 0)[
                         eval_estate[0](estate[0]),
                         eval_estate[1](estate[1]),
                         eval_estate[2](estate[2]),
@@ -981,23 +1113,30 @@ with ReLMLoader(__file__, loader=loader):
                         If(max_eval < e1)[max_eval(e1)],
                     ],
                     d(d + 1),
-                ].While(d < 15 * 7 + 14),
-                Do()[d := Int(nrand(15 * 7 + 14 - 16) + 16),].While(
-                    (distance[d] != 1) | (eval[d] != max_eval)
+                ].While(d < MAPW * (MAPH - 1) - 1),
+                Do()[d := Int(nrand(MAPW * (MAPH - 2) + 2) + MAPW + 1),].While(
+                    (eval[d] != max_eval) | (distance[d] & 1 == 0)
                 ),
                 dest(d),
                 dice_pos[0](d),
                 d := Int(d),
                 i := Int(1),
                 Do()[
-                    i1 := Int(i + 1),
-                    If(distance[d - 15] == i1)[d(d - 15)].Else[
-                        If(distance[d - 1] == i1)[d(d - 1)].Else[
-                            If(distance[d + 1] == i1)[d(d + 1)].Else[d(d + 15)]
+                    di := Int(1 << i),
+                    If((distance[d + MAPW] & di != 0) & (dir[d + MAPW] & 1 == 0))[
+                        d(d + MAPW)
+                    ].Else[
+                        If((distance[d - 1] & di != 0) & (dir[d - 1] & 2 == 0))[
+                            d(d - 1)
+                        ].Else[
+                            If(
+                                (distance[d - MAPW] & di != 0)
+                                & (dir[d - MAPW] & 4 == 0)
+                            )[d(d - MAPW)].Else[d(d + 1)]
                         ]
                     ],
                     dice_pos[i](d),
-                    i(i1),
+                    i(i + 1),
                 ].While(i <= dice),
                 i := Int(dice),
                 timer := Timer(ms=250),
@@ -1009,7 +1148,7 @@ with ReLMLoader(__file__, loader=loader):
                     pawn[pawn_j](pawn[pawn_j] | pawn_bit),
                     audio_state(WALK),
                     dispMap(bonus),
-                    dispDice.Switch(j, console.fifo_print.port),
+                    focus(pawn_j),
                     Do()[...].While(audio_ready == 0),
                     i(j),
                     timer.Wait(),
@@ -1070,16 +1209,17 @@ with ReLMLoader(__file__, loader=loader):
                                 Do()[...].While(audio_ready == 0),
                             ],
                             i(i + 1),
-                        ].While(i < 15 * 7 + 14),
+                        ].While(i < MAPW * (MAPH - 1) - 1),
                         If(money[index] < 0)[
                             audio_state(CRISIS),
                             Do()[...].While(audio_ready != 0),
                             Do()[...].While(audio_ready == 0),
                         ],
                         While((money[index] < 0) & (estate[index] != 0))[
-                            Do()[i := Int(nrand(15 * 7 + 14 - 16) + 16),].While(
-                                owner[i] != own
-                            ),
+                            Do()[
+                                i := Int(nrand(MAPW * (MAPH - 2) - 2) + MAPW + 1),
+                            ].While(owner[i] != own),
+                            focus(i),
                             owner[i](0xF),
                             group[i](0),
                             p := Int(price[i]),
@@ -1094,14 +1234,13 @@ with ReLMLoader(__file__, loader=loader):
                             Do()[...].While(audio_ready == 0),
                         ],
                         i := Int(16),
-                        Do()[
-                            If(owner[i] == 0xF)[owner[i](1)],
-                            i(i + 1),
-                        ].While(i < 15 * 7 + 14),
+                        Do()[If(owner[i] == 0xF)[owner[i](1)],].While(
+                            i(i + 1) < MAPW * (MAPH - 1) - 1
+                        ),
                     ],
                 ],
             ],
-            i := Int(16),
+            i := Int(MAPW + 1),
             Do()[
                 If(owner[i] == own)[
                     group[i](i),
@@ -1109,23 +1248,23 @@ with ReLMLoader(__file__, loader=loader):
                     total2[i](0),
                 ],
                 i(i + 1),
-            ].While(i < 15 * 7 + 14),
+            ].While(i < MAPW * (MAPH - 1) - 1),
             flag := Int(),
             Do()[
                 flag(0),
-                i := Int(16),
+                i := Int(MAPW + 1),
                 Do()[
                     If(owner[i] == own)[
                         g := Int(group[i]),
-                        If(owner[i + 15] == own)[
-                            gy := Int(group[i + 15]),
+                        If(owner[i + MAPW] == own)[
+                            gy := Int(group[i + MAPW]),
                             If(g < gy)[
                                 g(gy),
                                 group[i](gy),
                                 flag(1),
                             ].Else[
                                 If(g > gy)[
-                                    group[i + 15](g),
+                                    group[i + MAPW](g),
                                     flag(1),
                                 ],
                             ],
@@ -1134,7 +1273,7 @@ with ReLMLoader(__file__, loader=loader):
                             gx := Int(group[i + 1]),
                             If(g < gx)[
                                 group[i](gx),
-                                If(gy != 0)[group[i + 15](gx)],
+                                If(gy != 0)[group[i + MAPW](gx)],
                                 flag(1),
                             ].Else[
                                 If(g > gx)[
@@ -1145,9 +1284,9 @@ with ReLMLoader(__file__, loader=loader):
                         ],
                     ],
                     i(i + 1),
-                ].While(i < 15 * 7 + 14),
+                ].While(i < MAPW * (MAPH - 1) - 1),
             ].While(flag != 0),
-            i := Int(16),
+            i := Int(MAPW + 1),
             Do()[
                 If(owner[i] == own)[
                     g := Int(group[i]),
@@ -1157,8 +1296,8 @@ with ReLMLoader(__file__, loader=loader):
                     total2[g](total2[g] + q),
                 ],
                 i(i + 1),
-            ].While(i < 15 * 7 + 14),
-            i := Int(16),
+            ].While(i < MAPW * (MAPH - 1) - 1),
+            i := Int(MAPW + 1),
             Do()[
                 If(owner[i] == own)[
                     g := Int(group[i]),
@@ -1166,26 +1305,15 @@ with ReLMLoader(__file__, loader=loader):
                     total2[i](total2[g]),
                 ],
                 i(i + 1),
-            ].While(i < 15 * 7 + 14),
+            ].While(i < MAPW * (MAPH - 1) - 1),
             asset := Int(money[index] + estate[index]),
             If((asset < 0) | (asset >= goal))[
                 fillMessage((color & 0xF) * 16 + 0x0E),
-                console.Print("", 640 * 12 + 25),
+                console.Print("", V8 * 2 + 0 * 2),
             ],
         ].Return(
             asset
         ),
-        clear := Function()[
-            i := Int(3),
-            Do()[
-                console.Print(
-                    "                                                                                ",
-                    640 * i,
-                    0xF0,
-                ),
-                i(i + 1),
-            ].While(i <= 59),
-        ],
     ]
     Thread[
         LED(
@@ -1194,274 +1322,223 @@ with ReLMLoader(__file__, loader=loader):
             hex1=0b1111110,
             hex0=0b0111011,
         ),
-        blink(0x00FF0088),
+        clear(),
         console.Print(
-            "                                                                               ",
+            "                                  ",
             0,
             0x6E,
         ),
         console.Print(
-            "      Bubble Estate - Playable Proof of Concept for the ReLM Architecture      ",
-            640,
+            "   Bubble Estate - Playable PoC   ",
+            V8 * 1,
         ),
         console.Print(
-            "                                                                               ",
-            640 * 2,
+            "                                  ",
+            V8 * 2,
         ),
+        console.Print(
+            "     for the ReLM Architecture    ",
+            V8 * 3,
+        ),
+        console.Print(
+            "                                  ",
+            V8 * 4,
+        ),
+        console.Print("Introduction:", V8 * 6, 0xF0),
+        console.Print(
+            "This game, running on a ring topology multiprocessor system built on an FPGA,",
+            V8 * 8 + 3 * 2,
+        ),
+        console.Print(
+            "is a playable demo application based on the ReLM architecture.",
+            V8 * 9 + 3 * 2,
+        ),
+        console.Print(
+            "It shows how the ReLM architecture makes parallel processing simple and",
+            V8 * 11 + 3 * 2,
+        ),
+        console.Print(
+            "building stand-alone applications easy, in need of no operating system.",
+            V8 * 12 + 3 * 2,
+        ),
+        console.Print("Playable Demo:", V8 * 15),
+        console.Print(
+            "Bubble Estate is a simple Monopoly-like dice game.",
+            V8 * 17 + 3 * 2,
+        ),
+        console.Print(
+            "Just roll dice and choose the next cell to go, and only that.",
+            V8 * 19 + 3 * 2,
+        ),
+        console.Print("Let's play the new technology!", V8 * 22 + 3 * 2),
+        console.Print("Goal:", V8 * 25),
+        console.Print(
+            "You win when your total assets (real estate + money) reach %d." % goal,
+            V8 * 27 + 3 * 2,
+        ),
+        console.Print(
+            "However, when one of the players goes bankrupt, the game is over.",
+            V8 * 29 + 3 * 2,
+        ),
+        console.Print("Move:", V8 * 32),
+        console.Print(
+            "Roll dice and move forward according to the number on the dice.",
+            V8 * 34 + 3 * 2,
+        ),
+        console.Print('Roll dice by pressing "Enter",', V8 * 36 + 3 * 2),
+        console.Print(
+            "and then choose the next cell with the cursor keys.", V8 * 37 + 3 * 2
+        ),
+        console.Print("     ", V8 * 39 + 3 * 2, 0xF1),
+        console.Print("     ", V8 * 40 + 3 * 2),
+        console.Print("     ", V8 * 41 + 3 * 2),
+        console.Print("  200", V8 * 41 + 3 * 2),
+        console.Print("  200", V8 * 42 + 3 * 2),
+        console.Print("     ", V8 * 39 + 9 * 2),
+        console.Print("     ", V8 * 40 + 9 * 2),
+        console.Print("     ", V8 * 41 + 9 * 2),
+        console.Print("  200", V8 * 42 + 9 * 2),
+        console.Print("  200", V8 * 43 + 9 * 2),
+        console.Print("     ", V8 * 39 + 15 * 2),
+        console.Print("     ", V8 * 40 + 15 * 2),
+        console.Print("     ", V8 * 41 + 15 * 2),
+        console.Print("  200", V8 * 42 + 15 * 2),
+        console.Print("  200", V8 * 43 + 15 * 2),
+        console.Print(" ", V8 * 41 + 14 * 2, 0xFF),
+        console.Print("\x02", V8 * 41 + 8 * 2, 0xF0),
+        console.Print(
+            "\x02 between cells shows one-way traffic.",
+            V8 * 40 + 21 * 2,
+        ),
+        console.Print(" ", V8 * 42 + 21 * 2, 0xFF),
+        console.Print(" between cells shows two-way traffic.", color=0xF0),
+        console.Print(
+            "On reaching a cell, you will see an event description in the message window",
+            V8 * 45 + 3 * 2,
+        ),
+        console.Print(
+            "and have the event to occur.",
+            V8 * 46 + 3 * 2,
+        ),
+        console.Print(
+            'You can change your way to go until pressing "Enter" to fix your position.',
+            V8 * 48 + 3 * 2,
+        ),
+        console.Print("Events:", V8 * 51),
+        console.Print("Gray cells represent vacant lots of land.", V8 * 53 + 3 * 2),
+        console.Print("     ", V8 * 55 + 3 * 2, 0xF1),
+        console.Print("     ", V8 * 56 + 3 * 2),
+        console.Print("     ", V8 * 57 + 3 * 2),
+        console.Print("  200", V8 * 58 + 3 * 2),
+        console.Print("  200", V8 * 59 + 3 * 2),
+        console.Print(
+            "The number in each cell shows the land price.", V8 * 58 + 9 * 2, 0xF0
+        ),
+        console.Print(
+            "Once you stay in a gray cell, you are to automatically buy that lot as long",
+            V8 * 61 + 3 * 2,
+        ),
+        console.Print(
+            "as you have enough money.",
+            V8 * 62 + 3 * 2,
+        ),
+        console.Print(
+            "If you are short of money, you will not be forced to buy.",
+            V8 * 64 + 3 * 2,
+        ),
+        console.Print(
+            "Cells in other colors than yellow represent owned lots.",
+            V8 * 67 + 3 * 2,
+        ),
+        console.Print("     ", V8 * 69 + 3 * 2, 0xF3),
+        console.Print("     ", V8 * 70 + 3 * 2),
+        console.Print("     ", V8 * 71 + 3 * 2),
+        console.Print("  750", V8 * 72 + 3 * 2),
+        console.Print("  300", V8 * 73 + 3 * 2),
+        console.Print("     ", V8 * 69 + 9 * 2),
+        console.Print("     ", V8 * 70 + 9 * 2),
+        console.Print("     ", V8 * 71 + 9 * 2),
+        console.Print("  750", V8 * 72 + 9 * 2),
+        console.Print("  450", V8 * 73 + 9 * 2),
+        console.Print("\x02", V8 * 71 + 8 * 2, 0xF0),
+        console.Print(
+            "The upper value is the total price of adjoining lots,",
+            V8 * 72 + 15 * 2,
+        ),
+        console.Print(
+            "and the lower value is the price of each lot.", V8 * 73 + 15 * 2
+        ),
+        console.Print(
+            "When you stay in an owned lot except yours, you are to buy all adjoining",
+            V8 * 75 + 3 * 2,
+        ),
+        console.Print(
+            "lots of the same owner in disregard to the amount of your money.",
+            V8 * 76 + 3 * 2,
+        ),
+        console.Print(
+            "Once you buy a lot, the land price increases by 50%, bringing the same",
+            V8 * 78 + 3 * 2,
+        ),
+        console.Print("increase in your total assets.", V8 * 79 + 3 * 2),
+        console.Print(
+            "However, if you get short of money due to forced purchase, your lots are to",
+            V8 * 81 + 3 * 2,
+        ),
+        console.Print(
+            "be randomly sold at 50% discount to redeem your debt.",
+            V8 * 82 + 3 * 2,
+        ),
+        console.Print(
+            "The player with the smallest assets is to get a bonus on getting into a",
+            V8 * 85 + 3 * 2,
+        ),
+        console.Print("yellow cell.", V8 * 86 + 3 * 2),
+        console.Print("     ", V8 * 88 + 3 * 2, 0x62),
+        console.Print("     ", V8 * 89 + 3 * 2),
+        console.Print("     ", V8 * 90 + 3 * 2),
+        console.Print("BONUS", V8 * 91 + 3 * 2),
+        console.Print("  100", V8 * 92 + 3 * 2),
+        console.Print('The "', V8 * 91 + 9 * 2, 0xF0),
+        console.Print("BONUS", color=0x62),
+        console.Print(
+            '" message will disappear and nothing will happen unless you',
+            color=0xF0,
+        ),
+        console.Print("are the owner of the smallest assets.", V8 * 92 + 9 * 2),
+        console.Print(
+            "Once you get a bonus, you will have next bonus to increase by 50%.",
+            V8 * 94 + 3 * 2,
+        ),
+        console.Print("Tip:", V8 * 97),
+        console.Print(
+            "A tip to reverse the game is not to make the top player richer.",
+            V8 * 99 + 3 * 2,
+        ),
+        console.Print(
+            "When you are to buy lots, try to buy from the other player than the top one.",
+            V8 * 101 + 3 * 2,
+        ),
+        consoleStatus.Print(
+            'Press "Up" or "Down" to scroll this instruction.', 640 * 1, 0x80
+        ),
+        consoleStatus.Print(
+            'Press "Left" or "Right" to go back or forward a page.', 640 * 3
+        ),
+        consoleStatus.Print('Press "Enter" to start the game.', 640 * 5),
+        vsync(0),
+        Do()[...].While(vsync == 0),
+        blink(0x00FF0088),
         Do()[
-            clear(),
-            console.Print("Introduction:", 640 * 4),
-            console.Print(
-                "This game, running on a ring topology multiprocessor system built on an FPGA,",
-                640 * 6 + 3,
-            ),
-            console.Print(
-                "is a playable demo application based on the ReLM architecture.",
-                640 * 7 + 3,
-            ),
-            console.Print(
-                "It shows how the ReLM architecture makes parallel processing simple and",
-                640 * 9 + 3,
-            ),
-            console.Print(
-                "building stand-alone applications easy, in need of no operating system.",
-                640 * 10 + 3,
-            ),
-            console.Print("Playable Demo:", 640 * 13),
-            console.Print(
-                "Bubble Estate is a simple Monopoly-like dice game.",
-                640 * 15 + 3,
-            ),
-            console.Print(
-                "Just roll dice and choose the next cell to go, and only that.",
-                640 * 17 + 3,
-            ),
-            console.Print("Let's play the new technology!", 640 * 20 + 3),
-            console.Print("Goal:", 640 * 23),
-            console.Print(
-                "You win when your total assets (real estate + money) reach %d." % goal,
-                640 * 25 + 3,
-            ),
-            console.Print(
-                "However, when one of the players goes bankrupt, the game is over.",
-                640 * 27 + 3,
-            ),
-            console.Print("Move:", 640 * 30),
-            console.Print(
-                "Roll dice and move forward according to the number on the dice.",
-                640 * 32 + 3,
-            ),
-            console.Print('Roll dice by pressing "Enter",', 640 * 34 + 3),
-            console.Print(
-                "and then choose the next cell with the cursor keys.", 640 * 35 + 3
-            ),
-            console.Print("     ", 640 * 37 + 3, 0xF1),
-            console.Print("     ", 640 * 38 + 3),
-            console.Print("     ", 640 * 39 + 3),
-            console.Print("  200", 640 * 40 + 3),
-            console.Print("  200", 640 * 41 + 3),
-            console.Print("     ", 640 * 37 + 9),
-            console.Print("     ", 640 * 38 + 9),
-            console.Print("     ", 640 * 39 + 9),
-            console.Print("  200", 640 * 40 + 9),
-            console.Print("  200", 640 * 41 + 9),
-            console.Print("     ", 640 * 37 + 15),
-            console.Print("     ", 640 * 38 + 15),
-            console.Print("     ", 640 * 39 + 15),
-            console.Print("  200", 640 * 40 + 15),
-            console.Print("  200", 640 * 41 + 15),
-            console.Print(" ", 640 * 39 + 14, 0xFF),
-            console.Print("\x02", 640 * 39 + 8, 0xF0),
-            console.Print(
-                "\x02 between cells shows one-way traffic.",
-                640 * 38 + 21,
-            ),
-            console.Print(" ", 640 * 40 + 21, 0xFF),
-            console.Print(" between cells shows two-way traffic.", color=0xF0),
-            console.Print(
-                "On reaching a cell, you will see an event description in the message window",
-                640 * 43 + 3,
-            ),
-            console.Print(
-                "and have the event to occur.",
-                640 * 44 + 3,
-            ),
-            console.Print(
-                'You can change your way to go until pressing "Enter" to fix your position.',
-                640 * 46 + 3,
-            ),
-            console.Print(
-                'Press "Right" or "Down" to go to the next page.', 640 * 50, 0x80
-            ),
-            console.Print('Press "Enter" to start the game.', 640 * 52),
-            Do()[k := Int(keyboard.Pop())].While(
-                (k != DOWN) & (k != RIGHT) & (k != ENTER)
-            ),
-            If(k == ENTER)[Break()],
-            clear(),
-            console.Print("Events:", 640 * 4),
-            console.Print("Gray cells represent vacant lots of land.", 640 * 6 + 3),
-            console.Print("     ", 640 * 8 + 3, 0xF1),
-            console.Print("     ", 640 * 9 + 3),
-            console.Print("     ", 640 * 10 + 3),
-            console.Print("  200", 640 * 11 + 3),
-            console.Print("  200", 640 * 12 + 3),
-            console.Print(
-                "The number in each cell shows the land price.", 640 * 11 + 9, 0xF0
-            ),
-            console.Print(
-                "Once you stay in a gray cell, you are to automatically buy that lot as long",
-                640 * 14 + 3,
-            ),
-            console.Print(
-                "as you have enough money.",
-                640 * 15 + 3,
-            ),
-            console.Print(
-                "If you are short of money, you will not be forced to buy.",
-                640 * 17 + 3,
-            ),
-            console.Print(
-                "Cells in other colors than yellow represent owned lots.", 640 * 20 + 3
-            ),
-            console.Print("     ", 640 * 22 + 3, 0xF3),
-            console.Print("     ", 640 * 23 + 3),
-            console.Print("     ", 640 * 24 + 3),
-            console.Print("  750", 640 * 25 + 3),
-            console.Print("  300", 640 * 26 + 3),
-            console.Print("     ", 640 * 22 + 9),
-            console.Print("     ", 640 * 23 + 9),
-            console.Print("     ", 640 * 24 + 9),
-            console.Print("  750", 640 * 25 + 9),
-            console.Print("  450", 640 * 26 + 9),
-            console.Print("\x02", 640 * 24 + 8, 0xF0),
-            console.Print(
-                "The upper value is the total price of adjoining lots,", 640 * 25 + 15
-            ),
-            console.Print(
-                "and the lower value is the price of each lot.", 640 * 26 + 15
-            ),
-            console.Print(
-                "When you stay in an owned lot except yours, you are to buy all adjoining",
-                640 * 28 + 3,
-            ),
-            console.Print(
-                "lots of the same owner in disregard to the amount of your money.",
-                640 * 29 + 3,
-            ),
-            console.Print(
-                "Once you buy a lot, the land price increases by 50%, bringing the same",
-                640 * 31 + 3,
-            ),
-            console.Print("increase in your total assets.", 640 * 32 + 3),
-            console.Print(
-                "However, if you get short of money due to forced purchase, your lots are to",
-                640 * 34 + 3,
-            ),
-            console.Print(
-                "be randomly sold at 50% discount to redeem your debt.",
-                640 * 35 + 3,
-            ),
-            console.Print(
-                "The player with the smallest assets is to get a bonus on getting into a",
-                640 * 38 + 3,
-            ),
-            console.Print("yellow cell.", 640 * 39 + 3),
-            console.Print("     ", 640 * 41 + 3, 0x62),
-            console.Print("     ", 640 * 42 + 3),
-            console.Print("     ", 640 * 43 + 3),
-            console.Print("BONUS", 640 * 44 + 3),
-            console.Print("  100", 640 * 45 + 3),
-            console.Print('The "', 640 * 44 + 9, 0xF0),
-            console.Print("BONUS", color=0x62),
-            console.Print(
-                '" message will disappear and nothing will happen unless you',
-                color=0xF0,
-            ),
-            console.Print("are the owner of the smallest assets.", 640 * 45 + 9),
-            console.Print(
-                "Once you get a bonus, you will have next bonus to increase by 50%.",
-                640 * 47 + 3,
-            ),
-            console.Print("Tip:", 640 * 49),
-            console.Print(
-                "A tip to reverse the game is not to make the top player richer.",
-                640 * 51 + 3,
-            ),
-            console.Print(
-                "When you are to buy lots, try to buy from the other player than the top one.",
-                640 * 53 + 3,
-            ),
-            console.Print(
-                'Press "Left" or "Up" to go back to the previous page.', 640 * 56, 0x80
-            ),
-            console.Print('Press "Enter" to start the game.', 640 * 58),
-            Do()[k := Int(keyboard.Pop())].While(
-                (k != LEFT) & (k != UP) & (k != ENTER)
-            ),
+            k := Int(),
+            If(k(keyboard.Pop()) == UP)[scrollY(scrollY - 8), scroll()],
+            If(k == DOWN)[scrollY(scrollY + 8), scroll()],
+            If(k == LEFT)[scrollY(scrollY - (51 - 6) * 8), scroll()],
+            If(k == RIGHT)[scrollY(scrollY + (51 - 6) * 8), scroll()],
         ].While(k != ENTER),
         clear(),
-        console.Print(
-            "                                                                               ",
-            640 * 46,
-            0xFE,
-        ),
-        console.Print(
-            "                                                                               ",
-            640 * 47,
-        ),
-        console.Print(
-            "         RealEstate + Money = TotalAssets (Goal: %d)" % goal,
-            640 * 46 + 320,
-        ),
-        console.Print(
-            " You   ",
-            640 * 49,
-            0x84,
-        ),
-        console.Print(
-            " Alice ",
-            640 * 51 + 320,
-            0x73,
-        ),
-        console.Print(
-            " Bob   ",
-            640 * 54,
-            0x95,
-        ),
-        y := Int(0),
-        While(y < 7)[
-            cy := Int(y * (6 * 640) + 640 * 3),
-            x := Int(0),
-            While(x < 13)[
-                i := Int(y * 15 + x + 16),
-                o := Int(owner[i]),
-                If(o != 0)[
-                    pos := Int(cy + x * 6),
-                    If(o == 1)[
-                        price[i](200),
-                        total[i](200),
-                    ].Else[
-                        price[i](100),
-                    ],
-                    d := Int(dir[i]),
-                    If(d & 1 != 0)[console.Print("\x01", pos + 3, 0xF0),],
-                    If(owner[i + 1] != 0)[
-                        c := Int(0xFF),
-                        If(d & 2 != 0)[c(0xF0)],
-                        console.Print("\x02", pos + (6 + 640 * 3), c),
-                    ],
-                    If(owner[i + 15] != 0)[
-                        c := Int(0xFF),
-                        If(d & 4 != 0)[c(0xF0)],
-                        console.Print("\x03", pos + (3 + 640 * 6), c),
-                    ],
-                    If(d & 8 != 0)[console.Print("\x04", pos + (640 * 3), 0xF0),],
-                ],
-                x(x + 1),
-            ],
-            y(y + 1),
-        ],
+        initMap(),
+        nrand(0, In("TIMER")),
         Do()[
             LED(
                 hex3=0b0111011,
@@ -1523,4 +1600,11 @@ with ReLMLoader(__file__, loader=loader):
         ],
         dispStatus(),
         dispMap(bonus),
+        Do()[
+            k := Int(),
+            If(k(keyboard.Pop()) == UP)[scrollY(scrollY - 8 * 6), scroll()],
+            If(k == DOWN)[scrollY(scrollY + 8 * 6), scroll()],
+            If(k == LEFT)[scrollX(scrollX - 2 * 6), scroll()],
+            If(k == RIGHT)[scrollX(scrollX + 2 * 6), scroll()],
+        ],
     ]

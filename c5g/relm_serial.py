@@ -200,3 +200,19 @@ class Serial(SerialPrint):
                 curses.wrapper(window, ser)
                 ser.close()
                 break
+
+    def dump(self, file):
+        for p in serial.tools.list_ports.comports():
+            print(p)
+            if "USB Serial Port" in p.description:
+                ser = serial.Serial(p.device, 115200, timeout=1)
+                self.handshake(ser)
+                with open(file, "wb") as f:
+                    while True:
+                        if ser.in_waiting > 0:
+                            data = ser.read(1)
+                            if data == b"\xaa":
+                                break
+                            f.write(data)
+                ser.close()
+                break
