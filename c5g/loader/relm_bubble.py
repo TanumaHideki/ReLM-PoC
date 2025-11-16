@@ -7,7 +7,7 @@ from relm_c5g import *
 from relm_font import font8x8, ConsoleSRAM, ConsoleArray
 from relm_usb import USB
 import numpy as np
-from relm_bubble_map1 import (
+from relm_bubble_map2 import (
     map_owner,
     map_dir,
     map_pawn,
@@ -36,6 +36,7 @@ with ReLMLoader(__file__, loader=loader):
     Define[
         i2c := I2C(),
         audio := Audio(i2c),
+        mouse_mutex := Mutex(),
     ]
     sr_table = {
         8000: 0b001110,
@@ -94,6 +95,11 @@ with ReLMLoader(__file__, loader=loader):
             i2c.write(0x72, 0xA2, 0xA4),
             i2c.write(0x72, 0xA3, 0xA4),
             i2c.write(0x72, 0xE0, 0xD0),
+            mouse_mutex[
+                mouse_click := Int(0),
+                mouse_x := Int(320),
+                mouse_y := Int(200),
+            ],
             Out("HDMIPAL", 0x40),
             Do()[
                 Acc("VRAM"),
@@ -119,6 +125,18 @@ with ReLMLoader(__file__, loader=loader):
                 ].Else[
                     If(blink_state == 0x10)[Out("HDMIPAL", b),],
                 ],
+                usbProtocol := Int(),
+                If(usbProtocol == 2)[
+                    mouse_mutex[
+                        Out(
+                            "HDMIPAL",
+                            mouse_x * 256 + 0x8F10,
+                        ),
+                        Out("HDMIPAL", mouse_y * 256 + 0x2320),
+                    ],
+                ].Else[
+                    Out("HDMIPAL", 0x10, 0x20),
+                ],
                 i2c.read(0x72, 0x42),
             ].While(RegB & 0x6000 == 0x6000),
         ],
@@ -142,12 +160,22 @@ with ReLMLoader(__file__, loader=loader):
             vaddr[1](addr((scrollY << 8) + scrollX + ((91 << 19) + 68))),
             *([vaddr[1 + i * 2](addr + i * 256) for i in range(1, 40)]),
         ],
-        focus := Function(index := Int())[
+        focus := Function(index := Int(), cursor := Int())[
             y := Int(),
-            goalX := Int((index - y(index // MAPW) * MAPW) * 12 - 83),
-            If(goalX < 0)[goalX(0)].Else[If(goalX > 256 - 160)[goalX(256 - 160)],],
-            goalY := Int(y * 48 - 208),
-            If(goalY < 0)[goalY(0)].Else[If(goalY > 1024 - 400)[goalY(1024 - 400)],],
+            goalX := Int((index - y(index // MAPW) * MAPW) * 12 - 84),
+            cx := Int(),
+            If(goalX < 0)[cx(320 + goalX * 4), goalX(0)].Else[
+                If(goalX > 256 - 160)[
+                    cx(320 + (goalX - (256 - 160)) * 4), goalX(256 - 160)
+                ].Else[cx(320)]
+            ],
+            goalY := Int(y * 48 - 216),
+            cy := Int(),
+            If(goalY < 0)[cy(200 + goalY), goalY(0)].Else[
+                If(goalY > 1024 - 400)[
+                    cy(200 + (goalY - (1024 - 400))), goalY(1024 - 400)
+                ].Else[cy(200)]
+            ],
             Do()[
                 If(scrollX < goalX - 2)[scrollX(scrollX + 2)].Else[
                     If(scrollX > goalX + 2)[scrollX(scrollX - 2)].Else[scrollX(goalX)],
@@ -157,6 +185,14 @@ with ReLMLoader(__file__, loader=loader):
                 ],
                 scroll(),
             ].While((scrollX != goalX) | (scrollY != goalY)),
+            If(cursor != 0)[
+                If(usbProtocol == 2)[
+                    mouse_mutex[
+                        mouse_x(cx),
+                        mouse_y(cy),
+                    ],
+                ],
+            ],
         ],
     ]
     audio_shift = Array(*([0] * 11), op="OPB")
@@ -526,7 +562,7 @@ with ReLMLoader(__file__, loader=loader):
             ),
             y := Int(0),
             Do()[
-                cy := Int(y * (6 * V8) + (V8 + 2)),
+                cy := Int(y * (6 * V8) + (V4 + 1)),
                 x := Int(0),
                 Do()[
                     i := Int(),
@@ -561,7 +597,7 @@ with ReLMLoader(__file__, loader=loader):
         dispMap := Function(bonus := Int())[
             y := Int(0),
             Do()[
-                cy := Int(y * (6 * V8) + (V8 + 2)),
+                cy := Int(y * (6 * V8) + (V4 + 1)),
                 x := Int(0),
                 Do()[
                     i := Int(),
@@ -672,32 +708,74 @@ with ReLMLoader(__file__, loader=loader):
             Do()[scan_sw(0x55),],
         ].Else[
             Do()[
-                Do()[
-                    scan_sw(0),
-                    usb.Task(fifo_usb.port),
+                scan_sw(0),
+                usb.Task(fifo_usb.port),
+                Continue(),
+                usb.USB_STATE_ERROR,
+                usb.PowerOn(),
+                Continue(),
+                usb.USB_STATE_CONFIGURING,
+                If(usb.rcode(usb.GetConfDescr(1, 0, 18, 0, fifo_usb.port)) != 0)[
+                    usb.usb_task_state(usb.USB_STATE_ERROR),
                     Continue(),
-                    usb.USB_STATE_ERROR,
-                    usb.PowerOn(),
+                ],
+                If(fifo_usb.Pop() != 9)[
+                    fifo_usb.Clear(),
+                    usb.usb_task_state(usb.USB_STATE_ERROR),
                     Continue(),
-                    usb.USB_STATE_CONFIGURING,
+                ],
+                If(fifo_usb.Pop() != usb.USB_DESCRIPTOR_CONFIGURATION)[
+                    fifo_usb.Clear(),
+                    usb.usb_task_state(usb.USB_STATE_ERROR),
+                    Continue(),
+                ],
+                fifo_usb.Pop(),
+                fifo_usb.Pop(),
+                fifo_usb.Pop(),
+                fifo_usb.Pop(),
+                fifo_usb.Pop(),
+                fifo_usb.Pop(),
+                fifo_usb.Pop(),
+                If(fifo_usb.Pop() != 9)[
+                    fifo_usb.Clear(),
+                    usb.usb_task_state(usb.USB_STATE_ERROR),
+                    Continue(),
+                ],
+                If(fifo_usb.Pop() != usb.USB_DESCRIPTOR_INTERFACE)[
+                    fifo_usb.Clear(),
+                    usb.usb_task_state(usb.USB_STATE_ERROR),
+                    Continue(),
+                ],
+                fifo_usb.Pop(),
+                fifo_usb.Pop(),
+                fifo_usb.Pop(),
+                If(fifo_usb.Pop() != 3)[  # HID
+                    fifo_usb.Clear(),
+                    usb.usb_task_state(usb.USB_STATE_ERROR),
+                    Continue(),
+                ],
+                fifo_usb.Pop(),
+                usbProtocol(fifo_usb.Pop()),
+                fifo_usb.Pop(),
+                If((usbProtocol - 1) & ~1 == 0)[  # keyboard or mouse
                     usb.MaxPktSize[1](8),
                     usb.SndToggle[1](usb.SNDTOG0),
                     usb.RcvToggle[1](usb.RCVTOG0),
-                    If(usb.SetConf(1, 0, 1) != 0)[
+                    If(usb.rcode(usb.SetConf(1, 0, 1)) != 0)[
                         usb.usb_task_state(usb.USB_STATE_ERROR),
                         Continue(),
                     ],
-                    If(usb.SetProto(1, 0, 0, 0) != 0)[
-                        usb.usb_task_state(usb.USB_STATE_ERROR),
-                        Continue(),
-                    ],
-                    If(usb.SetIdle(1, 0, 0, 0, 1) != 0)[
+                    If(usb.rcode(usb.SetProto(1, 0, 0, 0)) != 0)[  # boot protocol
                         usb.usb_task_state(usb.USB_STATE_ERROR),
                         Continue(),
                     ],
                     usb.usb_task_state(usb.USB_STATE_RUNNING),
                     Continue(),
-                    usb.USB_STATE_RUNNING,
+                ],
+                usb.usb_task_state(usb.USB_STATE_ERROR),
+                Continue(),
+                usb.USB_STATE_RUNNING,
+                If(usbProtocol == 1)[  # keyboard
                     key1 := Int(0),
                     key2 := Int(),
                     key3 := Int(),
@@ -705,9 +783,8 @@ with ReLMLoader(__file__, loader=loader):
                     key5 := Int(),
                     key6 := Int(),
                     Do()[
-                        scan_sw(0xFF),
-                        If(usb.InTransfer(1, 8, fifo_usb) != 0)[Break(),],
-                        fifo_usb.Pop(),
+                        If(usb.rcode(usb.InTransfer(1, 8, fifo_usb)) != 0)[Break(),],
+                        scan_sw(fifo_usb.Pop() ^ 0xFF),
                         fifo_usb.Pop(),
                         now := Int(),
                         scan_hid(
@@ -730,8 +807,27 @@ with ReLMLoader(__file__, loader=loader):
                         scan_hid(now(fifo_usb.Pop())),
                         key6(now),
                     ],
+                ].Else[  # mouse
+                    keyboard.Clear(),
+                    Do()[
+                        If(usb.InTransfer(1, 3, fifo_usb) != 0)[Break(),],
+                        click := Int(),
+                        Out(
+                            "LED",
+                            ((In("KEY") & 0x3FF0) << 4)
+                            | (click(fifo_usb.Pop()) ^ 0xFF),
+                        ),
+                        dx := Int((fifo_usb.Pop() ^ 0x80) - 0x80),
+                        dy := Int((fifo_usb.Pop() ^ 0x80) - 0x80),
+                        mouse_mutex[
+                            mouse_click(click),
+                            mouse_x(mouse_x + dx),
+                            mouse_y(mouse_y + dy),
+                        ],
+                    ],
                 ],
-                Do()[scan_sw(0),].While(usb.IntHandler() == 0),
+                fifo_usb.Clear(),
+                usb.usb_task_state(usb.USB_STATE_ERROR),
             ],
         ],
     ],
@@ -821,30 +917,56 @@ with ReLMLoader(__file__, loader=loader):
             i := Int(MAPW),
             Do()[...].While(pawn[i(i + 1)] & pawn_bit == 0),
             pawn_i := Int(i),
-            focus(pawn_i),
+            focus(pawn_i, human),
             Do()[...].While(audio_ready == 0),
             fillMessage((color & 0xF) * 16 + 0x0E),
             If(human != 0)[
-                console.Print("Cursor keys:  Explore map", V8 * 1 + 2 * 2),
-                console.Print("Enter key:  Roll the dice", V8 * 3 + 2 * 2),
+                console.Print("Cursor or moving mouse:", V8 * 0 + V2 + 1 * 2),
+                console.Print("Explore the map", V8 * 1 + V2 + 13 * 2),
+                console.Print("Enter or click:", V8 * 2 + V6 + 1 * 2),
+                console.Print("Roll the dice", V8 * 3 + V6 + 13 * 2),
                 timer := Timer(),
-                dice := Int(1),
+                dice := Int(nrand(6) + 1),
                 keyboard.Clear(),
+                If(usbProtocol == 2)[Do()[...].While(mouse_click != 0),],  # mouse
                 Do()[
                     If(timer.IsTimeout())[
                         dispDice.Switch(dice, console.fifo_print.port),
-                        If(dice == 6)[dice(1)].Else[dice(dice + 1)],
+                        dice((dice + nrand(5)) % 6 + 1),
                         timer.After(ms=250),
                     ],
-                    If(keyboard.IsEmpty())[
-                        k := Int(0),
-                        Continue(),
+                    If(usbProtocol == 2)[  # mouse
+                        mouse_mutex[
+                            dx := Int(),
+                            mx := Int(mouse_x),
+                            If(mx < 0)[dx(mx), mouse_x(mx(0))].Else[
+                                If(mx > 639)[dx(mx - 639), mouse_x(mx(639))].Else[dx(0)]
+                            ],
+                            dy := Int(),
+                            my := Int(mouse_y),
+                            If(my < 0)[dy(my), mouse_y(my(0))].Else[
+                                If(my > 399)[dy(my - 399), mouse_y(my(399))].Else[dy(0)]
+                            ],
+                            click := Int(mouse_click),
+                            mouse_click(0),
+                        ],
+                        If(dx | dy != 0)[
+                            scrollX(scrollX + dx),
+                            scrollY(scrollY + dy),
+                            scroll(),
+                        ],
+                        If(click != 0)[Break()],
+                    ].Else[
+                        If(keyboard.IsEmpty())[Continue()],
+                        k := Int(),
+                        If(k(keyboard.Pop()) == UP)[scrollY(scrollY - 8 * 6), scroll()],
+                        If(k == DOWN)[scrollY(scrollY + 8 * 6), scroll()],
+                        If(k == LEFT)[scrollX(scrollX - 2 * 6), scroll()],
+                        If(k == RIGHT)[scrollX(scrollX + 2 * 6), scroll()],
+                        If(k == ENTER)[Break()],
                     ],
-                    If(k(keyboard.Pop()) == UP)[scrollY(scrollY - 8 * 6), scroll()],
-                    If(k == DOWN)[scrollY(scrollY + 8 * 6), scroll()],
-                    If(k == LEFT)[scrollX(scrollX - 2 * 6), scroll()],
-                    If(k == RIGHT)[scrollX(scrollX + 2 * 6), scroll()],
-                ].While(k != ENTER),
+                ],
+                focus(pawn_i, 1),
             ].Else[
                 If(index == 0)[
                     console.Print("Auto play:  Alice's turn", V8 * 2 + 3 * 2),
@@ -925,12 +1047,14 @@ with ReLMLoader(__file__, loader=loader):
             ].While(flag != 0),
             dispMap(bonus),
             If(human != 0)[
+                keyboard.Clear(),
+                If(usbProtocol == 2)[Do()[...].While(mouse_click != 0),],  # mouse
                 Do()[
                     fillMessage(0xFE),
                     If(distance[pawn_i] & 1 == 0)[
-                        console.Print("Cursor keys:", V8 * 0 + V2 + 1 * 2),
+                        console.Print("Cursor or moving mouse:", V8 * 0 + V2 + 1 * 2),
                         console.Print("Step ahead or back", V8 * 1 + V2 + 10 * 2),
-                        console.Print("Enter key:", V8 * 2 + V6 + 1 * 2),
+                        console.Print("Enter or click:", V8 * 2 + V6 + 1 * 2),
                         console.Print("Fix your position", V8 * 3 + V6 + 10 * 2),
                     ].Else[
                         o := Int(owner[pawn_i]),
@@ -1033,31 +1157,70 @@ with ReLMLoader(__file__, loader=loader):
                             ],
                         ],
                     ],
-                    k := Int(keyboard.Pop()),
-                    If(k == UP)[pawn_j := Int(pawn_i - MAPW),].Else[
-                        If(k == RIGHT)[pawn_j(pawn_i + 1),].Else[
-                            If(k == DOWN)[pawn_j(pawn_i + MAPW),].Else[
-                                If(k == LEFT)[pawn_j(pawn_i - 1),].Else[
-                                    If((k == ENTER) & (distance[pawn_i] & 1 != 0))[
-                                        Break()
+                    Do()[
+                        If(usbProtocol == 2)[  # mouse
+                            mouse_mutex[
+                                dx := Int(),
+                                mx := Int(mouse_x),
+                                If(mx < 0)[dx(mx), mouse_x(mx(0))].Else[
+                                    If(mx > 639)[dx(mx - 639), mouse_x(mx(639))].Else[
+                                        dx(0)
+                                    ]
+                                ],
+                                dy := Int(),
+                                my := Int(mouse_y),
+                                If(my < 0)[dy(my), mouse_y(my(0))].Else[
+                                    If(my > 399)[dy(my - 399), mouse_y(my(399))].Else[
+                                        dy(0)
+                                    ]
+                                ],
+                                click := Int(mouse_click),
+                            ],
+                            If(dx | dy != 0)[
+                                scrollX(scrollX + dx),
+                                scrollY(scrollY + dy),
+                                scroll(),
+                            ],
+                            x := Int((scrollX * 4 + mx + 40) // 48),
+                            y := Int((scrollY + my + 40) // 48),
+                            pawn_j := Int(y * MAPW + x),
+                            If(
+                                (pawn_j == pawn_i)
+                                & (click != 0)
+                                & (distance[pawn_i] & 1 != 0)
+                            )[Break()],
+                            If(distance[pawn_j] == 0)[pawn_j(pawn_i)],
+                        ].Else[
+                            pawn_j(pawn_i),
+                            If(keyboard.IsEmpty())[Continue()],
+                            k := Int(keyboard.Pop()),
+                            If(k == UP)[pawn_j(pawn_i - MAPW),].Else[
+                                If(k == RIGHT)[pawn_j(pawn_i + 1),].Else[
+                                    If(k == DOWN)[pawn_j(pawn_i + MAPW),].Else[
+                                        If(k == LEFT)[pawn_j(pawn_i - 1),].Else[
+                                            If(
+                                                (k == ENTER)
+                                                & (distance[pawn_i] & 1 != 0)
+                                            )[Break()],
+                                        ],
                                     ],
-                                    Continue(),
                                 ],
                             ],
+                            If(owner[pawn_j] == 0)[pawn_j(pawn_i)],
                         ],
-                    ],
-                    dist_j := Int(),
-                    If(dist_j(distance[pawn_j]) == 0)[Continue()],
+                    ].While(pawn_j == pawn_i),
+                    If(pawn_j == pawn_i)[Break()],  # click or enter
                     pawn[pawn_i](pawn[pawn_i] & (pawn_bit ^ 7)),
                     pawn[pawn_j](pawn[pawn_j] | pawn_bit),
                     audio_state(WALK),
                     dispMap(bonus),
-                    If(dist_j & 1 != 0)[
+                    If(distance[pawn_j] & 1 != 0)[
                         dispDice.Switch(0, console.fifo_print.port),
                     ].Else[
                         dispDice.Switch(dice, console.fifo_print.port),
                     ],
-                    focus(pawn_i(pawn_j)),
+                    If(usbProtocol != 2)[focus(pawn_j, 1),],
+                    pawn_i(pawn_j),
                 ],
                 dest := Int(pawn_i),
             ].Else[  # human == 0
@@ -1148,7 +1311,7 @@ with ReLMLoader(__file__, loader=loader):
                     pawn[pawn_j](pawn[pawn_j] | pawn_bit),
                     audio_state(WALK),
                     dispMap(bonus),
-                    focus(pawn_j),
+                    focus(pawn_j, 0),
                     Do()[...].While(audio_ready == 0),
                     i(j),
                     timer.Wait(),
@@ -1204,6 +1367,7 @@ with ReLMLoader(__file__, loader=loader):
                                 estate[index](estate[index] + p),
                                 owner[i](own),
                                 audio_state(BUY),
+                                focus(i, 0),
                                 dispMap(bonus),
                                 dispStatus(),
                                 Do()[...].While(audio_ready == 0),
@@ -1219,7 +1383,7 @@ with ReLMLoader(__file__, loader=loader):
                             Do()[
                                 i := Int(nrand(MAPW * (MAPH - 2) - 2) + MAPW + 1),
                             ].While(owner[i] != own),
-                            focus(i),
+                            focus(i, 1),
                             owner[i](0xF),
                             group[i](0),
                             p := Int(price[i]),
@@ -1520,22 +1684,47 @@ with ReLMLoader(__file__, loader=loader):
             V8 * 101 + 3 * 2,
         ),
         consoleStatus.Print(
-            'Press "Up" or "Down" to scroll this instruction.', 640 * 1, 0x80
+            'To scroll through the instructions, press "Up" or "Down" or move the mouse.',
+            640 * 1,
+            0x80,
         ),
         consoleStatus.Print(
             'Press "Left" or "Right" to go back or forward a page.', 640 * 3
         ),
-        consoleStatus.Print('Press "Enter" to start the game.', 640 * 5),
+        consoleStatus.Print(
+            'Press "Enter" or click the mouse to start the game.', 640 * 5
+        ),
         vsync(0),
         Do()[...].While(vsync == 0),
         blink(0x00FF0088),
         Do()[
-            k := Int(),
-            If(k(keyboard.Pop()) == UP)[scrollY(scrollY - 8), scroll()],
-            If(k == DOWN)[scrollY(scrollY + 8), scroll()],
-            If(k == LEFT)[scrollY(scrollY - (51 - 6) * 8), scroll()],
-            If(k == RIGHT)[scrollY(scrollY + (51 - 6) * 8), scroll()],
-        ].While(k != ENTER),
+            If(usbProtocol == 2)[  # mouse
+                mouse_mutex[
+                    mx := Int(mouse_x),
+                    If(mx < 0)[mouse_x(0)].Else[If(mx > 639)[mouse_x(639)]],
+                    dy := Int(),
+                    my := Int(mouse_y),
+                    If(my < 0)[dy(my), mouse_y(0)].Else[
+                        If(my > 399)[dy(my - 399), mouse_y(399)].Else[dy(0)]
+                    ],
+                    click := Int(mouse_click),
+                    mouse_click(0),
+                ],
+                If(dy != 0)[
+                    scrollY(scrollY + dy),
+                    scroll(),
+                ],
+                If(click != 0)[Break()],
+            ].Else[
+                If(keyboard.IsEmpty())[Continue()],
+                k := Int(),
+                If(k(keyboard.Pop()) == UP)[scrollY(scrollY - 8), scroll()],
+                If(k == DOWN)[scrollY(scrollY + 8), scroll()],
+                If(k == LEFT)[scrollY(scrollY - (51 - 6) * 8), scroll()],
+                If(k == RIGHT)[scrollY(scrollY + (51 - 6) * 8), scroll()],
+                If(k == ENTER)[Break()],
+            ],
+        ],
         clear(),
         initMap(),
         nrand(0, In("TIMER")),
@@ -1601,10 +1790,31 @@ with ReLMLoader(__file__, loader=loader):
         dispStatus(),
         dispMap(bonus),
         Do()[
-            k := Int(),
-            If(k(keyboard.Pop()) == UP)[scrollY(scrollY - 8 * 6), scroll()],
-            If(k == DOWN)[scrollY(scrollY + 8 * 6), scroll()],
-            If(k == LEFT)[scrollX(scrollX - 2 * 6), scroll()],
-            If(k == RIGHT)[scrollX(scrollX + 2 * 6), scroll()],
+            If(usbProtocol == 2)[  # mouse
+                mouse_mutex[
+                    dx := Int(),
+                    mx := Int(mouse_x),
+                    If(mx < 0)[dx(mx), mouse_x(mx(0))].Else[
+                        If(mx > 639)[dx(mx - 639), mouse_x(mx(639))].Else[dx(0)]
+                    ],
+                    dy := Int(),
+                    my := Int(mouse_y),
+                    If(my < 0)[dy(my), mouse_y(my(0))].Else[
+                        If(my > 399)[dy(my - 399), mouse_y(my(399))].Else[dy(0)]
+                    ],
+                ],
+                If(dx | dy != 0)[
+                    scrollX(scrollX + dx),
+                    scrollY(scrollY + dy),
+                    scroll(),
+                ],
+            ].Else[
+                If(keyboard.IsEmpty())[Continue()],
+                k := Int(),
+                If(k(keyboard.Pop()) == UP)[scrollY(scrollY - 8 * 6), scroll()],
+                If(k == DOWN)[scrollY(scrollY + 8 * 6), scroll()],
+                If(k == LEFT)[scrollX(scrollX - 2 * 6), scroll()],
+                If(k == RIGHT)[scrollX(scrollX + 2 * 6), scroll()],
+            ],
         ],
     ]

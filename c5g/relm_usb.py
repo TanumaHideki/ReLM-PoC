@@ -99,8 +99,9 @@ class USB(Debug):
     MODE_FS_HOST = DPPULLDN | DMPULLDN | HOST | SOFKAENAB
     MODE_LS_HOST = MODE_FS_HOST | LOWSPEED
 
-    def __init__(self, port: str = "USB"):
+    def __init__(self, timeout_ms: int = 5000, port: str = "USB"):
         super().__init__()
+        self.timeout_ms = timeout_ms
         self.port = port
         self.SendRegByte = Function(regdata := Int())[
             IO(port, IO(port, regdata)),
@@ -212,7 +213,7 @@ class USB(Debug):
         self.RcvToggle = Array(*([0] * 16))
         self[self.MaxPktSize, self.SndToggle, self.RcvToggle]
         self.DispatchPkt = Function(token := Int(), ep := Int())[
-            timeout := Timer(ms=5000),
+            timeout := Timer(ms=self.timeout_ms),
             retry_count := Int(0),
             Do()[
                 self.RegWr(self.HXFR, token | ep),
@@ -242,11 +243,13 @@ class USB(Debug):
                 If(rcode(self.DispatchPkt(self.TOKIN, ep)) != 0)[Return(rcode),],
                 If(self.RegRd(self.HIRQ) & self.RCVDAVIRQ == 0)[Return(0xF0),],
                 pktsize := Int(),
-                i := Int(pktsize(self.RegRd(self.RCVBC))),
+                If(pktsize(self.RegRd(self.RCVBC)) > nbytes)[pktsize(nbytes),],
                 self.BytesRd(self.RCVFIFO),
-                While(i != 0)[
-                    FIFO.PushPort(fifo_port, self.RecvByte()),
-                    i(i - 1),
+                i := Int(),
+                If(i(pktsize) != 0)[
+                    Do()[FIFO.PushPort(fifo_port, self.RecvByte()),].While(
+                        i(i - 1) != 0
+                    ),
                 ],
                 self.BytesEnd(),
                 self.RegWr(self.HIRQ, self.RCVDAVIRQ),
@@ -857,9 +860,9 @@ class USB(Debug):
 
 
 class USBDebug(USB):
-    def __init__(self, serial: Serial, port: str = "USB"):
+    def __init__(self, serial: Serial, timeout_ms: int = 5000, port: str = "USB"):
         self.serial = serial
-        super().__init__(port)
+        super().__init__(timeout_ms, port)
 
     def Println(self, *text: str, sep: str = " ", end: str = "\n"):
         return self.serial.Println(*text, sep=sep, end=end)

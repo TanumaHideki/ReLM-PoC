@@ -1144,23 +1144,28 @@ def Out(
 
 class FIFO:
     pool = []
+    total = 0
+    used = 0
 
     def __init__(self, port: str, size: int):
         self.port = port
         self.size = size
         self.locked = False
         FIFO.pool.append(self)
+        FIFO.total += 1
 
     @classmethod
     def Alloc(cls, size: int = 0) -> FIFO:
         candidate = [f.size for f in cls.pool if f.size >= size]
         assert candidate, "FIFO is not available"
+        FIFO.used += 1
         size = min(candidate)
         candidate = [i for i, f in enumerate(cls.pool) if f.size == size]
         return cls.pool.pop(candidate[0])
 
     def Free(self) -> None:
         FIFO.pool.append(self)
+        FIFO.used -= 1
 
     def Lock(self, load: str = "LOAD") -> Expr:
         assert not self.locked, "FIFO is locked"

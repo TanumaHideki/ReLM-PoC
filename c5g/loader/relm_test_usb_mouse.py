@@ -36,7 +36,7 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
                 usb.SndToggle[1](usb.SNDTOG0),
                 usb.RcvToggle[1](usb.RCVTOG0),
                 If(usb.rcode(usb.SetConf(1, 0, 1)) != 0)[
-                    serial.Println("Error attempting to configure keyboard."),
+                    serial.Println("Error attempting to configure mouse."),
                     usb.usb_task_state(usb.USB_STATE_ERROR),
                     Continue(),
                 ],
@@ -54,16 +54,18 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
                 serial.Println("USB_STATE_RUNNING"),
                 Continue(),
                 usb.USB_STATE_RUNNING,
+                # timer := Timer(),
                 Do()[
                     rcode := Int(),
-                    If(rcode(usb.InTransfer(1, 8, fifo)) != 0)[
+                    # timer.Wait(),
+                    If(rcode(usb.InTransfer(1, 3, fifo)) != 0)[
                         serial.Print("InTransfer rcode: 0x").Hex(rcode).Println(),
                         Break(),
                     ],
+                    # timer.After(ms=10),
                     LED(led=fifo.Pop()),
-                    fifo.Pop(),
-                    serial.Print("Key code:"),
-                    i := Int(6),
+                    serial.Print("Mouse code:"),
+                    i := Int(2),
                     Do()[serial.Print(" ").Hex(fifo.Pop(), "0X")].While(i(i - 1) != 0),
                     serial.Println(),
                 ],

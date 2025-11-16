@@ -15,6 +15,7 @@ ReLM[:] = (
     "HDMI",
     "VRAM",
     "AUDIO",
+    "FIFO9",
     "FIFO8",
     "FIFO7",
     "FIFO6",
@@ -23,6 +24,7 @@ ReLM[:] = (
     "FIFO3",
     "FIFO2",
     "FIFO1",
+    "FIFO0",
 )[::-1]
 ReLM[:] = (
     "JTAG",
@@ -33,6 +35,7 @@ ReLM[:] = (
     "I2C",
     "SRAM",
     "AUDIO",
+    "FIFO9",
     "FIFO8",
     "FIFO7",
     "FIFO6",
@@ -41,6 +44,7 @@ ReLM[:] = (
     "FIFO3",
     "FIFO2",
     "FIFO1",
+    "FIFO0",
 )[::-1]
 ReLM[0x18] = "FADD"
 ReLM[0x19] = "FMUL"
@@ -50,6 +54,7 @@ ReLM[0x1C::0x20] = "ITOF", "ISIGN"
 ReLM[0x1D::0x20] = ("ROUND", "TRUNC"), "FTOI"
 ReLM[0x1E] = "FCOMP"
 
+FIFO("FIFO0", 2048)
 FIFO("FIFO1", 2048)
 FIFO("FIFO2", 2048)
 FIFO("FIFO3", 2048)
@@ -57,7 +62,8 @@ FIFO("FIFO4", 2048)
 FIFO("FIFO5", 2048)
 FIFO("FIFO6", 2048)
 FIFO("FIFO7", 2048)
-FIFO("FIFO8", 2048)
+FIFO("FIFO8", 256)
+FIFO("FIFO9", 256)
 
 
 def LED(hex3=None, hex2=None, hex1=None, hex0=None, led=None):
@@ -292,6 +298,8 @@ class ReLMLoader(ReLM):
         print(
             f"{used} / {self.size} instructions ({used * 100 / self.size:.1f} % used)"
         )
+        print(f"{self.nthread} / {self.ncpu} threads")
+        print(f"{FIFO.used} / {FIFO.total} FIFOs")
         if not self.loader and self.release:
             self.save(*self.release)
         return self

@@ -239,8 +239,10 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 	input hdmi_int_in;
 	wire hdmi_empty;
 	reg [10:0] hdmi_x = 0;
+	reg [9:0] hdmi_cur_x = 0;
 	assign hdmi_clk_out = hdmi_x[0];
 	reg [9:0] hdmi_y = 0;
+	reg [9:0] hdmi_cur_y = 0;
 	wire [WD-1:0] hdmi_q;
 	reg [1:0] hdmi_en = 0;
 	reg [31:0] hdmi_pixel;
@@ -268,13 +270,15 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 			18*16-3: hdmi_en[0] <= 1;
 			98*16-3: hdmi_en[0] <= 0;
 		endcase
+		if (hdmipal_d[4]) hdmi_cur_x <= hdmipal_d[8+:10];
+		if (hdmipal_d[5]) hdmi_cur_y <= hdmipal_d[8+:10];
 		if (hdmipal_d[6] || hdmi_y == 35+480) hdmi_en[1] <= 0;
 		else if (hdmi_y == 35) hdmi_en[1] <= 1;
 		if (hdmipal_d[7]) hdmi_palette[hdmipal_d[3:0]] <= hdmipal_d[31:8];
 		casez (hdmi_x[3:0])
 			4'b???1: begin
 				hdmi_pixel <= {hdmi_pixel[27:0], 4'd0};
-				{hdmi_r_out, hdmi_g_out, hdmi_b_out} <= hdmi_palette[hdmi_pixel[31:28]];
+				{hdmi_r_out, hdmi_g_out, hdmi_b_out} <= hdmi_palette[hdmi_pixel[31:28]] ^ ((&hdmi_en && (hdmi_x[10:1] == hdmi_cur_x || hdmi_y == hdmi_cur_y)) ? 24'h808080 : 24'd0);
 				hdmi_de_out <= &hdmi_en;
 			end
 			4'b1110: if (&hdmi_en) hdmi_pixel <= hdmi_q;
@@ -518,7 +522,7 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 		.q(aud_adc_q)
 	);
 
-	parameter NFIFO = 8;
+	parameter NFIFO = 10;
 
 	wire [(WD+1)*NFIFO-1:0] pushf_d, popf_d, popf_q;
 	wire [NFIFO-1:0] pushf_retry;
@@ -526,7 +530,7 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 		genvar i;
 		for (i = 0; i < NFIFO; i = i + 1) begin : fifo
 			relm_fifo_io #(
-				.WAD(11),
+				.WAD((i < 8) ? 11 : 8),
 				.WD(WD)
 			) fifo_io(
 				.clk(clk),

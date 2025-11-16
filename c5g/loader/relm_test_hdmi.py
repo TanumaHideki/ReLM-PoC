@@ -10,7 +10,7 @@ Define[i2c := I2C(),]
 
 with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
     Thread[
-        Out("HDMIPAL", *[i * 0x11111101 + 0x80 for i in range(16)]),
+        Out("HDMIPAL", *[i * 0x11111101 + 0x80 for i in range(16)], 256 * 256 + 0x10, 128 * 256 + 0x20),
         Do()[
             Do()[
                 i2c.read(0x72, 0x42),  # HPD State, Monitor Sense State
