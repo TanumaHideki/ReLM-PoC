@@ -125,6 +125,12 @@ class BinaryOp(Statement):
     def __invert__(self) -> ExprB:
         return self ^ -1
 
+    def __abs__(self) -> ExprB:
+        if self.unsigned:
+            return self
+        else:
+            return ((RegB(self) >> 31) | 1) * RegB
+
     def __lt__(lhs, rhs: int | str | BinaryOp) -> Bool:
         if lhs.unsigned:
             return Bool(lhs.binary(rhs, "ULT", "UGT"))
@@ -1658,7 +1664,9 @@ class Mnemonic(type):
             case str():
                 assert isinstance(value, int), "value must be integer"
                 if key in cls.mnemonic:
-                    assert cls.mnemonic[key] == value, f"conflicted {key}={cls.mnemonic[key]}!={value}"
+                    assert (
+                        cls.mnemonic[key] == value
+                    ), f"conflicted {key}={cls.mnemonic[key]}!={value}"
                 else:
                     cls.mnemonic[key] = value
             case int():
