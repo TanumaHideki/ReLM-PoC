@@ -10,12 +10,12 @@ class Statement:
     def render(self, codes: list[Code]) -> list[Code]:
         raise SyntaxError("broken statement")
 
-    def terminal(self) -> bool:
+    def terminal(self) -> bool | None:
         return False
 
 
 class ErrorStatement(Statement):
-    def terminal(self) -> bool:
+    def terminal(self) -> bool | None:
         raise SyntaxError("broken statement")
 
 
@@ -124,6 +124,12 @@ class BinaryOp(Statement):
 
     def __invert__(self) -> ExprB:
         return self ^ -1
+
+    def __abs__(self) -> ExprB:
+        if self.unsigned:
+            return self
+        else:
+            return ((RegB(self) >> 31) | 1) * RegB
 
     def __lt__(lhs, rhs: int | str | BinaryOp) -> Bool:
         if lhs.unsigned:
@@ -434,13 +440,13 @@ AccU = AccExpr(True)
 
 class Int(BinaryOp):
     def __init__(
-        self, value: int | str | BinaryOp | None = None, unsigned: bool = False
+        self, value: int | str | BinaryOp | Label | None = None, unsigned: bool = False
     ):
         super().__init__(unsigned)
         match value:
             case int() | str():
                 self.expr = self["LOAD":value]
-            case BinaryOp():
+            case BinaryOp() | Label():
                 self.expr = +value
             case None:
                 self.expr = None
@@ -690,6 +696,9 @@ class Label(Code):
     def __init__(self, offset: int = 0):
         super().__init__("", "", offset=offset)
 
+    def terminal(self) -> bool | None:
+        return False if self.offset else None
+
     def __lshift__(self, rhs: str | Bool | Iterable[Code]) -> Code:
         match rhs:
             case str():
@@ -703,6 +712,9 @@ class Label(Code):
             case _:
                 self.ref.extend(rhs)
                 return self
+
+    def __pos__(self) -> Expr:
+        return Expr(self << "LOAD")
 
     def deploy(self, memory: list[Code], ncpu: int) -> bool:
         address = len(memory) + self.offset
@@ -774,7 +786,7 @@ class Block(Statement):
         self.block = []
         self._terminal = terminal
 
-    def terminal(self) -> bool:
+    def terminal(self) -> bool | None:
         return self._terminal
 
     def render(self, codes: list[Code]) -> list[Code]:
@@ -792,8 +804,24 @@ class Block(Statement):
         for s in item:
             if isinstance(s, Statement):
                 self.block.append(s)
-                self._terminal |= s.terminal()
+                if s.terminal() is None:
+                    self._terminal = False
+                else:
+                    self._terminal |= s.terminal()
         return self
+
+    def __call__(self, value: int | str | BinaryOp | None = None) -> ExprB:
+        match value:
+            case int() | str():
+                expr = Acc(value)
+                self[expr]
+            case BinaryOp():
+                expr = +value
+                self[expr]
+            case _:
+                expr = Acc
+        codes = self.render([])
+        return ExprB(*codes, unsigned=expr.unsigned)
 
     @classmethod
     def __class_getitem__(cls, item: Any) -> Block:
@@ -835,7 +863,7 @@ class IfThenElse(Statement):
         self.if_ = ifthen.if_
         self.else_ = ifthen.else_
 
-    def terminal(self) -> bool:
+    def terminal(self) -> bool | None:
         return self.if_.then.terminal() and self.else_.terminal()
 
     def render(self, codes: list[Code]) -> list[Code]:
@@ -919,7 +947,7 @@ class DoLoop(Statement):
         codes.append(self.loop.break_)
         return codes
 
-    def terminal(self) -> bool:
+    def terminal(self) -> bool | None:
         return not self.loop.break_.ref
 
     def Break(self) -> DoBreak:
@@ -1071,12 +1099,14 @@ def In(port: int | str, unsigned: bool = False, op: str = "IN") -> Expr:
 
 
 def IO(
-    port: int | str,
+    port: int | str | Int,
     expr: int | str | BinaryOp,
     unsigned: bool = False,
     load: str = "LOAD",
     op: str = "IO",
 ) -> ExprB:
+    if isinstance(port, Int):
+        port = port.put()
     t = Expr(unsigned=unsigned)
     match expr:
         case int() | str():
@@ -1088,8 +1118,13 @@ def IO(
 
 
 def Out(
-    port: int | str, *expr: int | str | BinaryOp, load: str = "LOAD", op: str = "OUT"
+    port: int | str | Int,
+    *expr: int | str | BinaryOp,
+    load: str = "LOAD",
+    op: str = "OUT",
 ) -> Block:
+    if isinstance(port, Int):
+        port = port.put()
     init: list[Int] = []
     burst: list[Code] = []
     opb = -1
@@ -1115,23 +1150,28 @@ def Out(
 
 class FIFO:
     pool = []
+    total = 0
+    used = 0
 
     def __init__(self, port: str, size: int):
         self.port = port
         self.size = size
         self.locked = False
         FIFO.pool.append(self)
+        FIFO.total += 1
 
     @classmethod
     def Alloc(cls, size: int = 0) -> FIFO:
         candidate = [f.size for f in cls.pool if f.size >= size]
         assert candidate, "FIFO is not available"
+        FIFO.used += 1
         size = min(candidate)
         candidate = [i for i, f in enumerate(cls.pool) if f.size == size]
         return cls.pool.pop(candidate[0])
 
     def Free(self) -> None:
         FIFO.pool.append(self)
+        FIFO.used -= 1
 
     def Lock(self, load: str = "LOAD") -> Expr:
         assert not self.locked, "FIFO is locked"
@@ -1142,8 +1182,16 @@ class FIFO:
         assert not self.locked, "FIFO is locked"
         return IO(self.port, 0x0, load=load, op="POP") == 0
 
+    @staticmethod
+    def IsEmptyPort(port: Int, load: str = "LOAD") -> Bool:
+        return IO(port, 0x0, load=load, op="POP") == 0
+
     def Clear(self, load: str = "LOAD") -> Expr:
         return IO(self.port, 0x80000001, load=load, op="POP")
+
+    @staticmethod
+    def ClearPort(port: Int, load: str = "LOAD") -> Bool:
+        return IO(port, 0x80000001, load=load, op="POP")
 
     def Pop(self, unsigned: bool = False, load: str = "LOAD") -> Expr:
         if self.locked:
@@ -1151,8 +1199,16 @@ class FIFO:
         else:
             return IO(self.port, 0x1, unsigned=unsigned, load=load, op="POP")
 
+    @staticmethod
+    def PopPort(port: Int, unsigned: bool = False, load: str = "LOAD") -> Expr:
+        return IO(port, 0x1, unsigned=unsigned, load=load, op="POP")
+
     def Push(self, *value: int | str | BinaryOp, load: str = "LOAD") -> Block:
         return Out(self.port, *value, load=load, op="PUSH")
+
+    @staticmethod
+    def PushPort(port: Int, *value: int | str | BinaryOp, load: str = "LOAD") -> Block:
+        return Out(port, *value, load=load, op="PUSH")
 
 
 class SRAM:
@@ -1413,23 +1469,69 @@ class ArrayElement(ExprB):
                 raise TypeError(f"{type(value)} is not supported")
 
 
-def Wait(align: int, loop: int = 0) -> Block:
-    assert align >= 0 and loop >= 0, "align and loop must be positive"
-    src = Label(align)
-    b = Block[src]
-    dest = Label()
-    if loop == 0:
-        if align:
-            b[dest << "JUMP", Align(src), dest]
-        return b
-    if align < 2:
-        loop -= 1
-        if loop == 0:
-            if align:
-                b[Wait(1)]
-            return b[dest << "JUMP", Align(src), dest]
-    wait = Label()
-    return b[Acc(loop), wait, dest << "JEQ", Acc - 1, wait << "JUMP", Align(src), dest]
+class Timer(Int):
+    @staticmethod
+    def clocks(
+        sec: int | float = 0,
+        ms: int | float = 0,
+        us: int | float = 0,
+        ns: int | float = 0,
+        clock_ns: int = 20,
+    ) -> int:
+        ms += sec * 1000
+        us += ms * 1000
+        ns += us * 1000
+        return int(-(-ns // clock_ns))
+
+    def __init__(
+        self,
+        sec: int | float = 0,
+        ms: int | float = 0,
+        us: int | float = 0,
+        ns: int | float = 0,
+        clock_ns: int = 20,
+    ):
+        offset = Timer.clocks(sec, ms, us, ns, clock_ns)
+        super().__init__(In("TIMER") + offset if offset else In("TIMER"))
+
+    def After(
+        self,
+        sec: int | float = 0,
+        ms: int | float = 0,
+        us: int | float = 0,
+        ns: int | float = 0,
+        clock_ns: int = 20,
+    ) -> Expr:
+        return self(self + Timer.clocks(sec, ms, us, ns, clock_ns))
+
+    def AfterNow(
+        self,
+        sec: int | float = 0,
+        ms: int | float = 0,
+        us: int | float = 0,
+        ns: int | float = 0,
+        clock_ns: int = 20,
+    ) -> Expr:
+        return self(In("TIMER") + Timer.clocks(sec, ms, us, ns, clock_ns))
+
+    def IsTimeout(self) -> Bool:
+        return In("TIMER") - self >= 0
+
+    def IsWaiting(self) -> Bool:
+        return In("TIMER") - self < 0
+
+    def Wait(self) -> Block:
+        return Block[Do()[...].While(self.IsWaiting()),]
+
+
+def Wait(
+    sec: int | float = 0,
+    ms: int | float = 0,
+    us: int | float = 0,
+    ns: int | float = 0,
+    clock_ns: int = 20,
+) -> Block:
+    return Block[timer := Timer(sec, ms, us, ns, clock_ns), timer.Wait()]
 
 
 class Atomic(Statement):
@@ -1561,7 +1663,12 @@ class Mnemonic(type):
         match key:
             case str():
                 assert isinstance(value, int), "value must be integer"
-                cls.mnemonic[key] = value
+                if key in cls.mnemonic:
+                    assert (
+                        cls.mnemonic[key] == value
+                    ), f"conflicted {key}={cls.mnemonic[key]}!={value}"
+                else:
+                    cls.mnemonic[key] = value
             case int():
                 if isinstance(value, str):
                     cls.mnemonic[value] = key
