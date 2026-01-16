@@ -4,7 +4,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
 from relm_c5g import *
-from relm_font import Console
+from relm_font import ConsoleSRAM
 
 with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
     Define[i2c := I2C(),]
@@ -25,14 +25,17 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
             i2c.write(0x72, 0xE0, 0xD0),
             Out("HDMIPAL", 0x40),
             Do()[
-                Acc("HDMI"),
-                vram := Array(*([0] * (80 * 480))),
+                Out(
+                    "VRAM",
+                    159 << 19,
+                    *([(159 << 19) + (1 << 18) + 256] * 479),
+                ),
                 i2c.read(0x72, 0x42),
             ].While(RegB & 0x6000 == 0x6000),
         ],
     ]
-    console = Console(vram, 80, FIFO.Alloc(), FIFO.Alloc())
-    Thread[console.Service()]
+
+    Thread[console := ConsoleSRAM(256, FIFO.Alloc(), FIFO.Alloc())]
     Define[
         sem_start := Semaphore(),
         sem_work := Semaphore(),
@@ -49,7 +52,7 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
                 j := Int(i * 5),
                 Do()[console.Print(" ")].While(j(j - 1) != 0),
                 console.Print("Thread1", color=0x10),
-                pos(pos + 640),
+                pos(pos + 2048),
             ],
         ].While(i(i + 1) < 10),
         sem_start.Release(),
@@ -64,7 +67,7 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
                 j := Int(i * 4),
                 Do()[console.Print(" ")].While(j(j - 1) != 0),
                 console.Print("Thread2", color=0x20),
-                pos(pos + 640),
+                pos(pos + 2048),
             ],
         ].While(i(i + 1) < 15),
         sem_start.Release(),
@@ -79,24 +82,25 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
                 j := Int(i * 3),
                 Do()[console.Print(" ")].While(j(j - 1) != 0),
                 console.Print("Thread3", color=0x30),
-                pos(pos + 640),
+                pos(pos + 2048),
             ],
         ].While(i(i + 1) < 25),
         sem_start.Release(),
     ]
     Thread[
+        console.Clear(),
         sem_start.Acquire(3),
         console.Print("Start", pos=0, color=0xF0),
-        pos(640),
+        pos(2048),
         sem_work.Release(3),
         sem_start.Acquire(),
-        mutex[console.Print("Thread1 End", pos=pos, color=0xF0), pos(pos + 640)],
+        mutex[console.Print("Thread1 End", pos=pos, color=0xF0), pos(pos + 2048)],
         sem_start.Acquire(),
-        mutex[console.Print("Thread2 End", pos=pos, color=0xF0), pos(pos + 640)],
+        mutex[console.Print("Thread2 End", pos=pos, color=0xF0), pos(pos + 2048)],
         sem_start.Acquire(),
         mutex[
             console.Print("Thread3 End", pos=pos, color=0xF0),
-            pos(pos + 640),
+            pos(pos + 2048),
         ],
         LED(
             hex3=0b1010010,  # T

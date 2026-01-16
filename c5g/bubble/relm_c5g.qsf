@@ -63,7 +63,7 @@ set_global_assignment -name SMART_RECOMPILE OFF
 set_global_assignment -name ENABLE_OCT_DONE OFF
 set_global_assignment -name ENABLE_CONFIGURATION_PINS OFF
 set_global_assignment -name ENABLE_BOOT_SEL_PIN OFF
-set_global_assignment -name STRATIXV_CONFIGURATION_SCHEME "PASSIVE SERIAL"
+set_global_assignment -name STRATIXV_CONFIGURATION_SCHEME "ACTIVE SERIAL X1"
 set_global_assignment -name USE_CONFIGURATION_DEVICE ON
 set_global_assignment -name CRC_ERROR_OPEN_DRAIN ON
 set_global_assignment -name GENERATE_SVF_FILE ON
@@ -78,4 +78,5 @@ set_global_assignment -name SDC_FILE ../relm_c5g.sdc
 set_global_assignment -name VERILOG_FILE ../relm_c5g.v
 set_global_assignment -name VERILOG_FILE ../../relm.v
 set_instance_assignment -name MATCH_PLL_COMPENSATION_CLOCK OFF -to *
+set_global_assignment -name STRATIXII_CONFIGURATION_DEVICE EPCQ256
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

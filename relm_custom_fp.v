@@ -114,8 +114,8 @@ module relm_custom(op_in, a_in, cb_in, x_in, xb_in, opb_in, a_out, cb_out);
 	wire [30:0] trunc_fmask = a_in[30] ? {9'd0, !a_in[29:28] ? trunc_ml : 22'd0} : {&a_in[29:23] ? 8'h00 : 8'hFF, 23'h7FFFFF};
 	wire trunc_fract = |(a_in[30:0] & trunc_fmask);
 
-	wire [31:0] ftoi_m = {9'b1, a_in[22:0]};
-	wire [31:0] ftoi_s = a_in[30] ? {9'd0, trunc_m} : &a_in[29:23] ? 32'h00800000 : 32'h01000000;
+	wire [23:0] ftoi_m = {1'b1, a_in[22:0]};
+	wire [31:0] ftoi_s = a_in[30] ? {9'd0, trunc_m} : {8'd0, &a_in[29:23], 23'd0};
 
 	wire [31:0] fcomp_a = !a_in[WD-2:WD-9] ? 32'h80000000 : {~a_in[WD-1], a_in[WD-1] ? ~a_in[WD-2:0] : a_in[WD-2:0]};
 	wire [31:0] fcomp_xb = !xb_in[WD-2:WD-9] ? 32'h80000000 : {~xb_in[WD-1], xb_in[WD-1] ? ~xb_in[WD-2:0] : xb_in[WD-2:0]};
@@ -151,7 +151,7 @@ module relm_custom(op_in, a_in, cb_in, x_in, xb_in, opb_in, a_out, cb_out);
 			end
 			6'b1?1101: begin // OPB FTOI
 				b_out <= ftoi_s;
-				a_out <= a_in[WD-1] ? -ftoi_m : ftoi_m;
+				a_out <= a_in[WD-1] ? {a_in[30:23] ? 8'hFF : 8'h00, -ftoi_m} : {8'h00, ftoi_m};
 			end
 			6'b???110: begin // (OPB) FCOMP
 				b_out <= b_in;

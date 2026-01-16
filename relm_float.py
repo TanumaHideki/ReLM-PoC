@@ -230,20 +230,17 @@ class Float(Int):
     def __init__(self, value: float | BinaryOp | None = None):
         super().__init__()
         self.refm = []
-        self.minus = False
         match value:
             case float():
-                self.expr = AccF[AccF(value)]
+                self.expr = AccF(value)
             case Float():
-                self.expr = AccF[+value]
+                self.expr = +value
             case FloatExprB():
-                self.minus = value.minus
-                self.expr = value[value]
+                self.expr = value
             case None:
                 self.expr = None
             case _:
                 raise TypeError(f"{type(value)} is not supported")
-        self.AccF = AccFM if self.minus else AccF
 
     def put(self, minus: bool = False) -> tuple[Code]:
         c = Code("PUT", debug="->      ")
@@ -268,13 +265,17 @@ class Float(Int):
     def render(self, codes: list[Code]) -> list[Code]:
         if self.expr is not None:
             self.expr.render(codes)
-            codes.extend(self.refm if self.minus else self.ref)
+            codes.extend(self.refm if self.expr.minus else self.ref)
             self.expr = None
         return codes
 
     def __call__(self, value: float | BinaryOp) -> FloatExprB:
-        expr = Float(value).expr
-        return expr[expr, self.refm if self.minus else self.ref]
+        match value:
+            case float():
+                value = AccF(value)
+            case Float():
+                value = +value
+        return value[value, self.refm if value.minus else self.ref]
 
     def fadd(
         lhs: Float, rhs: float | BinaryOp, sub: bool = False, rsub: bool = False
@@ -400,7 +401,7 @@ class Float(Int):
 def ToInt(value: FloatExprB | Float) -> ExprB:
     match value:
         case FloatExprB() | Float():
-            return (+value).opb("FTOI").opb("SAR")
+            return Acc[(+value).opb("FTOI").opb("SAR")]
         case _:
             raise TypeError(f"{type(value)} is not supported")
 
@@ -411,6 +412,18 @@ def ToFloat(value: BinaryOp, unsigned: bool = False) -> FloatExprB:
         return AccF[v, "ITOF":0x4E800000]
     else:
         return AccF[v, AccF.opb("ISIGN").opb("ITOF")]
+
+
+def AsInt(value: FloatExprB | Float) -> ExprB:
+    match value:
+        case FloatExprB() | Float():
+            return Acc[+value]
+        case _:
+            raise TypeError(f"{type(value)} is not supported")
+
+
+def AsFloat(value: BinaryOp) -> FloatExprB:
+    return AccF[+value]
 
 
 class FunctionF(Function):

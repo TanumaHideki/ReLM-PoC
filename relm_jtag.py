@@ -147,7 +147,7 @@ class USBBlaster(JTAG):
             self.shift_ir(0x6)
             i = self.read_int(0)
             print(f"IDCODE: {i:X} (index: {USBBlaster.index})")
-            if idcode is None or idcode == self.read_int(0):
+            if idcode is None or idcode == i:
                 break
             count += 1
             if count == 3:

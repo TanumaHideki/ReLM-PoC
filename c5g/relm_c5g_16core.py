@@ -9,42 +9,22 @@ from relm_jtag import USBBlaster
 
 ReLM[:] = (
     "PUTOP",
-    "HEX",
-    "LED",
     "HDMIPAL",
     "HDMI",
-    "VRAM",
-    "AUDIO",
-    "FIFO9",
-    "FIFO8",
-    "FIFO7",
-    "FIFO6",
-    "FIFO5",
-    "FIFO4",
-    "FIFO3",
-    "FIFO2",
+    "LED",
+    "HEX",
     "FIFO1",
-    "FIFO0",
+    "FIFO2",
+    "FIFO3",
 )[::-1]
 ReLM[:] = (
     "JTAG",
-    "USB",
     "UART",
-    "KEY",
-    "TIMER",
     "I2C",
-    "SRAM",
-    "AUDIO",
-    "FIFO9",
-    "FIFO8",
-    "FIFO7",
-    "FIFO6",
-    "FIFO5",
-    "FIFO4",
-    "FIFO3",
-    "FIFO2",
+    "KEY",
     "FIFO1",
-    "FIFO0",
+    "FIFO2",
+    "FIFO3",
 )[::-1]
 ReLM[0x18] = "FADD"
 ReLM[0x19] = "FMUL"
@@ -54,16 +34,9 @@ ReLM[0x1C::0x20] = "ITOF", "ISIGN"
 ReLM[0x1D::0x20] = ("ROUND", "TRUNC"), "FTOI"
 ReLM[0x1E] = "FCOMP"
 
-FIFO("FIFO0", 2048)
 FIFO("FIFO1", 2048)
 FIFO("FIFO2", 2048)
 FIFO("FIFO3", 2048)
-FIFO("FIFO4", 2048)
-FIFO("FIFO5", 2048)
-FIFO("FIFO6", 2048)
-FIFO("FIFO7", 2048)
-FIFO("FIFO8", 256)
-FIFO("FIFO9", 256)
 
 
 def LED(hex3=None, hex2=None, hex1=None, hex0=None, led=None):
@@ -186,16 +159,6 @@ class I2C(Block):
         ]
 
 
-class Audio(FIFO):
-    def __init__(self, i2c: I2C = None, port: str = "AUDIO"):
-        self.i2c_write = i2c
-        self.port = port
-        self.locked = True
-
-    def i2c(self, address, data, device=0x34):
-        return self.i2c_write.write(device, address << 1, data)
-
-
 operand = Int()
 Loader[
     Do()[
@@ -250,18 +213,15 @@ class ReLMLoader(ReLM):
         dump: bool = True,
         loader: str | bool = False,
         release_loader: bool = False,
-        WID: int = 3,
-        WAD: int = 14,
-        WAD2: int = 12,
+        WID: int = 4,
+        WAD: int = 12,
         IDCODE: int = 0x2B020DD,
     ):
         super().__init__(1 << WID, loader or release_loader)
         self.release = release
         self.dump = dump
         self.loader = loader
-        self.size = (
-            ((1 << (WAD - 1)) + (1 << WAD2)) << WID if WAD2 else 1 << (WID + WAD)
-        )
+        self.size = 1 << (WID + WAD)
         self.IDCODE = IDCODE
 
     def send(self, jtag, start, stop=None) -> None:
@@ -298,8 +258,6 @@ class ReLMLoader(ReLM):
         print(
             f"{used} / {self.size} instructions ({used * 100 / self.size:.1f} % used)"
         )
-        print(f"{self.nthread} / {self.ncpu} threads")
-        print(f"{FIFO.used} / {FIFO.total} FIFOs")
         if not self.loader and self.release:
             self.save(*self.release)
         return self
@@ -312,5 +270,5 @@ class ReLMLoader(ReLM):
 
 
 if __name__ == "__main__":
-    with ReLMLoader(__file__, "..", "loader", release_loader=True):
+    with ReLMLoader(__file__, "..", "loader_16core", release_loader=True):
         pass
