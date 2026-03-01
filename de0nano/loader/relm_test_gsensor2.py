@@ -8,15 +8,14 @@ from relm_de0nano import *
 with ReLMLoader(loader="loader/output_files/relm_de0nano.svf"):
     Define[gs := GSensor()]
     Thread[
-        gs.write(0x2C, 0x0F),
-        gs.write(0x31, 0x40),
-        gs.write(0x2D, 0x08),
-        c := Int(3),
+        gs.Write(0x2C, 0x0F),
+        gs.Write(0x31, 0x47),
+        gs.Write(0x2D, 0x08),
         Do()[
-            gs.read(0x30),
-            If(RegB & 0x80000000 == 0)[Continue()],
-            gs.read(0x32),
-            RegB((RegB >> 21) | c, "RGBLED1").opb("OUT"),
-            c(((c * 9) >> 1) & 7),
+            If(gs.Read(0x30) & 0x80 == 0)[Continue()],
+            a := Int(gs.Read(0x35)),
+            x := Int(1 << (abs(a) >> 2)),
+            If(a >= 16)[x(255)],
+            Out("LED", x),
         ],
     ]

@@ -2,6 +2,7 @@
 __pycache__/
 
 # Quartus Prime
+.qsys_edit/
 db/
 devkits/
 incremental_db/

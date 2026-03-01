@@ -46,12 +46,21 @@ endmodule
 
 module relm_de0nano(clk, sw_in, key_in, led_out,
 	adc_cs_n_out, adc_saddr_out, adc_sdat_in, adc_sclk_out,
-	rgbled1_out, rgbled2_out, rgbled3_out, rgbled4_out);
+	i2c_scl_out, i2c_sda_inout,	gs_int_in, gs_cs_n_out,
+	scd_pwron_n_out, mtrr_n_out, mtrr_p_out, mtrl_p_out, mtrl_n_out, mtr_sleep_n_out, mtr_fault_n_in,
+	ir_adc_convst_out, ir_adc_sck_out, ir_adc_sdo_in, ir_adc_sdi_out, ir_led_on_out, led_left_out, led_right_out
+	);
 	parameter WD = 32;
 	parameter WC = `WC;
 
 	(* chip_pin = "R8" *)
 	input clk;
+
+	wire [WD:0] timer_d;
+	relm_unused unused_timer(timer_d);
+	reg [WD-1:0] timer = 0;
+	always @(posedge clk) timer <= timer + 1;
+	wire [WD:0] timer_q = {1'b0, timer};
 
 	(* chip_pin = "M15, B9, T8, M1" *)
 	input [3:0] sw_in;
@@ -71,39 +80,6 @@ module relm_de0nano(clk, sw_in, key_in, led_out,
 	end
 	wire led_retry = 0;
 
-	(* chip_pin = "D5, A5, B5, A4, B4, B3, A3, A2, C3, D3, K15, J14, J13" *)
-	output reg [12:0] rgbled1_out;
-	wire [WD:0] rgbled1_d;
-	always @(posedge clk) begin
-		if (rgbled1_d[WD]) rgbled1_out <= rgbled1_d[0+:13];
-	end
-	wire rgbled1_retry = 0;
-
-	(* chip_pin = "D8, E7, E6, C8, C6, A7, D6, B7, A6, B6, J16, M10, L13" *)
-	output reg [12:0] rgbled2_out;
-	wire [WD:0] rgbled2_d;
-	always @(posedge clk) begin
-		if (rgbled2_d[WD]) rgbled2_out <= rgbled2_d[0+:13];
-	end
-	wire rgbled2_retry = 0;
-
-	(* chip_pin = "B12, D12, D11, A12, B11, C11, E10, E11, F8, E8, P14, N14, L14" *)
-	output reg [12:0] rgbled3_out;
-	wire [WD:0] rgbled3_d;
-	always @(posedge clk) begin
-		if (rgbled3_d[WD]) rgbled3_out <= rgbled3_d[0+:13];
-	end
-	wire rgbled3_retry = 0;
-
-	(* chip_pin = "R11, T10, T11, R12, T12, R13, T13, T14, T15, F13, N15, R14, N16" *)
-	output reg [12:0] rgbled4_out;
-	wire [WD:0] rgbled4_d;
-	always @(posedge clk) begin
-		if (rgbled4_d[WD]) rgbled4_out <= rgbled4_d[0+:13];
-	end
-	wire rgbled4_retry = 0;
-
-`ifdef GSENSOR
 	(* chip_pin = "F2" *)
 	output reg i2c_scl_out = 1;
 	(* chip_pin = "F1" *)
@@ -126,7 +102,6 @@ module relm_de0nano(clk, sw_in, key_in, led_out,
 			i2c_scl_out <= i2c_d[0];
 		end
 	end
-`endif
 
 	(* chip_pin = "A10" *)
 	output reg adc_cs_n_out = 1;
@@ -148,19 +123,62 @@ module relm_de0nano(clk, sw_in, key_in, led_out,
 		end
 	end
 
-	wire [WD:0] sram_wr_d, sram_ad_d, sram_rd_q;
-	wire sram_retry = 0;
-	relm_sram_io #(
-		.WAD(8),
-		.WD(WD)
-	) sram(
-		.clk(clk),
-		.sram_wr_d(sram_wr_d),
-		.sram_ad_d(sram_ad_d),
-		.sram_rd_q(sram_rd_q)
-	);
+	(* chip_pin = "B12" *)
+	output scd_pwron_n_out = 0;
+	(* chip_pin = "A2" *)
+	output reg mtrr_n_out = 0;
+	(* chip_pin = "A3" *)
+	output reg mtrr_p_out = 0;
+	(* chip_pin = "B3" *)
+	output reg mtrl_p_out = 0;
+	(* chip_pin = "B4" *)
+	output reg mtrl_n_out = 0;
+	(* chip_pin = "A4" *)
+	output mtr_sleep_n_out = 1;
+	(* chip_pin = "B5" *)
+	input mtr_fault_n_in;
+	(* chip_pin = "A7" *)
+	output reg led_left_out = 0;
+	(* chip_pin = "C6" *)
+	output reg led_right_out = 0;
+	reg [1:0] mtr_fault_n = 2'b11;
+	wire [WD:0] mtr_d;
+	wire [WD:0] mtr_q = {{WD{1'b0}}, mtr_fault_n[1]};
+	always @(posedge clk) begin
+		mtr_fault_n <= {mtr_fault_n[0], mtr_fault_n_in};
+		if (mtr_d[WD]) begin
+			mtrl_n_out <= mtr_d[3];
+			mtrl_p_out <= mtr_d[2];
+			mtrr_p_out <= mtr_d[1];
+			mtrr_n_out <= mtr_d[0];
+			led_right_out <= mtr_d[3];
+			led_left_out <= mtr_d[1];
+		end
+	end
 
-	parameter NFIFO = 1;
+	(* chip_pin = "A5" *)
+	output reg ir_adc_convst_out = 0;
+	(* chip_pin = "D5" *)
+	output reg ir_adc_sck_out = 0;
+	(* chip_pin = "B6" *)
+	input ir_adc_sdo_in;
+	(* chip_pin = "A6" *)
+	output reg ir_adc_sdi_out = 0;
+	(* chip_pin = "D12" *)
+	output ir_led_on_out = 1;
+	reg ir_adc_sdi = 0;
+	wire [WD:0] ir_adc_d;
+	wire [WD:0] ir_adc_q = {{WD-11{1'b0}}, ir_adc_d[11:1], ir_adc_d[WD-2] ? ir_adc_d[0] : ir_adc_sdo_in};
+	always @(posedge clk) begin
+		ir_adc_sck_out <= ir_adc_d[WD] ? ~ir_adc_d[WD-2] : 1'b0;
+		if (ir_adc_d[WD]) begin
+			ir_adc_convst_out <= ir_adc_d[WD-1];
+			ir_adc_sdi <= ir_adc_d[11];
+		end
+		ir_adc_sdi_out <= ir_adc_sdi;
+	end
+
+	parameter NFIFO = 2;
 
 	wire [(WD+1)*NFIFO-1:0] pushf_d, popf_d, popf_q;
 	wire [NFIFO-1:0] pushf_retry;
@@ -185,15 +203,15 @@ module relm_de0nano(clk, sw_in, key_in, led_out,
 	parameter WAD2 = 9;
 	parameter WOP = 5;
 
-	parameter NPUSH = 6 + NFIFO;
-	parameter NPOP = 3 + NFIFO;
+	parameter NPUSH = 1 + NFIFO;
+	parameter NPOP = 6 + NFIFO;
 
 	wire [NPUSH*(WD+1)-1:0] push_d;
-	assign {rgbled4_d, rgbled3_d, rgbled2_d, rgbled1_d, led_d, pushf_d, sram_wr_d} = push_d;
-	wire [NPUSH-1:0] push_retry = {rgbled4_retry, rgbled3_retry, rgbled2_retry, rgbled1_retry, led_retry, pushf_retry, sram_retry};
+	assign {led_d, pushf_d} = push_d;
+	wire [NPUSH-1:0] push_retry = {led_retry, pushf_retry};
 	wire [NPOP*(WD+1)-1:0] pop_d;
-	assign {adc_d, key_d, popf_d, sram_ad_d} = pop_d;
-	wire [NPOP*(WD+1)-1:0] pop_q = {adc_q, key_q, popf_q, sram_rd_q};
+	assign {ir_adc_d, mtr_d, timer_d, i2c_d, adc_d, key_d, popf_d} = pop_d;
+	wire [NPOP*(WD+1)-1:0] pop_q = {ir_adc_q, mtr_q, timer_q, i2c_q, adc_q, key_q, popf_q};
 
 `include "coverage.txt"
 	generate

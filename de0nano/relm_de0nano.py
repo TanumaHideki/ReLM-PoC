@@ -9,20 +9,20 @@ from relm_jtag import USBBlaster
 
 ReLM[:] = (
     "PUTOP",
-    "RGBLED4",
-    "RGBLED3",
-    "RGBLED2",
-    "RGBLED1",
     "LED",
+    "FIFO2",
     "FIFO1",
-    "SRAM",
 )[::-1]
 ReLM[:] = (
     "JTAG",
+    "IR_ADC",
+    "MOTOR",
+    "TIMER",
+    "I2C",
     "ADC",
     "KEY",
+    "FIFO2",
     "FIFO1",
-    "SRAM",
 )[::-1]
 ReLM[0x18] = "FADD"
 ReLM[0x19] = "FMUL"
@@ -33,7 +33,7 @@ ReLM[0x1D::0x20] = ("ROUND", "TRUNC"), "FTOI"
 ReLM[0x1E] = "FCOMP"
 
 FIFO("FIFO1", 256)
-sram = SRAM("SRAM", 0, 256)
+FIFO("FIFO2", 256)
 
 
 class GSensor(Block):
@@ -79,7 +79,7 @@ class GSensor(Block):
             self.recv,
         ]
 
-    def write(self, address, data):
+    def Write(self, address, data) -> Block:
         return Block[
             self.io(1, 1, RegB((address << 24) | (data << 16), 1 + 1), rd=1, cs=1),
             self.io(1, 1, 0, rd=1),
@@ -89,14 +89,15 @@ class GSensor(Block):
             self.io(1, 1, 0, rd=1, cs=1),
         ]
 
-    def read(self, address, length=1):
-        return Block[
+    def Read(self, address, length=1) -> ExprB:
+        return Acc[
             self.io(1, 1, RegB(0xC0000000 | (address << 24), 1 + 1), rd=1, cs=1),
             self.io(1, 1, 0, rd=1),
             self.send(),
             *[self.recv() for _ in range(length)],
             self.io(1, 1, 0, rd=1),
             self.io(1, 1, 0, rd=1, cs=1),
+            RegB >> (32 - length * 8),
         ]
 
 
@@ -149,8 +150,30 @@ class ADC(Block):
         ].Return(RegB)
         self[self.recv,]
 
-    def read(self, ch=None):
+    def Read(self, ch=None):
         return self.recv() if ch is None else self.recv(ch << 29)
+
+
+class IR_ADC(Block):
+    def __init__(self, ch: int):
+        super().__init__()
+        self[
+            IO("IR_ADC", 0xC0000000),
+            Wait(ns=1600),
+            IO("IR_ADC", 0x40000880 | ((ch & 1) << 10) | ((ch & 6) << 7)),
+            IO("IR_ADC", Acc << 1),
+            IO("IR_ADC", Acc << 1),
+            IO("IR_ADC", Acc << 1),
+            IO("IR_ADC", Acc << 1),
+            IO("IR_ADC", Acc << 1),
+            IO("IR_ADC", Acc << 1),
+            IO("IR_ADC", Acc << 1),
+            IO("IR_ADC", Acc << 1),
+            IO("IR_ADC", Acc << 1),
+            IO("IR_ADC", Acc << 1),
+            IO("IR_ADC", Acc << 1),
+            IO("IR_ADC", Acc << 1),
+        ]
 
 
 operand = Int()
