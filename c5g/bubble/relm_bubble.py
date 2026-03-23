@@ -531,6 +531,7 @@ with ReLMLoader(__file__, loader=loader):
         total := Array(*([0] * (MAPW * MAPH))),
         total2 := Array(*([0] * (MAPW * MAPH))),
         distance := Array(*([0] * (MAPW * MAPH))),
+        route := Array(*([0] * (MAPW * MAPH * 6))),
         initMap := Function()[
             consoleStatus.Print(
                 "                                                                                ",
@@ -893,6 +894,136 @@ with ReLMLoader(__file__, loader=loader):
             consoleStatus.Print("", 640 * 8 + 320, 0x95),
             dispBar(2),
         ],
+        checkUp := Function(now := Int(), prev := Int())[
+            If(dir[now] & 1 != 0)[Return(0)],
+            next := Int(),
+            If(next(now - MAPW) == prev)[Return(0)],
+            If(owner[next] == 0)[Return(0)],
+        ].Return(next),
+        checkRight := Function(now := Int(), prev := Int())[
+            If(dir[now] & 2 != 0)[Return(0)],
+            next := Int(),
+            If(next(now + 1) == prev)[Return(0)],
+            If(owner[next] == 0)[Return(0)],
+        ].Return(next),
+        checkDown := Function(now := Int(), prev := Int())[
+            If(dir[now] & 4 != 0)[Return(0)],
+            next := Int(),
+            If(next(now + MAPW) == prev)[Return(0)],
+            If(owner[next] == 0)[Return(0)],
+        ].Return(next),
+        checkLeft := Function(now := Int(), prev := Int())[
+            If(dir[now] & 8 != 0)[Return(0)],
+            next := Int(),
+            If(next(now - 1) == prev)[Return(0)],
+            If(owner[next] == 0)[Return(0)],
+        ].Return(next),
+        check0 := Function(
+            now := Int(),
+            p1 := Int(),
+            p2 := Int(),
+            p3 := Int(),
+            p4 := Int(),
+            p5 := Int(),
+            p6 := Int(),
+        )[
+            If(now != 0)[
+                distance[now](distance[now] | 1),
+                n6 := Int(),
+                route[n6(now * 6)](p1),
+                route[n6 + 1](p2),
+                route[n6 + 2](p3),
+                route[n6 + 3](p4),
+                route[n6 + 4](p5),
+                route[n6 + 5](p6),
+            ],
+        ],
+        check1 := Function(
+            now := Int(),
+            p1 := Int(),
+            p2 := Int(),
+            p3 := Int(),
+            p4 := Int(),
+            p5 := Int(),
+        )[
+            If(now != 0)[
+                distance[now](distance[now] | (1 << 1)),
+                check0(checkUp(now, p1), now, p1, p2, p3, p4, p5),
+                check0(checkRight(now, p1), now, p1, p2, p3, p4, p5),
+                check0(checkDown(now, p1), now, p1, p2, p3, p4, p5),
+                check0(checkLeft(now, p1), now, p1, p2, p3, p4, p5),
+            ],
+        ],
+        check2 := Function(
+            now := Int(), p1 := Int(), p2 := Int(), p3 := Int(), p4 := Int()
+        )[
+            If(now != 0)[
+                distance[now](distance[now] | (1 << 2)),
+                check1(checkUp(now, p1), now, p1, p2, p3, p4),
+                check1(checkRight(now, p1), now, p1, p2, p3, p4),
+                check1(checkDown(now, p1), now, p1, p2, p3, p4),
+                check1(checkLeft(now, p1), now, p1, p2, p3, p4),
+            ],
+        ],
+        check3 := Function(now := Int(), p1 := Int(), p2 := Int(), p3 := Int())[
+            If(now != 0)[
+                distance[now](distance[now] | (1 << 3)),
+                check2(checkUp(now, p1), now, p1, p2, p3),
+                check2(checkRight(now, p1), now, p1, p2, p3),
+                check2(checkDown(now, p1), now, p1, p2, p3),
+                check2(checkLeft(now, p1), now, p1, p2, p3),
+            ],
+        ],
+        check4 := Function(now := Int(), p1 := Int(), p2 := Int())[
+            If(now != 0)[
+                distance[now](distance[now] | (1 << 4)),
+                check3(checkUp(now, p1), now, p1, p2),
+                check3(checkRight(now, p1), now, p1, p2),
+                check3(checkDown(now, p1), now, p1, p2),
+                check3(checkLeft(now, p1), now, p1, p2),
+            ],
+        ],
+        check5 := Function(now := Int(), p1 := Int())[
+            If(now != 0)[
+                distance[now](distance[now] | (1 << 5)),
+                check4(checkUp(now, p1), now, p1),
+                check4(checkRight(now, p1), now, p1),
+                check4(checkDown(now, p1), now, p1),
+                check4(checkLeft(now, p1), now, p1),
+            ],
+        ],
+        check6 := Function(now := Int())[
+            If(now != 0)[
+                distance[now](distance[now] | (1 << 6)),
+                check5(checkUp(now, 0), now),
+                check5(checkRight(now, 0), now),
+                check5(checkDown(now, 0), now),
+                check5(checkLeft(now, 0), now),
+            ],
+        ],
+        checkMove := Function(dice := Int(), checkFrom := Int())[
+            If(dice == 6)[
+                check6(checkFrom),
+                Return(),
+            ],
+            If(dice == 5)[
+                check5(checkFrom, 0),
+                Return(),
+            ],
+            If(dice == 4)[
+                check4(checkFrom, 0, 0),
+                Return(),
+            ],
+            If(dice == 3)[
+                check3(checkFrom, 0, 0, 0),
+                Return(),
+            ],
+            If(dice == 2)[
+                check2(checkFrom, 0, 0, 0, 0),
+                Return(),
+            ],
+            check1(checkFrom, 0, 0, 0, 0, 0),
+        ],
         playTurn := Function(
             index := Int(),
             human := Int(),
@@ -979,72 +1110,17 @@ with ReLMLoader(__file__, loader=loader):
                 ],
             ],
             audio_state(CAST_DICE),
-            Do()[...].While(audio_ready != 0),
+            Do()[nrand()].While(audio_ready != 0),
             Do()[
                 If(vsync != 0)[
                     dispDice.Switch(nrand(6) + 1, console.fifo_print.port),
                     vsync(0),
                 ],
+                nrand(),
             ].While(audio_ready == 0),
             dice := Int(nrand(6) + 1),
             dispDice.Switch(dice, console.fifo_print.port),
-            distance[pawn_i](1 << dice),
-            flag := Int(),
-            Do()[
-                flag(0),
-                i := Int(MAPW + 1),
-                Do()[
-                    dist_i := Int(),
-                    If(dist_i(distance[i] >> 1) != 0)[
-                        dir_i := Int(),
-                        If(dir_i(dir[i]) & 1 == 0)[
-                            j := Int(),
-                            If(owner[j(i - MAPW)] != 0)[
-                                dist_j := Int(distance[j]),
-                                dist_ij := Int(),
-                                If(dist_ij(dist_j | dist_i) != dist_j)[
-                                    distance[j](dist_ij),
-                                    flag(1),
-                                ],
-                            ],
-                        ],
-                        If(dir_i & 2 == 0)[
-                            j := Int(),
-                            If(owner[j(i + 1)] != 0)[
-                                dist_j := Int(distance[j]),
-                                dist_ij := Int(),
-                                If(dist_ij(dist_j | dist_i) != dist_j)[
-                                    distance[j](dist_ij),
-                                    flag(1),
-                                ],
-                            ],
-                        ],
-                        If(dir_i & 4 == 0)[
-                            j := Int(),
-                            If(owner[j(i + MAPW)] != 0)[
-                                dist_j := Int(distance[j]),
-                                dist_ij := Int(),
-                                If(dist_ij(dist_j | dist_i) != dist_j)[
-                                    distance[j](dist_ij),
-                                    flag(1),
-                                ],
-                            ],
-                        ],
-                        If(dir_i & 8 == 0)[
-                            j := Int(),
-                            If(owner[j(i - 1)] != 0)[
-                                dist_j := Int(distance[j]),
-                                dist_ij := Int(),
-                                If(dist_ij(dist_j | dist_i) != dist_j)[
-                                    distance[j](dist_ij),
-                                    flag(1),
-                                ],
-                            ],
-                        ],
-                    ],
-                    i(i + 1),
-                ].While(i < MAPW * (MAPH - 1) - 1),
-            ].While(flag != 0),
+            checkMove(dice, pawn_i),
             dispMap(bonus),
             If(human != 0)[
                 keyboard.Clear(),
@@ -1282,25 +1358,13 @@ with ReLMLoader(__file__, loader=loader):
                 ),
                 dest(d),
                 dice_pos[0](d),
-                d := Int(d),
-                i := Int(1),
-                Do()[
-                    di := Int(1 << i),
-                    If((distance[d + MAPW] & di != 0) & (dir[d + MAPW] & 1 == 0))[
-                        d(d + MAPW)
-                    ].Else[
-                        If((distance[d - 1] & di != 0) & (dir[d - 1] & 2 == 0))[
-                            d(d - 1)
-                        ].Else[
-                            If(
-                                (distance[d - MAPW] & di != 0)
-                                & (dir[d - MAPW] & 4 == 0)
-                            )[d(d - MAPW)].Else[d(d + 1)]
-                        ]
-                    ],
-                    dice_pos[i](d),
-                    i(i + 1),
-                ].While(i <= dice),
+                d6 := Int(),
+                dice_pos[1](route[d6(d * 6)]),
+                dice_pos[2](route[d6 + 1]),
+                dice_pos[3](route[d6 + 2]),
+                dice_pos[4](route[d6 + 3]),
+                dice_pos[5](route[d6 + 4]),
+                dice_pos[6](route[d6 + 5]),
                 i := Int(dice),
                 timer := Timer(ms=250),
                 Do()[
@@ -1577,13 +1641,19 @@ with ReLMLoader(__file__, loader=loader):
         console.Print("\x02", v + V8 * 2 + h + 5 * 2, 0xF0),
         console.Print(
             "\x02 between cells shows one-way traffic.",
-            v + V8 * 1 + h + 18 * 2,
+            v + V4 + h + 19 * 2,
         ),
-        console.Print(" ", v + V8 * 3 + h + 18 * 2, 0xFF),
-        console.Print(" between cells shows two-way traffic.", color=0xF0),
+        console.Print(" ", v + V4 + V8 * 2 + h + 19 * 2, 0xFF),
+        console.Print(" between cells allows two-way traffic,", color=0xF0),
+        console.Print(
+            "but not to-and-fro move to the same cell.",
+            v + V8 * 4 + h + 21 * 2,
+            color=0xF3,
+        ),
         console.Print(
             "On reaching a cell, you will see an event description in the message window",
             (v := v + V8 * 6) + h,
+            color=0xF0,
         ),
         console.Print(
             "and have the event to occur.",
