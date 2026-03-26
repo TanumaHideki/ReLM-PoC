@@ -4,6 +4,8 @@ module relm_dpmem(clk, we_in, wa_in, ra_in, d_in, q_out);
 	parameter WD = 0;
 	parameter FILEH = 0;
 	parameter FILEB = 0;
+	parameter FILEH2 = 0;
+	parameter FILEB2 = 0;
 	input clk, we_in;
 	input [WAD-1:0] wa_in, ra_in;
 	input [WD-1:0] d_in;
@@ -34,6 +36,8 @@ module relm_dpmem(clk, we_in, wa_in, ra_in, d_in, q_out);
 	endgenerate
 	initial if (FILEH) $readmemh(FILEH, mem);
 	initial if (FILEB) $readmemb(FILEB, mem);
+	initial if (FILEH2) $readmemh(FILEH2, mem2);
+	initial if (FILEB2) $readmemb(FILEB2, mem2);
 endmodule
 
 module relm_unused(d_in, q_out);
@@ -202,7 +206,7 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 				if (vram_count == vram_width) begin
 					vram_busy <= 0;
 				end
-				vram_count <= vram_count + 1;
+				vram_count <= vram_count + 13'd1;
 			end
 			else begin
 				sram_oe <= 0;
@@ -572,6 +576,8 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 				.WC(WC),
 				.CODE("code00"),
 				.DATA("data00"),
+				.CODE2("codeu00"),
+				.DATA2("datau00"),
 				.EXT(".txt")
 			) relm(
 				.clk(clk),
@@ -604,6 +610,8 @@ module relm_c5g(clk, sw_in, key_in, uart_in, uart_out,
 				.WC(WC),
 				.CODE("code00"),
 				.DATA("data00"),
+				.CODE2("codeu00"),
+				.DATA2("datau00"),
 				.EXT(".txt")
 			) relm(
 				.clk(clk),

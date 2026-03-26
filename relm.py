@@ -1782,8 +1782,11 @@ class ReLM(metaclass=Mnemonic):
     def save(
         self,
         *path: str,
+        size=0,
         code="code{:02d}.txt",
         data="data{:02d}.txt",
+        code2="codeu{:02d}.txt",
+        data2="datau{:02d}.txt",
         coverage="coverage.txt",
     ) -> ReLM:
         path = Path(*path).resolve()
@@ -1791,6 +1794,12 @@ class ReLM(metaclass=Mnemonic):
             path = path.parent
         path.mkdir(exist_ok=True)
         count = Coverage()
+        if size:
+            memory1 = self.memory[:size]
+            memory2 = self.memory[size:]
+        else:
+            memory1 = self.memory
+            memory2 = []
         for i in range(ReLM.ncpu):
             pcode = path.joinpath(code.format(i))
             print(pcode)
@@ -1798,12 +1807,26 @@ class ReLM(metaclass=Mnemonic):
                 pdata = path.joinpath(data.format(i))
                 print(pdata)
                 with open(pdata, "w") as fdata:
-                    for c in self.memory[i :: ReLM.ncpu]:
+                    for c in memory1[i :: ReLM.ncpu]:
                         count.count(i, c)
                         op = self.mnemonic[c.op]
                         print(f"{op:b}", file=fcode)
                         operand = self.mnemonic[c.operand]
                         print(f"{operand & 0xFFFFFFFF:X}", file=fdata)
+        if size:
+            for i in range(ReLM.ncpu):
+                pcode = path.joinpath(code2.format(i))
+                print(pcode)
+                with open(pcode, "w") as fcode:
+                    pdata = path.joinpath(data2.format(i))
+                    print(pdata)
+                    with open(pdata, "w") as fdata:
+                        for c in memory2[i :: ReLM.ncpu]:
+                            count.count(i, c)
+                            op = self.mnemonic[c.op]
+                            print(f"{op:b}", file=fcode)
+                            operand = self.mnemonic[c.operand]
+                            print(f"{operand & 0xFFFFFFFF:X}", file=fdata)
         pcount = path.joinpath(coverage)
         print(pcount)
         with open(pcount, "w") as fcount:

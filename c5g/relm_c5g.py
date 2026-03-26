@@ -262,6 +262,7 @@ class ReLMLoader(ReLM):
         self.size = (
             ((1 << (WAD - 1)) + (1 << WAD2)) << WID if WAD2 else 1 << (WID + WAD)
         )
+        self.size1 = 1 << (WID + WAD - 1) if WAD2 else 0
         self.IDCODE = IDCODE
 
     def send(self, jtag, start, stop=None) -> None:
@@ -301,7 +302,7 @@ class ReLMLoader(ReLM):
         print(f"{self.nthread} / {self.ncpu} threads")
         print(f"{FIFO.used} / {FIFO.total} FIFOs")
         if not self.loader and self.release:
-            self.save(*self.release)
+            self.save(*self.release, size=self.size1)
         return self
 
     def __enter__(self):

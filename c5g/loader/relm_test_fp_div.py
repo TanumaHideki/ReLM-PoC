@@ -60,7 +60,7 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
             console.Print("x = ", pos=i * 2560, color=0xF0),
             digit_fp(x, 0),
             y := Float(1.0 / x),
-            console.Print("  y = "),
+            console.Print("  y = 1/x = "),
             digit_fp(y),
             console.Print("  xy = "),
             xy := Float(x * y),

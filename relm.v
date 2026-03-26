@@ -105,6 +105,8 @@ module relm_pe(clk, pc_in, pc_out, a_in, a_out, cb_in, cb_out,
 	parameter WC = 0;
 	parameter CODE = "code00";
 	parameter DATA = "data00";
+	parameter CODE2 = "codeu00";
+	parameter DATA2 = "datau00";
 	parameter EXT = ".txt";
 	localparam NID = 2 ** WID;
 	input clk;
@@ -139,7 +141,8 @@ module relm_pe(clk, pc_in, pc_out, a_in, a_out, cb_in, cb_out,
 		.WAD(WAD),
 		.WAD2(WAD2),
 		.WD(WD),
-		.FILEH({DATA + ID / 10 * 256 + ID % 10, EXT})
+		.FILEH({DATA + ID / 10 * 256 + ID % 10, EXT}),
+		.FILEH2({DATA2 + ID / 10 * 256 + ID % 10, EXT})
 	) dpmem_x(
 		.clk(clk),
 		.we_in(wb_en_in[ID]),
@@ -156,7 +159,8 @@ module relm_pe(clk, pc_in, pc_out, a_in, a_out, cb_in, cb_out,
 		.WAD(WAD),
 		.WAD2(WAD2),
 		.WD(WOP),
-		.FILEB({CODE + ID / 10 * 256 + ID % 10, EXT})
+		.FILEB({CODE + ID / 10 * 256 + ID % 10, EXT}),
+		.FILEB2({CODE2 + ID / 10 * 256 + ID % 10, EXT})
 	) dpmem_op(
 		.clk(clk),
 		.we_in(op_we_in && op_wa_in[0+:WID] == ID[0+:WID]),
@@ -376,6 +380,8 @@ module relm(clk, push_out, push_in, pop_out, pop_in, op_we_in, op_wa_in, op_d_in
 	parameter WC = 0;
 	parameter CODE = "code00";
 	parameter DATA = "data00";
+	parameter CODE2 = "codeu00";
+	parameter DATA2 = "datau00";
 	parameter EXT = ".txt";
 	input clk;
 	wire [NID*(WAD+WID+1)-1:0] pc;
