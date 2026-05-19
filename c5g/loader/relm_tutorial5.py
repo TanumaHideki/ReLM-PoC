@@ -32,7 +32,7 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
         tstart := UInt(In("TIMER")),
         i := Int(1),
         s0 := Int(0),
-        s1 := Int(0),
+        s1 := Int(),
         Do()[
             s1(s0 + i),
             s0(s1 + i + 1),
