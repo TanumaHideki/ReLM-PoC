@@ -31,14 +31,15 @@ with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
     Thread[
         tstart := UInt(In("TIMER")),
         i := Int(1),
-        s := Int(0),
+        s0 := Int(0),
+        s1 := Int(),
         Do()[
-            s(s + i),
-            s(s + i + 1),
+            s1(s0 + i),
+            s0(s1 + i + 1),
         ].While(i(i + 2) <= 100),
         tend := UInt(In("TIMER")),
         disp(tend - tstart),
-        Out("LED", s),
+        Out("LED", s0),
     ]
 print(sum(range(1, 101)))
 print(bin(sum(range(1, 101))))
