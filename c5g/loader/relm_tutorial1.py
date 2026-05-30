@@ -7,7 +7,7 @@ from relm_c5g import *
 
 with ReLMLoader(loader="loader/output_files/relm_c5g.svf"):
     Thread[
-        Out("HEX", 0b11000001 << 24, 0b00110001 << 16, 0b00001101 << 8, 0b00000011),
+        Out("HEX", 0b11101111_00100101_10111011_10110111), # 0123
         Do()[
             Out("LED", In("TIMER") >> 14),
         ],
